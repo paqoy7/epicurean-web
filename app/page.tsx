@@ -9,9 +9,12 @@ import {
 
 // Interfaces
 interface CustomBlend {
-  gayoRatio: number;
-  temanggungRatio: number;
-  mandhelingRatio: number;
+  bean1Type: string;
+  bean1Ratio: number;
+  bean2Type: string;
+  bean2Ratio: number;
+  bean3Type: string;
+  bean3Ratio: number;
   grindSize: string;
   weightGram: number;
 }
@@ -62,22 +65,39 @@ export default function EpicureanApp() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
+  // Daftar Pilihan Biji Kopi & Harga
+  const beanOptions: { [key: string]: number } = {
+    'Arabica Gayo Wine Roasted': 120000,
+    'Robusta Temanggung Natural': 85000,
+    'Arabica Mandheling Grade 1': 110000,
+    'Arabica Toraja Sapan': 130000,
+    'Arabica Bali Kintamani': 125000,
+    'Robusta Dampit Malang': 80000,
+  };
+
   // Custom Blend State (Minimum Order: 200gr)
   const [blend, setBlend] = useState<CustomBlend>({
-    gayoRatio: 60,
-    temanggungRatio: 40,
-    mandhelingRatio: 0,
+    bean1Type: 'Arabica Gayo Wine Roasted',
+    bean1Ratio: 50,
+    bean2Type: 'Robusta Temanggung Natural',
+    bean2Ratio: 30,
+    bean3Type: 'Arabica Mandheling Grade 1',
+    bean3Ratio: 20,
     grindSize: 'Biji Utuh (Whole Bean)',
     weightGram: 200
   });
 
-  const beanPrices = { gayo: 120000, temanggung: 85000, mandheling: 110000 };
   const roastingAndPackagingCost = 25000;
 
+  // Dynamic Price Calculation
+  const priceBean1 = beanOptions[blend.bean1Type] || 100000;
+  const priceBean2 = beanOptions[blend.bean2Type] || 100000;
+  const priceBean3 = beanOptions[blend.bean3Type] || 100000;
+
   const calculatedBlendPricePerKg = Math.round(
-    (blend.gayoRatio / 100) * beanPrices.gayo +
-    (blend.temanggungRatio / 100) * beanPrices.temanggung +
-    (blend.mandhelingRatio / 100) * beanPrices.mandheling +
+    (blend.bean1Ratio / 100) * priceBean1 +
+    (blend.bean2Ratio / 100) * priceBean2 +
+    (blend.bean3Ratio / 100) * priceBean3 +
     roastingAndPackagingCost
   );
   const calculatedBlendPricePerGram = calculatedBlendPricePerKg / 1000;
@@ -94,7 +114,7 @@ export default function EpicureanApp() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
   const grandTotal = cartSubtotal + shippingCost;
 
-  // Products State (Updated Categories)
+  // Products State
   const [products, setProducts] = useState<Product[]>([
     {
       id: 'P1',
@@ -151,7 +171,7 @@ export default function EpicureanApp() {
       shippingCost: 0,
       paymentMethod: 'kontra_bon_30',
       items: [
-        { id: '1', name: 'Custom Artisan Blend (60% Gayo / 40% Temanggung)', quantityGram: 20000, pricePerGram: 156, totalPrice: 3120000 }
+        { id: '1', name: 'Custom Artisan Blend (50% Gayo Wine / 30% Temanggung / 20% Mandheling)', quantityGram: 20000, pricePerGram: 156, totalPrice: 3120000 }
       ],
       subtotal: 3120000,
       totalAmount: 3120000,
@@ -163,23 +183,23 @@ export default function EpicureanApp() {
 
   const [lastSubmittedOrder, setLastSubmittedOrder] = useState<Order | null>(null);
 
-  // Ratio Adjusters
-  const handleRatioChange = (bean: 'gayo' | 'temanggung', val: number) => {
-    if (bean === 'gayo') {
+  // Ratio Adjuster
+  const handleRatioChange = (beanNum: 1 | 2, val: number) => {
+    if (beanNum === 1) {
       const remaining = 100 - val;
       setBlend(prev => ({
         ...prev,
-        gayoRatio: val,
-        temanggungRatio: Math.round(remaining * 0.6),
-        mandhelingRatio: Math.round(remaining * 0.4)
+        bean1Ratio: val,
+        bean2Ratio: Math.round(remaining * 0.6),
+        bean3Ratio: Math.round(remaining * 0.4)
       }));
     } else {
-      const remaining = 100 - blend.gayoRatio;
-      const validTemanggung = Math.min(val, remaining);
+      const remaining = 100 - blend.bean1Ratio;
+      const validBean2 = Math.min(val, remaining);
       setBlend(prev => ({
         ...prev,
-        temanggungRatio: validTemanggung,
-        mandhelingRatio: remaining - validTemanggung
+        bean2Ratio: validBean2,
+        bean3Ratio: remaining - validBean2
       }));
     }
   };
@@ -187,7 +207,7 @@ export default function EpicureanApp() {
   const addCustomBlendToCart = () => {
     const newItem: OrderItem = {
       id: `CB-${Date.now()}`,
-      name: `Custom Artisan Blend (${blend.gayoRatio}\% Gayo / ${blend.temanggungRatio}% Temanggung)`,
+      name: `Custom Blend (${blend.bean1Ratio}% ${blend.bean1Type.split(' ')[1] || 'Bean1'}, ${blend.bean2Ratio}% ${blend.bean2Type.split(' ')[1] || 'Bean2'}, ${blend.bean3Ratio}% ${blend.bean3Type.split(' ')[1] || 'Bean3'})`,
       quantityGram: blend.weightGram,
       pricePerGram: calculatedBlendPricePerGram,
       totalPrice: Math.round(calculatedBlendPricePerGram * blend.weightGram),
@@ -197,7 +217,7 @@ export default function EpicureanApp() {
   };
 
   const addProductToCart = (prod: Product) => {
-    const defaultPackGram = 200; // Minimum 200gr
+    const defaultPackGram = 200;
     const pricePerGram = prod.pricePerKg / 1000;
     const newItem: OrderItem = {
       id: `${prod.id}-${Date.now()}`,
@@ -333,7 +353,7 @@ export default function EpicureanApp() {
               </p>
             </div>
 
-            {/* Configurator dengan MOQ 200g */}
+            {/* Custom Blend Configurator dengan Pemilih Jenis Kopi */}
             <section className="bg-[#1A1816] border border-[#262422] rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center space-x-3 mb-6 border-b border-[#262422] pb-4">
                 <Calculator className="h-6 w-6 text-[#F59E0B]" />
@@ -342,37 +362,75 @@ export default function EpicureanApp() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-[#D4D0C7]">Arabica Gayo Wine Roasted (Base Body)</span>
-                      <span className="text-[#F59E0B]">{blend.gayoRatio}%</span>
+                  {/* Bean 1 Selection & Ratio */}
+                  <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold">
+                      <select
+                        value={blend.bean1Type}
+                        onChange={(e) => setBlend({ ...blend, bean1Type: e.target.value })}
+                        className="bg-[#1A1816] border border-[#262422] rounded-lg px-2.5 py-1 text-white font-bold text-xs"
+                      >
+                        {Object.keys(beanOptions).map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                      <span className="text-[#F59E0B] font-black text-sm">{blend.bean1Ratio}%</span>
                     </div>
                     <input
                       type="range"
                       min="0"
                       max="100"
-                      value={blend.gayoRatio}
-                      onChange={(e) => handleRatioChange('gayo', parseInt(e.target.value))}
+                      value={blend.bean1Ratio}
+                      onChange={(e) => handleRatioChange(1, parseInt(e.target.value))}
                       className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
                     />
                   </div>
 
-                  <div>
-                    <div className="flex justify-between text-xs font-bold mb-2">
-                      <span className="text-[#D4D0C7]">Robusta Temanggung Natural (Crema & Kick)</span>
-                      <span className="text-[#F59E0B]">{blend.temanggungRatio}%</span>
+                  {/* Bean 2 Selection & Ratio */}
+                  <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold">
+                      <select
+                        value={blend.bean2Type}
+                        onChange={(e) => setBlend({ ...blend, bean2Type: e.target.value })}
+                        className="bg-[#1A1816] border border-[#262422] rounded-lg px-2.5 py-1 text-white font-bold text-xs"
+                      >
+                        {Object.keys(beanOptions).map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                      <span className="text-[#F59E0B] font-black text-sm">{blend.bean2Ratio}%</span>
                     </div>
                     <input
                       type="range"
                       min="0"
-                      max={100 - blend.gayoRatio}
-                      value={blend.temanggungRatio}
-                      onChange={(e) => handleRatioChange('temanggung', parseInt(e.target.value))}
+                      max={100 - blend.bean1Ratio}
+                      value={blend.bean2Ratio}
+                      onChange={(e) => handleRatioChange(2, parseInt(e.target.value))}
                       className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t border-[#262422]">
+                  {/* Bean 3 Selection & Ratio */}
+                  <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
+                    <div className="flex justify-between items-center text-xs font-bold">
+                      <select
+                        value={blend.bean3Type}
+                        onChange={(e) => setBlend({ ...blend, bean3Type: e.target.value })}
+                        className="bg-[#1A1816] border border-[#262422] rounded-lg px-2.5 py-1 text-white font-bold text-xs"
+                      >
+                        {Object.keys(beanOptions).map(b => (
+                          <option key={b} value={b}>{b}</option>
+                        ))}
+                      </select>
+                      <span className="text-[#F59E0B] font-black text-sm">{blend.bean3Ratio}%</span>
+                    </div>
+                    <div className="w-full bg-[#262422] h-2.5 rounded-lg overflow-hidden">
+                      <div className="bg-[#F59E0B] h-full" style={{ width: `${blend.bean3Ratio}%` }}></div>
+                    </div>
+                  </div>
+
+                  {/* Weight & Grind Size */}
+                  <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
                       <label className="block text-xs font-bold text-[#8E8B85] mb-1">Ukuran Gilingan</label>
                       <select
@@ -401,6 +459,7 @@ export default function EpicureanApp() {
                   </div>
                 </div>
 
+                {/* Price Output Box */}
                 <div className="bg-[#121110] border border-[#262422] rounded-2xl p-6 flex flex-col justify-between">
                   <div>
                     <h3 className="text-xs font-bold text-[#8E8B85] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
@@ -431,7 +490,7 @@ export default function EpicureanApp() {
               </div>
             </section>
 
-            {/* Katalog Standar dengan Kategori Baru */}
+            {/* Katalog Standar */}
             <section className="space-y-6">
               <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -771,7 +830,6 @@ export default function EpicureanApp() {
                 </section>
               )}
 
-              {/* TAB 2: PRODUK & COGS (HPP) DENGAN DROPDOWN KATEGORI BARU */}
               {sellerSubTab === 'products' && (
                 <div className="space-y-8">
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -809,7 +867,6 @@ export default function EpicureanApp() {
                     })}
                   </section>
 
-                  {/* Form Tambah Produk Baru dengan Pilihan Kategori Kustom */}
                   <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
                     <h2 className="text-lg font-extrabold text-white">Tambah Katalog Produk Baru / Adjust COGS</h2>
 
