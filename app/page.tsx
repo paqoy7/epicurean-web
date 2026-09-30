@@ -14,9 +14,11 @@ interface Product {
   name: string;
   category: 'Green Beans' | 'Roasted Beans' | 'Blend Beans';
   pricePerKg: number;
+  pricePer200g: number;
   greenBeanCostPerKg: number;
   roastingCostPerKg: number;
   packagingCostPerKg: number;
+  packagingCostPer200g: number;
   description: string;
 }
 
@@ -27,6 +29,7 @@ interface OrderItem {
   pricePerGram: number;
   totalPrice: number;
   blendDetails?: string;
+  packType?: '1kg' | '200g';
 }
 
 interface Order {
@@ -65,9 +68,11 @@ export default function EpicureanApp() {
       name: 'Arabica Gayo Green Beans Grade 1',
       category: 'Green Beans',
       pricePerKg: 110000,
+      pricePer200g: 25000,
       greenBeanCostPerKg: 90000,
       roastingCostPerKg: 0,
       packagingCostPerKg: 5000,
+      packagingCostPer200g: 1500,
       description: 'Moisture: 12%, Defect < 5%, Single Origin Takengon'
     },
     {
@@ -75,9 +80,11 @@ export default function EpicureanApp() {
       name: 'Arabica Gayo Wine Roasted',
       category: 'Roasted Beans',
       pricePerKg: 180000,
+      pricePer200g: 42000,
       greenBeanCostPerKg: 98000,
       roastingCostPerKg: 20000,
       packagingCostPerKg: 15000,
+      packagingCostPer200g: 3500,
       description: 'Notes: Winey, Tropical Fruit, Medium Body'
     },
     {
@@ -85,9 +92,11 @@ export default function EpicureanApp() {
       name: 'Bandung Heritage House Blend (70/30)',
       category: 'Blend Beans',
       pricePerKg: 145000,
+      pricePer200g: 32000,
       greenBeanCostPerKg: 75000,
       roastingCostPerKg: 18000,
       packagingCostPerKg: 14000,
+      packagingCostPer200g: 3000,
       description: 'Notes: Caramel, Brown Sugar, Balanced'
     }
   ];
@@ -126,31 +135,37 @@ export default function EpicureanApp() {
     }
   }, [orders]);
 
-  // Custom Blend Options
-  const beanOptions: { [key: string]: number } = {
-    'Arabica Gayo Wine Roasted': 120000,
-    'Robusta Temanggung Natural': 85000,
-    'Arabica Mandheling Grade 1': 110000,
-    'Arabica Toraja Sapan': 130000,
-    'Arabica Bali Kintamani': 125000,
-    'Robusta Dampit Malang': 80000,
-  };
-
+  // Dynamic Roasted Beans Options for Blend Configurator
+  const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
+  
   const [blend, setBlend] = useState({
-    bean1Type: 'Arabica Gayo Wine Roasted',
+    bean1Id: roastedProducts[0]?.id || '',
     bean1Ratio: 50,
-    bean2Type: 'Robusta Temanggung Natural',
+    bean2Id: roastedProducts[1]?.id || roastedProducts[0]?.id || '',
     bean2Ratio: 30,
-    bean3Type: 'Arabica Mandheling Grade 1',
+    bean3Id: roastedProducts[2]?.id || roastedProducts[0]?.id || '',
     bean3Ratio: 20,
     grindSize: 'Biji Utuh (Whole Bean)',
     weightGram: 200
   });
 
+  // Keep blend selection valid if products change
+  useEffect(() => {
+    if (roastedProducts.length > 0) {
+      if (!roastedProducts.find(p => p.id === blend.bean1Id)) setBlend(b => ({ ...b, bean1Id: roastedProducts[0].id }));
+      if (!roastedProducts.find(p => p.id === blend.bean2Id)) setBlend(b => ({ ...b, bean2Id: roastedProducts[0].id }));
+      if (!roastedProducts.find(p => p.id === blend.bean3Id)) setBlend(b => ({ ...b, bean3Id: roastedProducts[0].id }));
+    }
+  }, [products]);
+
   const roastingAndPackagingCost = 25000;
-  const priceBean1 = beanOptions[blend.bean1Type] || 100000;
-  const priceBean2 = beanOptions[blend.bean2Type] || 100000;
-  const priceBean3 = beanOptions[blend.bean3Type] || 100000;
+  const bean1Obj = products.find(p => p.id === blend.bean1Id);
+  const bean2Obj = products.find(p => p.id === blend.bean2Id);
+  const bean3Obj = products.find(p => p.id === blend.bean3Id);
+
+  const priceBean1 = bean1Obj ? bean1Obj.pricePerKg : 150000;
+  const priceBean2 = bean2Obj ? bean2Obj.pricePerKg : 150000;
+  const priceBean3 = bean3Obj ? bean3Obj.pricePerKg : 150000;
 
   const calculatedBlendPricePerKg = Math.round(
     (blend.bean1Ratio / 100) * priceBean1 +
@@ -188,9 +203,11 @@ export default function EpicureanApp() {
     name: '',
     category: 'Green Beans' as Product['category'],
     pricePerKg: 150000,
+    pricePer200g: 35000,
     greenBeanCostPerKg: 90000,
     roastingCostPerKg: 15000,
-    packagingCostPerKg: 8000,
+    packagingCostPerKg: 10000,
+    packagingCostPer200g: 3000,
     description: ''
   });
 
@@ -215,9 +232,13 @@ export default function EpicureanApp() {
   };
 
   const addCustomBlendToCart = () => {
+    const b1Name = bean1Obj ? bean1Obj.name.split(' ')[0] : 'Bean1';
+    const b2Name = bean2Obj ? bean2Obj.name.split(' ')[0] : 'Bean2';
+    const b3Name = bean3Obj ? bean3Obj.name.split(' ')[0] : 'Bean3';
+
     const newItem: OrderItem = {
       id: `CB-${Date.now()}`,
-      name: `Custom Blend (${blend.bean1Ratio}% ${blend.bean1Type.split(' ')[1] || 'Bean1'}, ${blend.bean2Ratio}% ${blend.bean2Type.split(' ')[1] || 'Bean2'}, ${blend.bean3Ratio}% ${blend.bean3Type.split(' ')[1] || 'Bean3'})`,
+      name: `Custom Blend (${blend.bean1Ratio}% ${b1Name}, ${blend.bean2Ratio}% ${b2Name}, ${blend.bean3Ratio}% ${b3Name})`,
       quantityGram: blend.weightGram,
       pricePerGram: calculatedBlendPricePerGram,
       totalPrice: Math.round(calculatedBlendPricePerGram * blend.weightGram),
@@ -226,15 +247,17 @@ export default function EpicureanApp() {
     setCart([...cart, newItem]);
   };
 
-  const addProductToCart = (prod: Product) => {
-    const defaultPackGram = 200;
-    const pricePerGram = prod.pricePerKg / 1000;
+  const addProductToCart = (prod: Product, packType: '1kg' | '200g') => {
+    const weightGram = packType === '1kg' ? 1000 : 200;
+    const price = packType === '1kg' ? prod.pricePerKg : prod.pricePer200g;
+    
     const newItem: OrderItem = {
-      id: `${prod.id}-${Date.now()}`,
-      name: prod.name,
-      quantityGram: defaultPackGram,
-      pricePerGram: pricePerGram,
-      totalPrice: Math.round(pricePerGram * defaultPackGram)
+      id: `${prod.id}-${packType}-${Date.now()}`,
+      name: `${prod.name} (${packType === '1kg' ? 'Kemasan 1 Kg' : 'Kemasan 200 Gram'})`,
+      quantityGram: weightGram,
+      pricePerGram: price / weightGram,
+      totalPrice: price,
+      packType: packType
     };
     setCart([...cart, newItem]);
   };
@@ -280,8 +303,7 @@ export default function EpicureanApp() {
   };
 
   // Generate WhatsApp Link
-  const generateWhatsAppLink = (order: Order) => {
-    const roasteryNumber = '6281234567890';
+  const generateWhatsAppLink = (order: Order, targetPhone: string) => {
     let text = `*PRE-ORDER B2B EPICUREAN.id*\n`;
     text += `------------------------------------\n`;
     text += `*ID Order:* ${order.id}\n`;
@@ -298,7 +320,7 @@ export default function EpicureanApp() {
     text += `*TOTAL TAGIHAN:* Rp ${order.totalAmount.toLocaleString('id-ID')}\n\n`;
     text += `Mohon diproses untuk pengiriman ke alamat:\n${order.shippingAddress}`;
 
-    return `https://wa.me/${roasteryNumber}?text=${encodeURIComponent(text)}`;
+    return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
   };
 
   const handleUploadPaymentProof = (e: React.FormEvent) => {
@@ -334,9 +356,11 @@ export default function EpicureanApp() {
       name: '',
       category: 'Green Beans',
       pricePerKg: 150000,
+      pricePer200g: 35000,
       greenBeanCostPerKg: 90000,
       roastingCostPerKg: 15000,
-      packagingCostPerKg: 8000,
+      packagingCostPerKg: 10000,
+      packagingCostPer200g: 3000,
       description: ''
     });
   };
@@ -410,140 +434,149 @@ export default function EpicureanApp() {
             <section className="bg-[#1A1816] border border-[#262422] rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center space-x-3 mb-6 border-b border-[#262422] pb-4">
                 <Calculator className="h-6 w-6 text-[#F59E0B]" />
-                <h2 className="text-xl font-extrabold text-white">Custom Blend Configurator</h2>
+                <div>
+                  <h2 className="text-xl font-extrabold text-white">Custom Blend Configurator</h2>
+                  <p className="text-xs text-[#A19D95]">Khusus pilihan biji kopi dari kategori Roasted Beans</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 space-y-6">
-                  {/* Bean 1 Selection */}
-                  <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <select
-                        value={blend.bean1Type}
-                        onChange={(e) => setBlend({ ...blend, bean1Type: e.target.value })}
-                        className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
-                      >
-                        {Object.keys(beanOptions).map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                      <span className="text-[#F59E0B] font-black text-sm">{blend.bean1Ratio}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={blend.bean1Ratio}
-                      onChange={(e) => handleRatioChange(1, parseInt(e.target.value))}
-                      className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Bean 2 Selection */}
-                  <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <select
-                        value={blend.bean2Type}
-                        onChange={(e) => setBlend({ ...blend, bean2Type: e.target.value })}
-                        className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
-                      >
-                        {Object.keys(beanOptions).map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                      <span className="text-[#F59E0B] font-black text-sm">{blend.bean2Ratio}%</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max={100 - blend.bean1Ratio}
-                      value={blend.bean2Ratio}
-                      onChange={(e) => handleRatioChange(2, parseInt(e.target.value))}
-                      className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
-                    />
-                  </div>
-
-                  {/* Bean 3 Selection */}
-                  <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
-                    <div className="flex justify-between items-center text-xs font-bold">
-                      <select
-                        value={blend.bean3Type}
-                        onChange={(e) => setBlend({ ...blend, bean3Type: e.target.value })}
-                        className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
-                      >
-                        {Object.keys(beanOptions).map(b => (
-                          <option key={b} value={b}>{b}</option>
-                        ))}
-                      </select>
-                      <span className="text-[#F59E0B] font-black text-sm">{blend.bean3Ratio}%</span>
-                    </div>
-                    <div className="w-full bg-[#262422] h-2.5 rounded-lg overflow-hidden">
-                      <div className="bg-[#F59E0B] h-full" style={{ width: `${blend.bean3Ratio}%` }}></div>
-                    </div>
-                  </div>
-
-                  {/* Weight & Grind */}
-                  <div className="grid grid-cols-2 gap-4 pt-2">
-                    <div>
-                      <label className="block text-xs font-bold text-[#A19D95] mb-1">Ukuran Gilingan</label>
-                      <select
-                        value={blend.grindSize}
-                        onChange={(e) => setBlend({ ...blend, grindSize: e.target.value })}
-                        className="w-full bg-[#121110] border border-[#262422] rounded-xl px-3 py-2.5 text-xs text-[#E2E2E2]"
-                      >
-                        <option>Biji Utuh (Whole Bean)</option>
-                        <option>Kasar (French Press)</option>
-                        <option>Sedang (Drip/Filter)</option>
-                        <option>Halus (Espresso)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-[#A19D95] mb-1">Jumlah Order (Gram)</label>
+              {roastedProducts.length === 0 ? (
+                <div className="p-6 bg-[#121110] border border-[#262422] rounded-2xl text-center text-xs text-[#A19D95]">
+                  Belum ada produk ber-kategori <strong>Roasted Beans</strong> pada katalog. Tambahkan produk pada Seller Admin terlebih dahulu.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  <div className="lg:col-span-2 space-y-6">
+                    {/* Bean 1 Selection */}
+                    <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
+                      <div className="flex justify-between items-center text-xs font-bold">
+                        <select
+                          value={blend.bean1Id}
+                          onChange={(e) => setBlend({ ...blend, bean1Id: e.target.value })}
+                          className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
+                        >
+                          {roastedProducts.map(b => (
+                            <option key={b.id} value={b.id}>{b.name} (Rp {b.pricePerKg.toLocaleString('id-ID')}/Kg)</option>
+                          ))}
+                        </select>
+                        <span className="text-[#F59E0B] font-black text-sm">{blend.bean1Ratio}%</span>
+                      </div>
                       <input
-                        type="number"
-                        min="200"
-                        step="50"
-                        value={blend.weightGram}
-                        onChange={(e) => setBlend({ ...blend, weightGram: Math.max(200, parseInt(e.target.value) || 200) })}
-                        className="w-full bg-[#121110] border border-[#262422] rounded-xl px-3 py-2.5 text-xs text-[#E2E2E2]"
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={blend.bean1Ratio}
+                        onChange={(e) => handleRatioChange(1, parseInt(e.target.value))}
+                        className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
                       />
-                      <span className="text-[10px] text-[#F59E0B] mt-1 block font-bold">*Min. Order 200 Gram</span>
+                    </div>
+
+                    {/* Bean 2 Selection */}
+                    <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
+                      <div className="flex justify-between items-center text-xs font-bold">
+                        <select
+                          value={blend.bean2Id}
+                          onChange={(e) => setBlend({ ...blend, bean2Id: e.target.value })}
+                          className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
+                        >
+                          {roastedProducts.map(b => (
+                            <option key={b.id} value={b.id}>{b.name} (Rp {b.pricePerKg.toLocaleString('id-ID')}/Kg)</option>
+                          ))}
+                        </select>
+                        <span className="text-[#F59E0B] font-black text-sm">{blend.bean2Ratio}%</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max={100 - blend.bean1Ratio}
+                        value={blend.bean2Ratio}
+                        onChange={(e) => handleRatioChange(2, parseInt(e.target.value))}
+                        className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
+                      />
+                    </div>
+
+                    {/* Bean 3 Selection */}
+                    <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
+                      <div className="flex justify-between items-center text-xs font-bold">
+                        <select
+                          value={blend.bean3Id}
+                          onChange={(e) => setBlend({ ...blend, bean3Id: e.target.value })}
+                          className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
+                        >
+                          {roastedProducts.map(b => (
+                            <option key={b.id} value={b.id}>{b.name} (Rp {b.pricePerKg.toLocaleString('id-ID')}/Kg)</option>
+                          ))}
+                        </select>
+                        <span className="text-[#F59E0B] font-black text-sm">{blend.bean3Ratio}%</span>
+                      </div>
+                      <div className="w-full bg-[#262422] h-2.5 rounded-lg overflow-hidden">
+                        <div className="bg-[#F59E0B] h-full" style={{ width: `${blend.bean3Ratio}%` }}></div>
+                      </div>
+                    </div>
+
+                    {/* Weight & Grind */}
+                    <div className="grid grid-cols-2 gap-4 pt-2">
+                      <div>
+                        <label className="block text-xs font-bold text-[#A19D95] mb-1">Ukuran Gilingan</label>
+                        <select
+                          value={blend.grindSize}
+                          onChange={(e) => setBlend({ ...blend, grindSize: e.target.value })}
+                          className="w-full bg-[#121110] border border-[#262422] rounded-xl px-3 py-2.5 text-xs text-[#E2E2E2]"
+                        >
+                          <option>Biji Utuh (Whole Bean)</option>
+                          <option>Kasar (French Press)</option>
+                          <option>Sedang (Drip/Filter)</option>
+                          <option>Halus (Espresso)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-[#A19D95] mb-1">Jumlah Order (Gram)</label>
+                        <input
+                          type="number"
+                          min="200"
+                          step="50"
+                          value={blend.weightGram}
+                          onChange={(e) => setBlend({ ...blend, weightGram: Math.max(200, parseInt(e.target.value) || 200) })}
+                          className="w-full bg-[#121110] border border-[#262422] rounded-xl px-3 py-2.5 text-xs text-[#E2E2E2]"
+                        />
+                        <span className="text-[10px] text-[#F59E0B] mt-1 block font-bold">*Min. Order 200 Gram</span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Price Output Card */}
-                <div className="bg-[#121110] border border-[#262422] rounded-2xl p-6 flex flex-col justify-between shadow-inner">
-                  <div>
-                    <h3 className="text-xs font-bold text-[#A19D95] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
-                    <div className="space-y-3 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-[#A19D95]">Harga Blend / Kg:</span>
-                        <span className="font-extrabold text-[#F59E0B]">Rp {calculatedBlendPricePerKg.toLocaleString('id-ID')}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-[#A19D95]">Total Berat:</span>
-                        <span className="font-bold text-white">{blend.weightGram} Gram</span>
-                      </div>
-                      <div className="border-t border-[#262422] pt-3 flex justify-between text-base font-black text-white">
-                        <span>Total Tagihan:</span>
-                        <span className="text-[#F59E0B]">Rp {Math.round(calculatedBlendPricePerGram * blend.weightGram).toLocaleString('id-ID')}</span>
+                  {/* Price Output Card */}
+                  <div className="bg-[#121110] border border-[#262422] rounded-2xl p-6 flex flex-col justify-between shadow-inner">
+                    <div>
+                      <h3 className="text-xs font-bold text-[#A19D95] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
+                      <div className="space-y-3 text-xs">
+                        <div className="flex justify-between">
+                          <span className="text-[#A19D95]">Harga Blend / Kg:</span>
+                          <span className="font-extrabold text-[#F59E0B]">Rp {calculatedBlendPricePerKg.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-[#A19D95]">Total Berat:</span>
+                          <span className="font-bold text-white">{blend.weightGram} Gram</span>
+                        </div>
+                        <div className="border-t border-[#262422] pt-3 flex justify-between text-base font-black text-white">
+                          <span>Total Tagihan:</span>
+                          <span className="text-[#F59E0B]">Rp {Math.round(calculatedBlendPricePerGram * blend.weightGram).toLocaleString('id-ID')}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <button
-                    onClick={addCustomBlendToCart}
-                    className="w-full mt-6 bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:brightness-110 text-black font-black py-3.5 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-[#F59E0B]/20"
-                  >
-                    <Plus className="h-4 w-4 stroke-[3]" />
-                    <span>Tambah Blend ke Order</span>
-                  </button>
+                    <button
+                      onClick={addCustomBlendToCart}
+                      className="w-full mt-6 bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:brightness-110 text-black font-black py-3.5 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-[#F59E0B]/20"
+                    >
+                      <Plus className="h-4 w-4 stroke-[3]" />
+                      <span>Tambah Blend ke Order</span>
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
             </section>
 
-            {/* Katalog Standar dengan Badge Warna Dynamic */}
+            {/* Katalog Standar dengan Pilihan Kemasan 1 Kg & 200g */}
             <section className="space-y-6">
               <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
               {products.length === 0 ? (
@@ -553,7 +586,6 @@ export default function EpicureanApp() {
                   {products.map((p) => (
                     <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between hover:border-[#33302D] transition-all shadow-lg">
                       <div>
-                        {/* Dynamic Category Badges */}
                         <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
                           p.category === 'Green Beans' 
                             ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
@@ -565,14 +597,33 @@ export default function EpicureanApp() {
                         </span>
                         <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
                         <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
-                        <p className="text-[#F59E0B] font-black text-base mt-4">Rp {p.pricePerKg.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#A19D95]">/ Kg</span></p>
+                        
+                        <div className="mt-4 space-y-1">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[#A19D95]">Kemasan 1 Kg:</span>
+                            <span className="text-[#F59E0B] font-black">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[#A19D95]">Kemasan 200 Gram:</span>
+                            <span className="text-[#F59E0B] font-black">Rp {p.pricePer200g.toLocaleString('id-ID')}</span>
+                          </div>
+                        </div>
                       </div>
-                      <button
-                        onClick={() => addProductToCart(p)}
-                        className="w-full mt-4 bg-[#262422] hover:bg-[#33302d] text-white text-xs font-bold py-2.5 rounded-xl transition-all"
-                      >
-                        + Tambah Paket 200 Gram
-                      </button>
+
+                      <div className="grid grid-cols-2 gap-2 mt-5">
+                        <button
+                          onClick={() => addProductToCart(p, '200g')}
+                          className="bg-[#262422] hover:bg-[#33302d] text-white text-[11px] font-bold py-2.5 rounded-xl transition-all"
+                        >
+                          + Pack 200g
+                        </button>
+                        <button
+                          onClick={() => addProductToCart(p, '1kg')}
+                          className="bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 text-[11px] font-bold py-2.5 rounded-xl transition-all"
+                        >
+                          + Pack 1 Kg
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -779,27 +830,40 @@ export default function EpicureanApp() {
                 </form>
               )}
 
-              {/* Halaman Upload Bukti & WhatsApp Direct */}
+              {/* Halaman Upload Bukti & Dual WhatsApp Direct */}
               {currentActiveOrder && (
                 <div className="mt-8 p-6 bg-[#121110] border border-emerald-800/80 rounded-2xl space-y-4 shadow-xl">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-col space-y-3">
                     <div className="flex items-center space-x-2 text-emerald-400 font-extrabold text-sm">
                       <CheckCircle className="h-5 w-5" />
                       <span>Pre-Order Terdaftar! (ID: {currentActiveOrder.id})</span>
                     </div>
 
-                    <a
-                      href={generateWhatsAppLink(currentActiveOrder)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"
-                    >
-                      <MessageSquare className="h-4 w-4" />
-                      <span>Kirim Tagihan ke WhatsApp Roastery</span>
-                    </a>
+                    <p className="text-xs text-[#A19D95]">Kirim rincian tagihan ini ke Admin Roastery via WhatsApp:</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <a
+                        href={generateWhatsAppLink(currentActiveOrder, '6281931364302')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>Kirim WA Admin 1 (081931364302)</span>
+                      </a>
+                      <a
+                        href={generateWhatsAppLink(currentActiveOrder, '6289654225095')}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"
+                      >
+                        <MessageSquare className="h-4 w-4" />
+                        <span>Kirim WA Admin 2 (089654225095)</span>
+                      </a>
+                    </div>
                   </div>
                   
-                  <div className="text-xs space-y-1 text-[#E2E2E2]">
+                  <div className="text-xs space-y-1 text-[#E2E2E2] pt-2 border-t border-[#262422]">
                     <p><span className="text-[#A19D95]">Atas Nama:</span> {currentActiveOrder.customerName} ({currentActiveOrder.companyName})</p>
                     <p><span className="text-[#A19D95]">Total Tagihan:</span> <strong className="text-[#F59E0B]">Rp {currentActiveOrder.totalAmount.toLocaleString('id-ID')}</strong></p>
                     <p><span className="text-[#A19D95]">Status Approval:</span> <span className="text-yellow-400 font-bold">{currentActiveOrder.status}</span></p>
@@ -1003,9 +1067,14 @@ export default function EpicureanApp() {
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => {
                       const adjustedGreenBeanCost = Math.round(p.greenBeanCostPerKg / 0.85);
-                      const totalCogs = adjustedGreenBeanCost + p.roastingCostPerKg + p.packagingCostPerKg;
-                      const profit = p.pricePerKg - totalCogs;
-                      const marginPct = ((profit / p.pricePerKg) * 100).toFixed(1);
+                      const totalCogsKg = adjustedGreenBeanCost + p.roastingCostPerKg + p.packagingCostPerKg;
+                      const profitKg = p.pricePerKg - totalCogsKg;
+                      const marginPctKg = ((profitKg / p.pricePerKg) * 100).toFixed(1);
+
+                      const totalCogs200g = Math.round((adjustedGreenBeanCost + p.roastingCostPerKg) * 0.2) + p.packagingCostPer200g;
+                      const profit200g = p.pricePer200g - totalCogs200g;
+                      const marginPct200g = ((profit200g / p.pricePer200g) * 100).toFixed(1);
+
                       return (
                         <div key={p.id} className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl space-y-4 flex flex-col justify-between shadow-lg">
                           <div>
@@ -1028,32 +1097,38 @@ export default function EpicureanApp() {
                               </button>
                             </div>
                             <h3 className="text-base font-extrabold text-white mt-3">{p.name}</h3>
-                            <div className="grid grid-cols-2 gap-4 mt-4 text-xs border-t border-[#262422] pt-3">
-                              <div>
-                                <p className="text-[#A19D95]">Harga Jual / Kg</p>
-                                <p className="font-extrabold text-white text-sm mt-0.5">Rp {p.pricePerKg.toLocaleString('id-ID')}</p>
+
+                            {/* Rincian Kemasan 1 Kg */}
+                            <div className="bg-[#121110] p-3 rounded-2xl border border-[#262422] mt-3 space-y-1">
+                              <p className="text-[11px] font-black text-[#F59E0B] uppercase">KEMASAN 1 KG</p>
+                              <div className="flex justify-between text-xs text-[#A19D95]">
+                                <span>Harga Jual: <strong className="text-white">Rp {p.pricePerKg.toLocaleString('id-ID')}</strong></span>
+                                <span>COGS: <strong className="text-rose-400">Rp {totalCogsKg.toLocaleString('id-ID')}</strong></span>
                               </div>
-                              <div>
-                                <p className="text-[#A19D95]">Total COGS (Inc. 15% Loss)</p>
-                                <p className="font-extrabold text-rose-400 text-sm mt-0.5">Rp {totalCogs.toLocaleString('id-ID')}</p>
-                              </div>
+                              <p className="text-[11px] text-emerald-400 font-bold text-right pt-1">Margin: Rp {profitKg.toLocaleString('id-ID')} ({marginPctKg}%)</p>
                             </div>
-                          </div>
-                          <div className="bg-[#121110] border border-[#262422] p-3 rounded-2xl flex justify-between items-center text-xs">
-                            <span className="text-[#A19D95]">Margin Keuntungan:</span>
-                            <span className="font-black text-emerald-400 text-sm">Rp {profit.toLocaleString('id-ID')} ({marginPct}%)</span>
+
+                            {/* Rincian Kemasan 200g */}
+                            <div className="bg-[#121110] p-3 rounded-2xl border border-[#262422] mt-2 space-y-1">
+                              <p className="text-[11px] font-black text-[#F59E0B] uppercase">KEMASAN 200 GRAM</p>
+                              <div className="flex justify-between text-xs text-[#A19D95]">
+                                <span>Harga Jual: <strong className="text-white">Rp {p.pricePer200g.toLocaleString('id-ID')}</strong></span>
+                                <span>COGS: <strong className="text-rose-400">Rp {totalCogs200g.toLocaleString('id-ID')}</strong></span>
+                              </div>
+                              <p className="text-[11px] text-emerald-400 font-bold text-right pt-1">Margin: Rp {profit200g.toLocaleString('id-ID')} ({marginPct200g}%)</p>
+                            </div>
                           </div>
                         </div>
                       );
                     })}
                   </section>
 
-                  {/* Form Tambah Produk */}
+                  {/* Form Tambah Produk Terpisah 1 Kg & 200g */}
                   <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
-                    <h2 className="text-lg font-extrabold text-white">Tambah Katalog Produk Baru / Adjust COGS</h2>
+                    <h2 className="text-lg font-extrabold text-white">Tambah Katalog Produk & Atur COGS (1 Kg vs 200 Gram)</h2>
 
                     <form onSubmit={handleSaveProduct} className="space-y-6">
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-[#A19D95] mb-1">Nama Produk Kopi</label>
                           <input
@@ -1077,8 +1152,12 @@ export default function EpicureanApp() {
                             <option value="Blend Beans">Blend Beans</option>
                           </select>
                         </div>
+                      </div>
+
+                      {/* Penetapan Harga */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-bold text-[#A19D95] mb-1">Harga Jual per Kg (IDR)</label>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Jual Kemasan 1 Kg (IDR)</label>
                           <input
                             type="number"
                             required
@@ -1087,11 +1166,23 @@ export default function EpicureanApp() {
                             className="w-full bg-[#121110] border border-[#262422] rounded-xl px-4 py-2.5 text-xs text-white font-bold"
                           />
                         </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Jual Kemasan 200 Gram (IDR)</label>
+                          <input
+                            type="number"
+                            required
+                            value={productForm.pricePer200g}
+                            onChange={(e) => setProductForm({ ...productForm, pricePer200g: parseInt(e.target.value) || 0 })}
+                            className="w-full bg-[#121110] border border-[#262422] rounded-xl px-4 py-2.5 text-xs text-white font-bold"
+                          />
+                        </div>
                       </div>
 
+                      {/* COGS Section */}
                       <div className="bg-[#121110] border border-[#262422] p-5 rounded-2xl space-y-4">
-                        <p className="text-xs font-black text-[#F59E0B] uppercase tracking-wider">RINCIAN KOMPONEN HPP / COGS PER KG</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <p className="text-xs font-black text-[#F59E0B] uppercase tracking-wider">KOMPONEN MODAL HPP / COGS</p>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className="block text-xs text-[#A19D95] mb-1">Modal Green Bean / Kg</label>
                             <input
@@ -1103,7 +1194,7 @@ export default function EpicureanApp() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Roasting / Kg</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Roasting Operasional / Kg</label>
                             <input
                               type="number"
                               required
@@ -1112,13 +1203,26 @@ export default function EpicureanApp() {
                               className="w-full bg-[#1A1816] border border-[#262422] rounded-xl px-3 py-2 text-xs text-white"
                             />
                           </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#262422]">
                           <div>
-                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Packaging / Kg</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Kemasan Pouch 1 Kg</label>
                             <input
                               type="number"
                               required
                               value={productForm.packagingCostPerKg}
                               onChange={(e) => setProductForm({ ...productForm, packagingCostPerKg: parseInt(e.target.value) || 0 })}
+                              className="w-full bg-[#1A1816] border border-[#262422] rounded-xl px-3 py-2 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Kemasan Pouch 200 Gram</label>
+                            <input
+                              type="number"
+                              required
+                              value={productForm.packagingCostPer200g}
+                              onChange={(e) => setProductForm({ ...productForm, packagingCostPer200g: parseInt(e.target.value) || 0 })}
                               className="w-full bg-[#1A1816] border border-[#262422] rounded-xl px-3 py-2 text-xs text-white"
                             />
                           </div>
