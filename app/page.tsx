@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { 
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
-  Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X
+  Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
+  MessageSquare, ExternalLink, Download
 } from 'lucide-react';
 
 // Interfaces
@@ -33,6 +34,7 @@ interface Order {
   customerType: 'perorangan' | 'cafe';
   customerName: string;
   companyName: string;
+  customerPhone: string;
   destinationArea: 'bandung' | 'luar_bandung';
   shippingAddress: string;
   shippingMethod: string;
@@ -56,7 +58,7 @@ export default function EpicureanApp() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
-  // Initial Default Products
+  // Default Initial Products
   const defaultProducts: Product[] = [
     {
       id: 'P1',
@@ -124,7 +126,7 @@ export default function EpicureanApp() {
     }
   }, [orders]);
 
-  // Custom Blend State
+  // Custom Blend Options
   const beanOptions: { [key: string]: number } = {
     'Arabica Gayo Wine Roasted': 120000,
     'Robusta Temanggung Natural': 85000,
@@ -158,14 +160,13 @@ export default function EpicureanApp() {
   );
   const calculatedBlendPricePerGram = calculatedBlendPricePerKg / 1000;
 
-  // Cart & Customer Checkout State
+  // Cart & Customer State
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
   const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
   const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('kontra_bon_30');
   const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
 
-  // Reset payment method when switching customer type
   useEffect(() => {
     if (customerType === 'perorangan') {
       setPaymentMethod('transfer');
@@ -178,11 +179,11 @@ export default function EpicureanApp() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
   const grandTotal = cartSubtotal + shippingCost;
 
-  // Active Order Flow for Payment Proof
+  // Active Submitted Order
   const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
   const [paymentProofInput, setPaymentProofInput] = useState('');
 
-  // Form Tambah Produk Baru
+  // Form Product State
   const [productForm, setProductForm] = useState({
     name: '',
     category: 'Green Beans' as Product['category'],
@@ -259,6 +260,7 @@ export default function EpicureanApp() {
       customerType: customerType,
       customerName: customerInfo.name,
       companyName: customerType === 'cafe' ? customerInfo.company : 'Pembeli Perorangan',
+      customerPhone: customerInfo.phone,
       destinationArea: destination,
       shippingAddress: customerInfo.address,
       shippingMethod: destination === 'bandung' ? 'DIRECT BANDUNG' : 'JNE REG',
@@ -277,6 +279,28 @@ export default function EpicureanApp() {
     setCart([]);
   };
 
+  // Generate WhatsApp Message Link
+  const generateWhatsAppLink = (order: Order) => {
+    const roasteryNumber = '6281234567890'; // Ganti nomor WhatsApp roastery Anda di sini
+    let text = `*PRE-ORDER B2B EPICUREAN.id*\n`;
+    text += `------------------------------------\n`;
+    text += `*ID Order:* ${order.id}\n`;
+    text += `*Pemesan:* ${order.customerName} (${order.companyName})\n`;
+    text += `*Kategori:* ${order.customerType.toUpperCase()}\n`;
+    text += `*Metode Bayar:* ${order.paymentMethod.replace('_', ' ').toUpperCase()}\n`;
+    text += `------------------------------------\n`;
+    text += `*Rincian Pesanan:*\n`;
+    order.items.forEach(item => {
+      text += `- ${item.name} (${item.quantityGram}g) : Rp ${item.totalPrice.toLocaleString('id-ID')}\n`;
+    });
+    text += `------------------------------------\n`;
+    text += `*Ongkir (${order.shippingMethod}):* Rp ${order.shippingCost.toLocaleString('id-ID')}\n`;
+    text += `*TOTAL TAGIHAN:* Rp ${order.totalAmount.toLocaleString('id-ID')}\n\n`;
+    text += `Mohon diproses untuk pengiriman ke alamat:\n${order.shippingAddress}`;
+
+    return `https://wa.me/${roasteryNumber}?text=${encodeURIComponent(text)}`;
+  };
+
   const handleUploadPaymentProof = (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentActiveOrder || !paymentProofInput) return;
@@ -286,7 +310,7 @@ export default function EpicureanApp() {
     );
     setOrders(updatedOrders);
     setCurrentActiveOrder(prev => prev ? { ...prev, paymentProof: paymentProofInput } : null);
-    alert('Bukti pembayaran berhasil dikirim! Menunggu approval dari pihak Seller/Roastery.');
+    alert('Bukti pembayaran berhasil dicatat! Tim admin akan segera memverifikasi.');
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -318,8 +342,7 @@ export default function EpicureanApp() {
   };
 
   const handleDeleteProduct = (id: string) => {
-    const updated = products.filter(p => p.id !== id);
-    setProducts(updated);
+    setProducts(products.filter(p => p.id !== id));
   };
 
   const updateOrderStatus = (orderId: string, status: Order['status']) => {
@@ -517,11 +540,11 @@ export default function EpicureanApp() {
               </div>
             </section>
 
-            {/* Katalog Standar Pembeli */}
+            {/* Katalog Produk Ready-to-Roast */}
             <section className="space-y-6">
               <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
               {products.length === 0 ? (
-                <p className="text-xs text-[#8E8B85]">Belum ada produk yang tersedia.</p>
+                <p className="text-xs text-[#8E8B85]">Belum ada produk yang tersedia saat ini.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {products.map((p) => (
@@ -570,7 +593,7 @@ export default function EpicureanApp() {
                       ))}
                     </div>
 
-                    {/* Kategori Pembeli */}
+                    {/* Kategori Pemesan */}
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
                       <p className="text-xs font-bold text-white flex items-center space-x-2">
                         <Building2 className="h-4 w-4 text-[#F59E0B]" />
@@ -594,7 +617,7 @@ export default function EpicureanApp() {
                           type="button"
                           onClick={() => setCustomerType('perorangan')}
                           className={`p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2 ${
-                            customerType === 'perorangan' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#8E8B85]'
+                            customerType === 'perorangan' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422]'
                           }`}
                         >
                           <User className="h-4 w-4" />
@@ -701,6 +724,14 @@ export default function EpicureanApp() {
                           className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
                         />
                       )}
+                      <input
+                        type="text"
+                        placeholder="Nomor WhatsApp *"
+                        required
+                        value={customerInfo.phone}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
+                      />
                       <textarea
                         placeholder="Alamat Pengiriman Lengkap *"
                         required
@@ -738,12 +769,24 @@ export default function EpicureanApp() {
                 </form>
               )}
 
-              {/* Halaman Konfirmasi & Upload Bukti Pembayaran */}
+              {/* Halaman Upload Bukti & WhatsApp Direct */}
               {currentActiveOrder && (
                 <div className="mt-8 p-6 bg-[#121110] border border-emerald-800 rounded-2xl space-y-4">
-                  <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
-                    <CheckCircle className="h-5 w-5" />
-                    <span>Pre-Order Terdaftar! (ID: {currentActiveOrder.id})</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                      <CheckCircle className="h-5 w-5" />
+                      <span>Pre-Order Terdaftar! (ID: {currentActiveOrder.id})</span>
+                    </div>
+
+                    <a
+                      href={generateWhatsAppLink(currentActiveOrder)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-2 transition-all"
+                    >
+                      <MessageSquare className="h-4 w-4" />
+                      <span>Kirim Tagihan ke WhatsApp Roastery</span>
+                    </a>
                   </div>
                   
                   <div className="text-xs space-y-1 text-[#D4D0C7]">
@@ -761,11 +804,11 @@ export default function EpicureanApp() {
                       </div>
 
                       <form onSubmit={handleUploadPaymentProof} className="space-y-3">
-                        <label className="block text-xs font-bold text-[#8E8B85]">Input Nomor Referensi / Link Bukti Transfer</label>
+                        <label className="block text-xs font-bold text-[#8E8B85]">Input Ref / Catatan Pembayaran</label>
                         <input
                           type="text"
                           required
-                          placeholder="Contoh: Ref 8839201 / URL Gambar Bukti Transfer"
+                          placeholder="Contoh: Ref BCA 8839201"
                           value={paymentProofInput}
                           onChange={(e) => setPaymentProofInput(e.target.value)}
                           className="w-full bg-[#1A1816] border border-[#262422] rounded-xl px-3 py-2 text-xs text-white"
@@ -775,7 +818,7 @@ export default function EpicureanApp() {
                           className="bg-[#F59E0B] text-black font-extrabold px-4 py-2 rounded-xl text-xs flex items-center space-x-2"
                         >
                           <Upload className="h-4 w-4" />
-                          <span>Kirim Bukti Pembayaran</span>
+                          <span>Simpan Catatan Pembayaran</span>
                         </button>
                       </form>
                     </div>
@@ -931,6 +974,7 @@ export default function EpicureanApp() {
                               <button
                                 onClick={() => window.print()}
                                 className="p-2 bg-[#121110] hover:bg-[#262422] border border-[#262422] rounded-xl text-[#8E8B85] hover:text-white transition-all"
+                                title="Cetak Invoice PDF Digital"
                               >
                                 <Printer className="h-4 w-4" />
                               </button>
@@ -948,7 +992,9 @@ export default function EpicureanApp() {
                   {/* List Produk Seller */}
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => {
-                      const totalCogs = p.greenBeanCostPerKg + p.roastingCostPerKg + p.packagingCostPerKg;
+                      // HPP memperhitungkan estimasi susut roasting 15%
+                      const adjustedGreenBeanCost = Math.round(p.greenBeanCostPerKg / 0.85);
+                      const totalCogs = adjustedGreenBeanCost + p.roastingCostPerKg + p.packagingCostPerKg;
                       const profit = p.pricePerKg - totalCogs;
                       const marginPct = ((profit / p.pricePerKg) * 100).toFixed(1);
                       return (
@@ -959,7 +1005,7 @@ export default function EpicureanApp() {
                               <button 
                                 onClick={() => handleDeleteProduct(p.id)} 
                                 className="p-1.5 text-[#8E8B85] hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-all"
-                                title="Hapus Produk Permanen"
+                                title="Hapus Produk"
                               >
                                 <Trash2 className="h-4 w-4" />
                               </button>
@@ -971,7 +1017,7 @@ export default function EpicureanApp() {
                                 <p className="font-extrabold text-white text-sm mt-0.5">Rp {p.pricePerKg.toLocaleString('id-ID')}</p>
                               </div>
                               <div>
-                                <p className="text-[#8E8B85]">Total COGS / Kg</p>
+                                <p className="text-[#8E8B85]">Total COGS (Inc. 15% Loss)</p>
                                 <p className="font-extrabold text-rose-400 text-sm mt-0.5">Rp {totalCogs.toLocaleString('id-ID')}</p>
                               </div>
                             </div>
@@ -1027,7 +1073,7 @@ export default function EpicureanApp() {
                       </div>
 
                       <div className="bg-[#121110] border border-[#262422] p-5 rounded-2xl space-y-4">
-                        <p className="text-xs font-black text-[#F59E0B] uppercase tracking-wider">RINCIAN KOMPONEN HPP / COGS (COST OF GOODS SOLD) PER KG</p>
+                        <p className="text-xs font-black text-[#F59E0B] uppercase tracking-wider">RINCIAN KOMPONEN HPP / COGS PER KG</p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
                             <label className="block text-xs text-[#8E8B85] mb-1">Modal Green Bean / Kg</label>
@@ -1040,7 +1086,7 @@ export default function EpicureanApp() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-[#8E8B85] mb-1">Biaya Operasional Roasting / Kg</label>
+                            <label className="block text-xs text-[#8E8B85] mb-1">Biaya Roasting / Kg</label>
                             <input
                               type="number"
                               required
@@ -1050,7 +1096,7 @@ export default function EpicureanApp() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-[#8E8B85] mb-1">Biaya Packaging Kemasan / Kg</label>
+                            <label className="block text-xs text-[#8E8B85] mb-1">Biaya Packaging / Kg</label>
                             <input
                               type="number"
                               required
