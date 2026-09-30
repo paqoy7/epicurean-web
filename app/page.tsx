@@ -1,24 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
-  Search, Trash2, Printer, AlertTriangle
+  Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X
 } from 'lucide-react';
 
 // Interfaces
-interface CustomBlend {
-  bean1Type: string;
-  bean1Ratio: number;
-  bean2Type: string;
-  bean2Ratio: number;
-  bean3Type: string;
-  bean3Ratio: number;
-  grindSize: string;
-  weightGram: number;
-}
-
 interface Product {
   id: string;
   name: string;
@@ -41,6 +30,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  customerType: 'perorangan' | 'cafe';
   customerName: string;
   companyName: string;
   destinationArea: 'bandung' | 'luar_bandung';
@@ -48,10 +38,11 @@ interface Order {
   shippingMethod: string;
   shippingCost: number;
   paymentMethod: 'transfer' | 'kontra_bon_15' | 'kontra_bon_30';
+  paymentProof?: string;
   items: OrderItem[];
   subtotal: number;
   totalAmount: number;
-  status: 'Roasting Process' | 'Ready for Shipping' | 'Delivered' | 'Pending';
+  status: 'Pending Approval' | 'Roasting Process' | 'Ready for Shipping' | 'Delivered' | 'Rejected';
   dueDate?: string;
   createdAt: string;
 }
@@ -65,57 +56,8 @@ export default function EpicureanApp() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
-  // Daftar Pilihan Biji Kopi & Harga
-  const beanOptions: { [key: string]: number } = {
-    'Arabica Gayo Wine Roasted': 120000,
-    'Robusta Temanggung Natural': 85000,
-    'Arabica Mandheling Grade 1': 110000,
-    'Arabica Toraja Sapan': 130000,
-    'Arabica Bali Kintamani': 125000,
-    'Robusta Dampit Malang': 80000,
-  };
-
-  // Custom Blend State (Minimum Order: 200gr)
-  const [blend, setBlend] = useState<CustomBlend>({
-    bean1Type: 'Arabica Gayo Wine Roasted',
-    bean1Ratio: 50,
-    bean2Type: 'Robusta Temanggung Natural',
-    bean2Ratio: 30,
-    bean3Type: 'Arabica Mandheling Grade 1',
-    bean3Ratio: 20,
-    grindSize: 'Biji Utuh (Whole Bean)',
-    weightGram: 200
-  });
-
-  const roastingAndPackagingCost = 25000;
-
-  // Dynamic Price Calculation
-  const priceBean1 = beanOptions[blend.bean1Type] || 100000;
-  const priceBean2 = beanOptions[blend.bean2Type] || 100000;
-  const priceBean3 = beanOptions[blend.bean3Type] || 100000;
-
-  const calculatedBlendPricePerKg = Math.round(
-    (blend.bean1Ratio / 100) * priceBean1 +
-    (blend.bean2Ratio / 100) * priceBean2 +
-    (blend.bean3Ratio / 100) * priceBean3 +
-    roastingAndPackagingCost
-  );
-  const calculatedBlendPricePerGram = calculatedBlendPricePerKg / 1000;
-
-  // Cart & Checkout State
-  const [cart, setCart] = useState<OrderItem[]>([]);
-  const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
-  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('kontra_bon_30');
-  const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
-
-  const totalCartWeightKg = cart.reduce((acc, item) => acc + item.quantityGram, 0) / 1000;
-  const jneRatePerKg = 18000;
-  const shippingCost = destination === 'bandung' ? 0 : Math.ceil(totalCartWeightKg) * jneRatePerKg;
-  const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
-  const grandTotal = cartSubtotal + shippingCost;
-
-  // Products State
-  const [products, setProducts] = useState<Product[]>([
+  // Initial Default Products
+  const defaultProducts: Product[] = [
     {
       id: 'P1',
       name: 'Arabica Gayo Green Beans Grade 1',
@@ -146,7 +88,99 @@ export default function EpicureanApp() {
       packagingCostPerKg: 14000,
       description: 'Notes: Caramel, Brown Sugar, Balanced'
     }
-  ]);
+  ];
+
+  // Persistent Products via localStorage
+  const [products, setProducts] = useState<Product[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('epicurean_products');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      }
+    }
+    return defaultProducts;
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('epicurean_products', JSON.stringify(products));
+    }
+  }, [products]);
+
+  // Persistent Orders via localStorage
+  const [orders, setOrders] = useState<Order[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('epicurean_orders');
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { console.error(e); }
+      }
+    }
+    return [];
+  });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('epicurean_orders', JSON.stringify(orders));
+    }
+  }, [orders]);
+
+  // Custom Blend State
+  const beanOptions: { [key: string]: number } = {
+    'Arabica Gayo Wine Roasted': 120000,
+    'Robusta Temanggung Natural': 85000,
+    'Arabica Mandheling Grade 1': 110000,
+    'Arabica Toraja Sapan': 130000,
+    'Arabica Bali Kintamani': 125000,
+    'Robusta Dampit Malang': 80000,
+  };
+
+  const [blend, setBlend] = useState({
+    bean1Type: 'Arabica Gayo Wine Roasted',
+    bean1Ratio: 50,
+    bean2Type: 'Robusta Temanggung Natural',
+    bean2Ratio: 30,
+    bean3Type: 'Arabica Mandheling Grade 1',
+    bean3Ratio: 20,
+    grindSize: 'Biji Utuh (Whole Bean)',
+    weightGram: 200
+  });
+
+  const roastingAndPackagingCost = 25000;
+  const priceBean1 = beanOptions[blend.bean1Type] || 100000;
+  const priceBean2 = beanOptions[blend.bean2Type] || 100000;
+  const priceBean3 = beanOptions[blend.bean3Type] || 100000;
+
+  const calculatedBlendPricePerKg = Math.round(
+    (blend.bean1Ratio / 100) * priceBean1 +
+    (blend.bean2Ratio / 100) * priceBean2 +
+    (blend.bean3Ratio / 100) * priceBean3 +
+    roastingAndPackagingCost
+  );
+  const calculatedBlendPricePerGram = calculatedBlendPricePerKg / 1000;
+
+  // Cart & Customer Checkout State
+  const [cart, setCart] = useState<OrderItem[]>([]);
+  const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
+  const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
+  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('kontra_bon_30');
+  const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
+
+  // Reset payment method when switching customer type
+  useEffect(() => {
+    if (customerType === 'perorangan') {
+      setPaymentMethod('transfer');
+    }
+  }, [customerType]);
+
+  const totalCartWeightKg = cart.reduce((acc, item) => acc + item.quantityGram, 0) / 1000;
+  const jneRatePerKg = 18000;
+  const shippingCost = destination === 'bandung' ? 0 : Math.ceil(totalCartWeightKg) * jneRatePerKg;
+  const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
+  const grandTotal = cartSubtotal + shippingCost;
+
+  // Active Order Flow for Payment Proof
+  const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
+  const [paymentProofInput, setPaymentProofInput] = useState('');
 
   // Form Tambah Produk Baru
   const [productForm, setProductForm] = useState({
@@ -159,31 +193,6 @@ export default function EpicureanApp() {
     description: ''
   });
 
-  // Orders Data
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: 'ORD-2026-001',
-      customerName: 'Kopi Kenangan Senja Cafe',
-      companyName: 'PT Senja Abadi Kuliner',
-      destinationArea: 'bandung',
-      shippingAddress: 'Jl. Riau No. 45, Kota Bandung',
-      shippingMethod: 'DIRECT BANDUNG',
-      shippingCost: 0,
-      paymentMethod: 'kontra_bon_30',
-      items: [
-        { id: '1', name: 'Custom Artisan Blend (50% Gayo Wine / 30% Temanggung / 20% Mandheling)', quantityGram: 20000, pricePerGram: 156, totalPrice: 3120000 }
-      ],
-      subtotal: 3120000,
-      totalAmount: 3120000,
-      status: 'Roasting Process',
-      dueDate: '2026-10-24',
-      createdAt: '2026-09-24'
-    }
-  ]);
-
-  const [lastSubmittedOrder, setLastSubmittedOrder] = useState<Order | null>(null);
-
-  // Ratio Adjuster
   const handleRatioChange = (beanNum: 1 | 2, val: number) => {
     if (beanNum === 1) {
       const remaining = 100 - val;
@@ -235,36 +244,49 @@ export default function EpicureanApp() {
 
     const today = new Date();
     let dueDateStr = '';
-    if (paymentMethod === 'kontra_bon_15') {
-      const due = new Date(today);
-      due.setDate(due.getDate() + 15);
-      dueDateStr = due.toISOString().split('T')[0];
-    } else if (paymentMethod === 'kontra_bon_30') {
-      const due = new Date(today);
-      due.setDate(due.getDate() + 30);
-      dueDateStr = due.toISOString().split('T')[0];
+    if (customerType === 'cafe') {
+      if (paymentMethod === 'kontra_bon_15') {
+        const due = new Date(today); due.setDate(due.getDate() + 15);
+        dueDateStr = due.toISOString().split('T')[0];
+      } else if (paymentMethod === 'kontra_bon_30') {
+        const due = new Date(today); due.setDate(due.getDate() + 30);
+        dueDateStr = due.toISOString().split('T')[0];
+      }
     }
 
     const newOrder: Order = {
-      id: `ORD-2026-00${orders.length + 1}`,
+      id: `ORD-${Date.now().toString().slice(-6)}`,
+      customerType: customerType,
       customerName: customerInfo.name,
-      companyName: customerInfo.company || 'Perorangan',
+      companyName: customerType === 'cafe' ? customerInfo.company : 'Pembeli Perorangan',
       destinationArea: destination,
       shippingAddress: customerInfo.address,
       shippingMethod: destination === 'bandung' ? 'DIRECT BANDUNG' : 'JNE REG',
       shippingCost: shippingCost,
-      paymentMethod: paymentMethod,
+      paymentMethod: customerType === 'perorangan' ? 'transfer' : paymentMethod,
       items: cart,
       subtotal: cartSubtotal,
       totalAmount: grandTotal,
-      status: 'Roasting Process',
+      status: 'Pending Approval',
       dueDate: dueDateStr || undefined,
       createdAt: today.toISOString().split('T')[0]
     };
 
     setOrders([newOrder, ...orders]);
-    setLastSubmittedOrder(newOrder);
+    setCurrentActiveOrder(newOrder);
     setCart([]);
+  };
+
+  const handleUploadPaymentProof = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentActiveOrder || !paymentProofInput) return;
+
+    const updatedOrders = orders.map(o => 
+      o.id === currentActiveOrder.id ? { ...o, paymentProof: paymentProofInput } : o
+    );
+    setOrders(updatedOrders);
+    setCurrentActiveOrder(prev => prev ? { ...prev, paymentProof: paymentProofInput } : null);
+    alert('Bukti pembayaran berhasil dikirim! Menunggu approval dari pihak Seller/Roastery.');
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -296,14 +318,19 @@ export default function EpicureanApp() {
   };
 
   const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
+    const updated = products.filter(p => p.id !== id);
+    setProducts(updated);
   };
 
-  const totalOmzet = orders.reduce((acc, o) => acc + o.totalAmount, 0);
-  const totalEstimatedCOGS = orders.reduce((acc, o) => acc + Math.round(o.subtotal * 0.65), 0);
+  const updateOrderStatus = (orderId: string, status: Order['status']) => {
+    setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
+  };
+
+  const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
+  const totalEstimatedCOGS = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + Math.round(o.subtotal * 0.65), 0);
   const totalGrossProfit = totalOmzet - totalEstimatedCOGS;
   const totalUnpaidKontraBon = orders
-    .filter(o => o.paymentMethod.startsWith('kontra_bon'))
+    .filter(o => o.paymentMethod.startsWith('kontra_bon') && o.status !== 'Rejected')
     .reduce((acc, o) => acc + o.totalAmount, 0);
 
   return (
@@ -353,7 +380,7 @@ export default function EpicureanApp() {
               </p>
             </div>
 
-            {/* Custom Blend Configurator dengan Pemilih Jenis Kopi */}
+            {/* Custom Blend Configurator */}
             <section className="bg-[#1A1816] border border-[#262422] rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center space-x-3 mb-6 border-b border-[#262422] pb-4">
                 <Calculator className="h-6 w-6 text-[#F59E0B]" />
@@ -362,7 +389,7 @@ export default function EpicureanApp() {
 
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-6">
-                  {/* Bean 1 Selection & Ratio */}
+                  {/* Bean 1 Selection */}
                   <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
                     <div className="flex justify-between items-center text-xs font-bold">
                       <select
@@ -386,7 +413,7 @@ export default function EpicureanApp() {
                     />
                   </div>
 
-                  {/* Bean 2 Selection & Ratio */}
+                  {/* Bean 2 Selection */}
                   <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
                     <div className="flex justify-between items-center text-xs font-bold">
                       <select
@@ -410,7 +437,7 @@ export default function EpicureanApp() {
                     />
                   </div>
 
-                  {/* Bean 3 Selection & Ratio */}
+                  {/* Bean 3 Selection */}
                   <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
                     <div className="flex justify-between items-center text-xs font-bold">
                       <select
@@ -429,7 +456,7 @@ export default function EpicureanApp() {
                     </div>
                   </div>
 
-                  {/* Weight & Grind Size */}
+                  {/* Weight & Grind */}
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
                       <label className="block text-xs font-bold text-[#8E8B85] mb-1">Ukuran Gilingan</label>
@@ -459,7 +486,7 @@ export default function EpicureanApp() {
                   </div>
                 </div>
 
-                {/* Price Output Box */}
+                {/* Price Output */}
                 <div className="bg-[#121110] border border-[#262422] rounded-2xl p-6 flex flex-col justify-between">
                   <div>
                     <h3 className="text-xs font-bold text-[#8E8B85] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
@@ -490,29 +517,33 @@ export default function EpicureanApp() {
               </div>
             </section>
 
-            {/* Katalog Standar */}
+            {/* Katalog Standar Pembeli */}
             <section className="space-y-6">
               <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {products.map((p) => (
-                  <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1 bg-[#262422] text-[#F59E0B] rounded-md">
-                        {p.category}
-                      </span>
-                      <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
-                      <p className="text-xs text-[#8E8B85] mt-1 line-clamp-2">{p.description}</p>
-                      <p className="text-[#F59E0B] font-black text-base mt-4">Rp {p.pricePerKg.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#8E8B85]">/ Kg</span></p>
+              {products.length === 0 ? (
+                <p className="text-xs text-[#8E8B85]">Belum ada produk yang tersedia.</p>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {products.map((p) => (
+                    <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between">
+                      <div>
+                        <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1 bg-[#262422] text-[#F59E0B] rounded-md">
+                          {p.category}
+                        </span>
+                        <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
+                        <p className="text-xs text-[#8E8B85] mt-1 line-clamp-2">{p.description}</p>
+                        <p className="text-[#F59E0B] font-black text-base mt-4">Rp {p.pricePerKg.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#8E8B85]">/ Kg</span></p>
+                      </div>
+                      <button
+                        onClick={() => addProductToCart(p)}
+                        className="w-full mt-4 bg-[#262422] hover:bg-[#33302d] text-white text-xs font-bold py-2.5 rounded-xl transition-all"
+                      >
+                        + Tambah Paket 200 Gram
+                      </button>
                     </div>
-                    <button
-                      onClick={() => addProductToCart(p)}
-                      className="w-full mt-4 bg-[#262422] hover:bg-[#33302d] text-white text-xs font-bold py-2.5 rounded-xl transition-all"
-                    >
-                      + Tambah Paket 200 Gram
-                    </button>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* Checkout Form */}
@@ -539,6 +570,43 @@ export default function EpicureanApp() {
                       ))}
                     </div>
 
+                    {/* Kategori Pembeli */}
+                    <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
+                      <p className="text-xs font-bold text-white flex items-center space-x-2">
+                        <Building2 className="h-4 w-4 text-[#F59E0B]" />
+                        <span>Kategori Pembeli</span>
+                      </p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          type="button"
+                          onClick={() => setCustomerType('cafe')}
+                          className={`p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2 ${
+                            customerType === 'cafe' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#8E8B85]'
+                          }`}
+                        >
+                          <Building2 className="h-4 w-4" />
+                          <div>
+                            <p className="font-bold">Cafe / Bisnis B2B</p>
+                            <p className="text-[10px] text-[#F59E0B] mt-0.5">Bisa Kontra Bon / Transfer</p>
+                          </div>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCustomerType('perorangan')}
+                          className={`p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2 ${
+                            customerType === 'perorangan' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#8E8B85]'
+                          }`}
+                        >
+                          <User className="h-4 w-4" />
+                          <div>
+                            <p className="font-bold">Perorangan</p>
+                            <p className="text-[10px] text-emerald-400 mt-0.5">Wajib Direct Transfer</p>
+                          </div>
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Opsi Pengiriman */}
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
                       <p className="text-xs font-bold text-white flex items-center space-x-2">
                         <Truck className="h-4 w-4 text-[#F59E0B]" />
@@ -568,6 +636,7 @@ export default function EpicureanApp() {
                       </div>
                     </div>
 
+                    {/* Metode Pembayaran */}
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
                       <p className="text-xs font-bold text-white flex items-center space-x-2">
                         <CreditCard className="h-4 w-4 text-[#F59E0B]" />
@@ -584,48 +653,54 @@ export default function EpicureanApp() {
                           </div>
                         </label>
 
-                        <label className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer ${
-                          paymentMethod === 'kontra_bon_15' ? 'border-[#F59E0B] bg-[#F59E0B]/10' : 'border-[#262422]'
-                        }`}>
-                          <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_15'} onChange={() => setPaymentMethod('kontra_bon_15')} className="accent-[#F59E0B]" />
-                          <div>
-                            <p className="font-bold text-white">Kontra Bon (Net 15 Hari)</p>
-                            <p className="text-[10px] text-[#F59E0B]">Jatuh Tempo +15 Hari Setelah Tagihan</p>
-                          </div>
-                        </label>
+                        {customerType === 'cafe' && (
+                          <>
+                            <label className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer ${
+                              paymentMethod === 'kontra_bon_15' ? 'border-[#F59E0B] bg-[#F59E0B]/10' : 'border-[#262422]'
+                            }`}>
+                              <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_15'} onChange={() => setPaymentMethod('kontra_bon_15')} className="accent-[#F59E0B]" />
+                              <div>
+                                <p className="font-bold text-white">Kontra Bon (Net 15 Hari)</p>
+                                <p className="text-[10px] text-[#F59E0B]">Khusus Cafe - Jatuh Tempo +15 Hari</p>
+                              </div>
+                            </label>
 
-                        <label className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer ${
-                          paymentMethod === 'kontra_bon_30' ? 'border-[#F59E0B] bg-[#F59E0B]/10' : 'border-[#262422]'
-                        }`}>
-                          <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_30'} onChange={() => setPaymentMethod('kontra_bon_30')} className="accent-[#F59E0B]" />
-                          <div>
-                            <p className="font-bold text-white">Kontra Bon (Net 30 Hari)</p>
-                            <p className="text-[10px] text-[#F59E0B]">Jatuh Tempo +30 Hari Setelah Tagihan</p>
-                          </div>
-                        </label>
+                            <label className={`flex items-center space-x-3 p-3 rounded-xl border cursor-pointer ${
+                              paymentMethod === 'kontra_bon_30' ? 'border-[#F59E0B] bg-[#F59E0B]/10' : 'border-[#262422]'
+                            }`}>
+                              <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_30'} onChange={() => setPaymentMethod('kontra_bon_30')} className="accent-[#F59E0B]" />
+                              <div>
+                                <p className="font-bold text-white">Kontra Bon (Net 30 Hari)</p>
+                                <p className="text-[10px] text-[#F59E0B]">Khusus Cafe - Jatuh Tempo +30 Hari</p>
+                              </div>
+                            </label>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-6">
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
-                      <h3 className="text-xs font-bold text-white">Detail Perusahaan Pemesan</h3>
+                      <h3 className="text-xs font-bold text-white">Detail Identitas Pemesan</h3>
                       <input
                         type="text"
-                        placeholder="Nama Penanggung Jawab *"
+                        placeholder="Nama Lengkap Penanggung Jawab *"
                         required
                         value={customerInfo.name}
                         onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                         className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
                       />
-                      <input
-                        type="text"
-                        placeholder="Nama Perusahaan / Cafe *"
-                        required
-                        value={customerInfo.company}
-                        onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
-                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
-                      />
+                      {customerType === 'cafe' && (
+                        <input
+                          type="text"
+                          placeholder="Nama Perusahaan / Cafe *"
+                          required
+                          value={customerInfo.company}
+                          onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
+                          className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
+                        />
+                      )}
                       <textarea
                         placeholder="Alamat Pengiriman Lengkap *"
                         required
@@ -663,19 +738,48 @@ export default function EpicureanApp() {
                 </form>
               )}
 
-              {lastSubmittedOrder && (
-                <div className="mt-8 p-6 bg-[#121110] border border-emerald-800 rounded-2xl space-y-3">
+              {/* Halaman Konfirmasi & Upload Bukti Pembayaran */}
+              {currentActiveOrder && (
+                <div className="mt-8 p-6 bg-[#121110] border border-emerald-800 rounded-2xl space-y-4">
                   <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
                     <CheckCircle className="h-5 w-5" />
-                    <span>Pre-Order Berhasil Terkirim!</span>
+                    <span>Pre-Order Terdaftar! (ID: {currentActiveOrder.id})</span>
                   </div>
+                  
                   <div className="text-xs space-y-1 text-[#D4D0C7]">
-                    <p><span className="text-[#8E8B85]">ID Order:</span> {lastSubmittedOrder.id}</p>
-                    <p><span className="text-[#8E8B85]">Total Tagihan:</span> Rp {lastSubmittedOrder.totalAmount.toLocaleString('id-ID')}</p>
-                    {lastSubmittedOrder.paymentMethod === 'transfer' && (
-                      <p className="text-[#F59E0B] font-bold mt-1">Transfer Ke: 7772400244 / MULTI AGRI SENTOSA CV</p>
-                    )}
+                    <p><span className="text-[#8E8B85]">Atas Nama:</span> {currentActiveOrder.customerName} ({currentActiveOrder.companyName})</p>
+                    <p><span className="text-[#8E8B85]">Total Tagihan:</span> <strong className="text-[#F59E0B]">Rp {currentActiveOrder.totalAmount.toLocaleString('id-ID')}</strong></p>
+                    <p><span className="text-[#8E8B85]">Status Approval:</span> <span className="text-yellow-400 font-bold">{currentActiveOrder.status}</span></p>
                   </div>
+
+                  {currentActiveOrder.paymentMethod === 'transfer' && (
+                    <div className="pt-4 border-t border-[#262422] space-y-3">
+                      <div className="p-3 bg-[#1A1816] rounded-xl border border-[#262422]">
+                        <p className="text-xs font-bold text-[#F59E0B]">Instruksi Pembayaran Transfer Direct:</p>
+                        <p className="text-xs text-white mt-1">Bank BCA: <strong>7772400244</strong></p>
+                        <p className="text-xs text-[#8E8B85]">a/n MULTI AGRI SENTOSA CV</p>
+                      </div>
+
+                      <form onSubmit={handleUploadPaymentProof} className="space-y-3">
+                        <label className="block text-xs font-bold text-[#8E8B85]">Input Nomor Referensi / Link Bukti Transfer</label>
+                        <input
+                          type="text"
+                          required
+                          placeholder="Contoh: Ref 8839201 / URL Gambar Bukti Transfer"
+                          value={paymentProofInput}
+                          onChange={(e) => setPaymentProofInput(e.target.value)}
+                          className="w-full bg-[#1A1816] border border-[#262422] rounded-xl px-3 py-2 text-xs text-white"
+                        />
+                        <button
+                          type="submit"
+                          className="bg-[#F59E0B] text-black font-extrabold px-4 py-2 rounded-xl text-xs flex items-center space-x-2"
+                        >
+                          <Upload className="h-4 w-4" />
+                          <span>Kirim Bukti Pembayaran</span>
+                        </button>
+                      </form>
+                    </div>
+                  )}
                 </div>
               )}
             </section>
@@ -723,7 +827,7 @@ export default function EpicureanApp() {
                       <BarChart2 className="h-7 w-7 text-[#F59E0B]" />
                       <span>Dashboard Penjual & Roastery Manager</span>
                     </h1>
-                    <p className="text-xs text-[#8E8B85] mt-1">Kelola stok, kustomisasi COGS (HPP), pantau antrean sangrai, dan cetak laporan penjualan.</p>
+                    <p className="text-xs text-[#8E8B85] mt-1">Kelola produk, approval pembayaran transfer, pantau antrean, dan atur COGS (HPP).</p>
                   </div>
                   <div className="flex items-center space-x-2 bg-[#0F0E0D] p-1.5 rounded-2xl border border-[#262422]">
                     <button
@@ -757,7 +861,7 @@ export default function EpicureanApp() {
               {sellerSubTab === 'orders' && (
                 <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
                   <div className="flex justify-between items-center border-b border-[#262422] pb-4">
-                    <h2 className="text-lg font-extrabold text-white">Daftar Antrean Order Pre-Order</h2>
+                    <h2 className="text-lg font-extrabold text-white">Daftar Antrean Order & Approval Pembayaran</h2>
                     <span className="text-xs text-[#8E8B85]">Total {orders.length} Order Masuk</span>
                   </div>
 
@@ -765,11 +869,10 @@ export default function EpicureanApp() {
                     <table className="w-full text-left text-xs text-[#D4D0C7]">
                       <thead className="bg-[#121110] text-[#8E8B85] uppercase font-bold text-[10px] tracking-wider">
                         <tr>
-                          <th className="p-4 rounded-l-xl">ID Order / Tanggal</th>
-                          <th className="p-4">Pelanggan / Perusahaan</th>
-                          <th className="p-4">Pengiriman</th>
-                          <th className="p-4">Pembayaran</th>
-                          <th className="p-4">Status Pesanan</th>
+                          <th className="p-4 rounded-l-xl">ID Order</th>
+                          <th className="p-4">Pelanggan / Tipe</th>
+                          <th className="p-4">Metode & Bukti Bayar</th>
+                          <th className="p-4">Status & Approval</th>
                           <th className="p-4">Total Tagihan</th>
                           <th className="p-4 text-center rounded-r-xl">Aksi</th>
                         </tr>
@@ -783,11 +886,9 @@ export default function EpicureanApp() {
                             </td>
                             <td className="p-4">
                               <p className="font-extrabold text-white text-sm">{o.customerName}</p>
-                              <p className="text-[10px] text-[#8E8B85]">{o.companyName}</p>
-                            </td>
-                            <td className="p-4">
-                              <p className="font-bold text-white">{o.destinationArea === 'bandung' ? 'Bandung' : 'Luar Bandung'}</p>
-                              <p className="text-[10px] text-[#8E8B85]">{o.shippingMethod}</p>
+                              <span className="text-[10px] px-2 py-0.5 rounded bg-[#262422] text-[#F59E0B] uppercase font-bold">
+                                {o.customerType}
+                              </span>
                             </td>
                             <td className="p-4">
                               <span className={`px-2.5 py-1 rounded-md text-[10px] font-black ${
@@ -795,21 +896,33 @@ export default function EpicureanApp() {
                               }`}>
                                 {o.paymentMethod.replace('_', ' ').toUpperCase()}
                               </span>
-                              <p className="text-[10px] text-[#8E8B85] mt-1">{o.dueDate ? `Unpaid (Due: ${o.dueDate})` : 'Paid Transfer'}</p>
+                              {o.paymentProof && (
+                                <p className="text-[10px] text-emerald-400 font-mono mt-1">Bukti: {o.paymentProof}</p>
+                              )}
                             </td>
                             <td className="p-4">
-                              <select
-                                value={o.status}
-                                onChange={(e) => {
-                                  const newStatus = e.target.value as Order['status'];
-                                  setOrders(orders.map(item => item.id === o.id ? { ...item, status: newStatus } : item));
-                                }}
-                                className="bg-[#121110] border border-[#262422] px-3 py-1.5 rounded-xl text-xs font-bold text-white focus:outline-none"
-                              >
-                                <option value="Roasting Process">Roasting Process</option>
-                                <option value="Ready for Shipping">Ready for Shipping</option>
-                                <option value="Delivered">Delivered</option>
-                              </select>
+                              <div className="flex items-center space-x-2">
+                                <select
+                                  value={o.status}
+                                  onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
+                                  className="bg-[#121110] border border-[#262422] px-3 py-1.5 rounded-xl text-xs font-bold text-white focus:outline-none"
+                                >
+                                  <option value="Pending Approval">Pending Approval</option>
+                                  <option value="Roasting Process">Roasting Process</option>
+                                  <option value="Ready for Shipping">Ready for Shipping</option>
+                                  <option value="Delivered">Delivered</option>
+                                  <option value="Rejected">Rejected</option>
+                                </select>
+                                {o.status === 'Pending Approval' && (
+                                  <button
+                                    onClick={() => updateOrderStatus(o.id, 'Roasting Process')}
+                                    className="p-1.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg"
+                                    title="Approve Order"
+                                  >
+                                    <Check className="h-4 w-4" />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             <td className="p-4 font-black text-white text-sm">
                               Rp {o.totalAmount.toLocaleString('id-ID')}
@@ -832,6 +945,7 @@ export default function EpicureanApp() {
 
               {sellerSubTab === 'products' && (
                 <div className="space-y-8">
+                  {/* List Produk Seller */}
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => {
                       const totalCogs = p.greenBeanCostPerKg + p.roastingCostPerKg + p.packagingCostPerKg;
@@ -842,7 +956,11 @@ export default function EpicureanApp() {
                           <div>
                             <div className="flex justify-between items-start">
                               <span className="text-[10px] font-black tracking-wider text-[#F59E0B] uppercase px-2.5 py-1 bg-[#121110] border border-[#262422] rounded-md">{p.category}</span>
-                              <button onClick={() => handleDeleteProduct(p.id)} className="text-[#8E8B85] hover:text-rose-400">
+                              <button 
+                                onClick={() => handleDeleteProduct(p.id)} 
+                                className="p-1.5 text-[#8E8B85] hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-all"
+                                title="Hapus Produk Permanen"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
@@ -867,6 +985,7 @@ export default function EpicureanApp() {
                     })}
                   </section>
 
+                  {/* Form Tambah Produk */}
                   <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
                     <h2 className="text-lg font-extrabold text-white">Tambah Katalog Produk Baru / Adjust COGS</h2>
 
@@ -941,13 +1060,6 @@ export default function EpicureanApp() {
                             />
                           </div>
                         </div>
-
-                        <div className="flex justify-between items-center pt-2 text-xs">
-                          <span className="text-[#8E8B85]">Total COGS: <strong className="text-white">Rp {(productForm.greenBeanCostPerKg + productForm.roastingCostPerKg + productForm.packagingCostPerKg).toLocaleString('id-ID')}/kg</strong></span>
-                          <span className="px-3 py-1.5 bg-emerald-950 border border-emerald-800 text-emerald-400 rounded-xl font-bold">
-                            Estimasi Gross Margin: {(((productForm.pricePerKg - (productForm.greenBeanCostPerKg + productForm.roastingCostPerKg + productForm.packagingCostPerKg)) / productForm.pricePerKg) * 100).toFixed(1)}%
-                          </span>
-                        </div>
                       </div>
 
                       <button
@@ -955,7 +1067,7 @@ export default function EpicureanApp() {
                         className="bg-[#F59E0B] hover:bg-[#d98a08] text-black font-extrabold px-6 py-3 rounded-xl text-xs transition-all flex items-center space-x-2"
                       >
                         <Plus className="h-4 w-4 stroke-[3]" />
-                        <span>Simpan Produk Baru</span>
+                        <span>Simpan & Publikasikan Produk</span>
                       </button>
                     </form>
                   </section>
@@ -985,23 +1097,6 @@ export default function EpicureanApp() {
                       <p className="text-2xl font-black text-purple-400 mt-2">Rp {totalUnpaidKontraBon.toLocaleString('id-ID')}</p>
                     </div>
                   </div>
-
-                  <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
-                    <h2 className="text-lg font-extrabold text-white">Laporan Rekapan Penjualan Per Order</h2>
-                    <div className="space-y-3">
-                      {orders.map((o) => (
-                        <div key={o.id} className="bg-[#121110] border border-[#262422] p-5 rounded-2xl flex justify-between items-center text-xs">
-                          <div>
-                            <p className="font-mono font-bold text-[#F59E0B] text-sm">{o.id} <span className="text-[#8E8B85] font-normal text-xs">({o.createdAt})</span></p>
-                            <p className="font-extrabold text-white text-base mt-1">{o.companyName}</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="font-black text-white text-base">Rp {o.totalAmount.toLocaleString('id-ID')}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </section>
                 </div>
               )}
             </div>
