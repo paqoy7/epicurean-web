@@ -135,7 +135,7 @@ export default function EpicureanApp() {
     }
   }, [orders]);
 
-  // Dynamic Roasted Beans Options for Blend Configurator
+  // Filter khusus Roasted Beans untuk Custom Blend
   const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
   
   const [blend, setBlend] = useState({
@@ -149,7 +149,6 @@ export default function EpicureanApp() {
     weightGram: 200
   });
 
-  // Keep blend selection valid if products change
   useEffect(() => {
     if (roastedProducts.length > 0) {
       if (!roastedProducts.find(p => p.id === blend.bean1Id)) setBlend(b => ({ ...b, bean1Id: roastedProducts[0].id }));
@@ -249,7 +248,7 @@ export default function EpicureanApp() {
 
   const addProductToCart = (prod: Product, packType: '1kg' | '200g') => {
     const weightGram = packType === '1kg' ? 1000 : 200;
-    const price = packType === '1kg' ? prod.pricePerKg : prod.pricePer200g;
+    const price = packType === '1kg' ? (prod.pricePerKg || 150000) : (prod.pricePer200g || 35000);
     
     const newItem: OrderItem = {
       id: `${prod.id}-${packType}-${Date.now()}`,
@@ -348,8 +347,16 @@ export default function EpicureanApp() {
   const handleSaveProduct = (e: React.FormEvent) => {
     e.preventDefault();
     const newProd: Product = {
-      ...productForm,
-      id: `P-${Date.now()}`
+      id: `P-${Date.now()}`,
+      name: productForm.name,
+      category: productForm.category,
+      pricePerKg: productForm.pricePerKg,
+      pricePer200g: productForm.pricePer200g,
+      greenBeanCostPerKg: productForm.greenBeanCostPerKg,
+      roastingCostPerKg: productForm.roastingCostPerKg,
+      packagingCostPerKg: productForm.packagingCostPerKg,
+      packagingCostPer200g: productForm.packagingCostPer200g,
+      description: productForm.description
     };
     setProducts([...products, newProd]);
     setProductForm({
@@ -456,7 +463,7 @@ export default function EpicureanApp() {
                           className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
                         >
                           {roastedProducts.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} (Rp {b.pricePerKg.toLocaleString('id-ID')}/Kg)</option>
+                            <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
                           ))}
                         </select>
                         <span className="text-[#F59E0B] font-black text-sm">{blend.bean1Ratio}%</span>
@@ -480,7 +487,7 @@ export default function EpicureanApp() {
                           className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
                         >
                           {roastedProducts.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} (Rp {b.pricePerKg.toLocaleString('id-ID')}/Kg)</option>
+                            <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
                           ))}
                         </select>
                         <span className="text-[#F59E0B] font-black text-sm">{blend.bean2Ratio}%</span>
@@ -504,7 +511,7 @@ export default function EpicureanApp() {
                           className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
                         >
                           {roastedProducts.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} (Rp {b.pricePerKg.toLocaleString('id-ID')}/Kg)</option>
+                            <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
                           ))}
                         </select>
                         <span className="text-[#F59E0B] font-black text-sm">{blend.bean3Ratio}%</span>
@@ -598,14 +605,14 @@ export default function EpicureanApp() {
                         <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
                         <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
                         
-                        <div className="mt-4 space-y-1">
+                        <div className="mt-4 space-y-1 bg-[#121110] p-3 rounded-xl border border-[#262422]">
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-[#A19D95]">Kemasan 1 Kg:</span>
-                            <span className="text-[#F59E0B] font-black">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
+                            <span className="text-[#F59E0B] font-black">Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-[#A19D95]">Kemasan 200 Gram:</span>
-                            <span className="text-[#F59E0B] font-black">Rp {p.pricePer200g.toLocaleString('id-ID')}</span>
+                            <span className="text-[#F59E0B] font-black">Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</span>
                           </div>
                         </div>
                       </div>
@@ -1066,14 +1073,14 @@ export default function EpicureanApp() {
                   {/* List Produk Seller */}
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => {
-                      const adjustedGreenBeanCost = Math.round(p.greenBeanCostPerKg / 0.85);
-                      const totalCogsKg = adjustedGreenBeanCost + p.roastingCostPerKg + p.packagingCostPerKg;
-                      const profitKg = p.pricePerKg - totalCogsKg;
-                      const marginPctKg = ((profitKg / p.pricePerKg) * 100).toFixed(1);
+                      const adjustedGreenBeanCost = Math.round((p.greenBeanCostPerKg || 0) / 0.85);
+                      const totalCogsKg = adjustedGreenBeanCost + (p.roastingCostPerKg || 0) + (p.packagingCostPerKg || 0);
+                      const profitKg = (p.pricePerKg || 0) - totalCogsKg;
+                      const marginPctKg = p.pricePerKg ? ((profitKg / p.pricePerKg) * 100).toFixed(1) : '0';
 
-                      const totalCogs200g = Math.round((adjustedGreenBeanCost + p.roastingCostPerKg) * 0.2) + p.packagingCostPer200g;
-                      const profit200g = p.pricePer200g - totalCogs200g;
-                      const marginPct200g = ((profit200g / p.pricePer200g) * 100).toFixed(1);
+                      const totalCogs200g = Math.round((adjustedGreenBeanCost + (p.roastingCostPerKg || 0)) * 0.2) + (p.packagingCostPer200g || 0);
+                      const profit200g = (p.pricePer200g || 0) - totalCogs200g;
+                      const marginPct200g = p.pricePer200g ? ((profit200g / p.pricePer200g) * 100).toFixed(1) : '0';
 
                       return (
                         <div key={p.id} className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl space-y-4 flex flex-col justify-between shadow-lg">
@@ -1102,7 +1109,7 @@ export default function EpicureanApp() {
                             <div className="bg-[#121110] p-3 rounded-2xl border border-[#262422] mt-3 space-y-1">
                               <p className="text-[11px] font-black text-[#F59E0B] uppercase">KEMASAN 1 KG</p>
                               <div className="flex justify-between text-xs text-[#A19D95]">
-                                <span>Harga Jual: <strong className="text-white">Rp {p.pricePerKg.toLocaleString('id-ID')}</strong></span>
+                                <span>Harga Jual: <strong className="text-white">Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</strong></span>
                                 <span>COGS: <strong className="text-rose-400">Rp {totalCogsKg.toLocaleString('id-ID')}</strong></span>
                               </div>
                               <p className="text-[11px] text-emerald-400 font-bold text-right pt-1">Margin: Rp {profitKg.toLocaleString('id-ID')} ({marginPctKg}%)</p>
@@ -1112,7 +1119,7 @@ export default function EpicureanApp() {
                             <div className="bg-[#121110] p-3 rounded-2xl border border-[#262422] mt-2 space-y-1">
                               <p className="text-[11px] font-black text-[#F59E0B] uppercase">KEMASAN 200 GRAM</p>
                               <div className="flex justify-between text-xs text-[#A19D95]">
-                                <span>Harga Jual: <strong className="text-white">Rp {p.pricePer200g.toLocaleString('id-ID')}</strong></span>
+                                <span>Harga Jual: <strong className="text-white">Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</strong></span>
                                 <span>COGS: <strong className="text-rose-400">Rp {totalCogs200g.toLocaleString('id-ID')}</strong></span>
                               </div>
                               <p className="text-[11px] text-emerald-400 font-bold text-right pt-1">Margin: Rp {profit200g.toLocaleString('id-ID')} ({marginPct200g}%)</p>
