@@ -5,7 +5,7 @@ import {
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
   Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
-  MessageSquare, ExternalLink, Download
+  MessageSquare, ExternalLink
 } from 'lucide-react';
 
 // Interfaces
@@ -279,9 +279,9 @@ export default function EpicureanApp() {
     setCart([]);
   };
 
-  // Generate WhatsApp Message Link
+  // Generate WhatsApp Link
   const generateWhatsAppLink = (order: Order) => {
-    const roasteryNumber = '6281234567890'; // Ganti nomor WhatsApp roastery Anda di sini
+    const roasteryNumber = '6281234567890';
     let text = `*PRE-ORDER B2B EPICUREAN.id*\n`;
     text += `------------------------------------\n`;
     text += `*ID Order:* ${order.id}\n`;
@@ -310,7 +310,7 @@ export default function EpicureanApp() {
     );
     setOrders(updatedOrders);
     setCurrentActiveOrder(prev => prev ? { ...prev, paymentProof: paymentProofInput } : null);
-    alert('Bukti pembayaran berhasil dicatat! Tim admin akan segera memverifikasi.');
+    alert('Bukti pembayaran berhasil dicatat!');
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -357,11 +357,12 @@ export default function EpicureanApp() {
     .reduce((acc, o) => acc + o.totalAmount, 0);
 
   return (
-    <div className="min-h-screen bg-[#121110] text-[#E2E2E2] font-sans">
-      <header className="border-b border-[#262422] bg-[#1A1816] sticky top-0 z-50">
+    <div className="min-h-screen bg-[#121110] text-[#E2E2E2] font-sans antialiased">
+      {/* Header Bar */}
+      <header className="border-b border-[#262422] bg-[#1A1816]/90 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <div className="bg-[#F59E0B] p-2.5 rounded-xl text-black">
+            <div className="bg-gradient-to-tr from-[#D97706] to-[#F59E0B] p-2.5 rounded-xl text-black shadow-lg shadow-[#F59E0B]/20">
               <Coffee className="h-6 w-6 stroke-[2.5]" />
             </div>
             <div>
@@ -372,16 +373,16 @@ export default function EpicureanApp() {
           <div className="flex items-center space-x-2 bg-[#0F0E0D] p-1.5 rounded-xl border border-[#262422]">
             <button
               onClick={() => setActiveTab('storefront')}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all ${
-                activeTab === 'storefront' ? 'bg-[#262422] text-white shadow' : 'text-[#8E8B85] hover:text-white'
+              className={`px-5 py-2 rounded-lg text-xs font-extrabold transition-all ${
+                activeTab === 'storefront' ? 'bg-[#262422] text-white shadow' : 'text-[#A19D95] hover:text-white'
               }`}
             >
               Storefront
             </button>
             <button
               onClick={() => setActiveTab('seller')}
-              className={`px-5 py-2 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
-                activeTab === 'seller' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#8E8B85] hover:text-white'
+              className={`px-5 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center space-x-1.5 ${
+                activeTab === 'seller' ? 'bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-black shadow-lg shadow-[#F59E0B]/20' : 'text-[#A19D95] hover:text-white'
               }`}
             >
               <BarChart2 className="h-4 w-4" />
@@ -394,11 +395,13 @@ export default function EpicureanApp() {
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {activeTab === 'storefront' ? (
           <div className="space-y-10">
+            {/* Banner Header */}
             <div className="text-center py-10 bg-[#1A1816] border border-[#262422] rounded-3xl shadow-2xl relative overflow-hidden">
+              <div className="absolute -top-24 -right-24 w-60 h-60 bg-[#F59E0B]/5 rounded-full blur-3xl pointer-events-none"></div>
               <h1 className="text-3xl sm:text-5xl font-black text-white tracking-tight">
                 EPICUREAN<span className="text-[#F59E0B]">.id</span>
               </h1>
-              <p className="text-[#A19D95] max-w-2xl mx-auto text-sm sm:text-base mt-2">
+              <p className="text-[#A19D95] max-w-2xl mx-auto text-sm sm:text-base mt-2 font-medium">
                 Platform Pre-Order Kopi B2B & Custom Blend Roastery.
               </p>
             </div>
@@ -418,7 +421,7 @@ export default function EpicureanApp() {
                       <select
                         value={blend.bean1Type}
                         onChange={(e) => setBlend({ ...blend, bean1Type: e.target.value })}
-                        className="bg-[#1A1816] border border-[#262422] rounded-lg px-2.5 py-1 text-white font-bold text-xs"
+                        className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
                       >
                         {Object.keys(beanOptions).map(b => (
                           <option key={b} value={b}>{b}</option>
@@ -442,7 +445,7 @@ export default function EpicureanApp() {
                       <select
                         value={blend.bean2Type}
                         onChange={(e) => setBlend({ ...blend, bean2Type: e.target.value })}
-                        className="bg-[#1A1816] border border-[#262422] rounded-lg px-2.5 py-1 text-white font-bold text-xs"
+                        className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
                       >
                         {Object.keys(beanOptions).map(b => (
                           <option key={b} value={b}>{b}</option>
@@ -466,7 +469,7 @@ export default function EpicureanApp() {
                       <select
                         value={blend.bean3Type}
                         onChange={(e) => setBlend({ ...blend, bean3Type: e.target.value })}
-                        className="bg-[#1A1816] border border-[#262422] rounded-lg px-2.5 py-1 text-white font-bold text-xs"
+                        className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
                       >
                         {Object.keys(beanOptions).map(b => (
                           <option key={b} value={b}>{b}</option>
@@ -482,7 +485,7 @@ export default function EpicureanApp() {
                   {/* Weight & Grind */}
                   <div className="grid grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="block text-xs font-bold text-[#8E8B85] mb-1">Ukuran Gilingan</label>
+                      <label className="block text-xs font-bold text-[#A19D95] mb-1">Ukuran Gilingan</label>
                       <select
                         value={blend.grindSize}
                         onChange={(e) => setBlend({ ...blend, grindSize: e.target.value })}
@@ -495,7 +498,7 @@ export default function EpicureanApp() {
                       </select>
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-[#8E8B85] mb-1">Jumlah Order (Gram)</label>
+                      <label className="block text-xs font-bold text-[#A19D95] mb-1">Jumlah Order (Gram)</label>
                       <input
                         type="number"
                         min="200"
@@ -504,25 +507,25 @@ export default function EpicureanApp() {
                         onChange={(e) => setBlend({ ...blend, weightGram: Math.max(200, parseInt(e.target.value) || 200) })}
                         className="w-full bg-[#121110] border border-[#262422] rounded-xl px-3 py-2.5 text-xs text-[#E2E2E2]"
                       />
-                      <span className="text-[10px] text-[#F59E0B] mt-1 block">*Min. Order 200 Gram</span>
+                      <span className="text-[10px] text-[#F59E0B] mt-1 block font-bold">*Min. Order 200 Gram</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Price Output */}
-                <div className="bg-[#121110] border border-[#262422] rounded-2xl p-6 flex flex-col justify-between">
+                {/* Price Output Card */}
+                <div className="bg-[#121110] border border-[#262422] rounded-2xl p-6 flex flex-col justify-between shadow-inner">
                   <div>
-                    <h3 className="text-xs font-bold text-[#8E8B85] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
+                    <h3 className="text-xs font-bold text-[#A19D95] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
                     <div className="space-y-3 text-xs">
                       <div className="flex justify-between">
                         <span className="text-[#A19D95]">Harga Blend / Kg:</span>
-                        <span className="font-bold text-[#F59E0B]">Rp {calculatedBlendPricePerKg.toLocaleString('id-ID')}</span>
+                        <span className="font-extrabold text-[#F59E0B]">Rp {calculatedBlendPricePerKg.toLocaleString('id-ID')}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-[#A19D95]">Total Berat:</span>
                         <span className="font-bold text-white">{blend.weightGram} Gram</span>
                       </div>
-                      <div className="border-t border-[#262422] pt-3 flex justify-between text-base font-extrabold text-white">
+                      <div className="border-t border-[#262422] pt-3 flex justify-between text-base font-black text-white">
                         <span>Total Tagihan:</span>
                         <span className="text-[#F59E0B]">Rp {Math.round(calculatedBlendPricePerGram * blend.weightGram).toLocaleString('id-ID')}</span>
                       </div>
@@ -531,7 +534,7 @@ export default function EpicureanApp() {
 
                   <button
                     onClick={addCustomBlendToCart}
-                    className="w-full mt-6 bg-[#F59E0B] hover:bg-[#d98a08] text-black font-extrabold py-3.5 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"
+                    className="w-full mt-6 bg-gradient-to-r from-[#F59E0B] to-[#D97706] hover:brightness-110 text-black font-black py-3.5 rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg shadow-[#F59E0B]/20"
                   >
                     <Plus className="h-4 w-4 stroke-[3]" />
                     <span>Tambah Blend ke Order</span>
@@ -540,22 +543,29 @@ export default function EpicureanApp() {
               </div>
             </section>
 
-            {/* Katalog Produk Ready-to-Roast */}
+            {/* Katalog Standar dengan Badge Warna Dynamic */}
             <section className="space-y-6">
               <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
               {products.length === 0 ? (
-                <p className="text-xs text-[#8E8B85]">Belum ada produk yang tersedia saat ini.</p>
+                <p className="text-xs text-[#A19D95]">Belum ada produk yang tersedia saat ini.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {products.map((p) => (
-                    <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between">
+                    <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between hover:border-[#33302D] transition-all shadow-lg">
                       <div>
-                        <span className="text-[10px] uppercase font-black tracking-wider px-2.5 py-1 bg-[#262422] text-[#F59E0B] rounded-md">
+                        {/* Dynamic Category Badges */}
+                        <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
+                          p.category === 'Green Beans' 
+                            ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
+                            : p.category === 'Roasted Beans'
+                            ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
+                            : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
+                        }`}>
                           {p.category}
                         </span>
                         <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
-                        <p className="text-xs text-[#8E8B85] mt-1 line-clamp-2">{p.description}</p>
-                        <p className="text-[#F59E0B] font-black text-base mt-4">Rp {p.pricePerKg.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#8E8B85]">/ Kg</span></p>
+                        <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
+                        <p className="text-[#F59E0B] font-black text-base mt-4">Rp {p.pricePerKg.toLocaleString('id-ID')} <span className="text-xs font-normal text-[#A19D95]">/ Kg</span></p>
                       </div>
                       <button
                         onClick={() => addProductToCart(p)}
@@ -577,7 +587,7 @@ export default function EpicureanApp() {
               </div>
 
               {cart.length === 0 ? (
-                <p className="text-xs text-[#8E8B85] text-center py-8">Keranjang belanja Anda masih kosong.</p>
+                <p className="text-xs text-[#A19D95] text-center py-8">Keranjang belanja Anda masih kosong.</p>
               ) : (
                 <form onSubmit={handleCheckout} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="space-y-6">
@@ -586,14 +596,14 @@ export default function EpicureanApp() {
                         <div key={item.id} className="bg-[#121110] border border-[#262422] p-4 rounded-xl flex justify-between items-center text-xs">
                           <div>
                             <p className="font-bold text-white">{item.name}</p>
-                            <p className="text-[#8E8B85] mt-0.5">{item.quantityGram} Gram</p>
+                            <p className="text-[#A19D95] mt-0.5">{item.quantityGram} Gram</p>
                           </div>
                           <p className="font-extrabold text-[#F59E0B]">Rp {item.totalPrice.toLocaleString('id-ID')}</p>
                         </div>
                       ))}
                     </div>
 
-                    {/* Kategori Pemesan */}
+                    {/* Kategori Pembeli */}
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
                       <p className="text-xs font-bold text-white flex items-center space-x-2">
                         <Building2 className="h-4 w-4 text-[#F59E0B]" />
@@ -604,26 +614,26 @@ export default function EpicureanApp() {
                           type="button"
                           onClick={() => setCustomerType('cafe')}
                           className={`p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2 ${
-                            customerType === 'cafe' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#8E8B85]'
+                            customerType === 'cafe' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#A19D95]'
                           }`}
                         >
                           <Building2 className="h-4 w-4" />
                           <div>
                             <p className="font-bold">Cafe / Bisnis B2B</p>
-                            <p className="text-[10px] text-[#F59E0B] mt-0.5">Bisa Kontra Bon / Transfer</p>
+                            <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Bisa Kontra Bon / Transfer</p>
                           </div>
                         </button>
                         <button
                           type="button"
                           onClick={() => setCustomerType('perorangan')}
                           className={`p-3 rounded-xl border text-left text-xs transition-all flex items-center space-x-2 ${
-                            customerType === 'perorangan' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422]'
+                            customerType === 'perorangan' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#A19D95]'
                           }`}
                         >
                           <User className="h-4 w-4" />
                           <div>
                             <p className="font-bold">Perorangan</p>
-                            <p className="text-[10px] text-emerald-400 mt-0.5">Wajib Direct Transfer</p>
+                            <p className="text-[10px] text-emerald-400 mt-0.5 font-bold">Wajib Direct Transfer</p>
                           </div>
                         </button>
                       </div>
@@ -640,21 +650,21 @@ export default function EpicureanApp() {
                           type="button"
                           onClick={() => setDestination('bandung')}
                           className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                            destination === 'bandung' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#8E8B85]'
+                            destination === 'bandung' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#A19D95]'
                           }`}
                         >
                           <p className="font-bold">Kota Bandung</p>
-                          <p className="text-[10px] text-emerald-400 mt-0.5">DIRECT BANDUNG (Bebas Ongkir)</p>
+                          <p className="text-[10px] text-emerald-400 mt-0.5 font-bold">DIRECT BANDUNG (Bebas Ongkir)</p>
                         </button>
                         <button
                           type="button"
                           onClick={() => setDestination('luar_bandung')}
                           className={`p-3 rounded-xl border text-left text-xs transition-all ${
-                            destination === 'luar_bandung' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#8E8B85]'
+                            destination === 'luar_bandung' ? 'border-[#F59E0B] bg-[#F59E0B]/10 text-white' : 'border-[#262422] text-[#A19D95]'
                           }`}
                         >
                           <p className="font-bold">Luar Bandung</p>
-                          <p className="text-[10px] text-[#F59E0B] mt-0.5">Ekspedisi JNE (Ditanggung Customer)</p>
+                          <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Ekspedisi JNE (Ditanggung Customer)</p>
                         </button>
                       </div>
                     </div>
@@ -712,7 +722,7 @@ export default function EpicureanApp() {
                         required
                         value={customerInfo.name}
                         onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
+                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white focus:border-[#F59E0B] focus:outline-none"
                       />
                       {customerType === 'cafe' && (
                         <input
@@ -721,7 +731,7 @@ export default function EpicureanApp() {
                           required
                           value={customerInfo.company}
                           onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
-                          className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
+                          className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white focus:border-[#F59E0B] focus:outline-none"
                         />
                       )}
                       <input
@@ -730,7 +740,7 @@ export default function EpicureanApp() {
                         required
                         value={customerInfo.phone}
                         onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
+                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white focus:border-[#F59E0B] focus:outline-none"
                       />
                       <textarea
                         placeholder="Alamat Pengiriman Lengkap *"
@@ -738,22 +748,22 @@ export default function EpicureanApp() {
                         rows={2}
                         value={customerInfo.address}
                         onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white"
+                        className="w-full bg-[#1A1816] border border-[#262422] rounded-lg px-3 py-2 text-xs text-white focus:border-[#F59E0B] focus:outline-none"
                       />
                     </div>
 
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-2 text-xs">
-                      <div className="flex justify-between text-[#8E8B85]">
+                      <div className="flex justify-between text-[#A19D95]">
                         <span>Subtotal Produk:</span>
                         <span>Rp {cartSubtotal.toLocaleString('id-ID')}</span>
                       </div>
-                      <div className="flex justify-between text-[#8E8B85]">
+                      <div className="flex justify-between text-[#A19D95]">
                         <span>Ongkos Kirim ({destination === 'bandung' ? 'Bebas Ongkir' : `JNE (${totalCartWeightKg.toFixed(1)} Kg)`}):</span>
                         <span className={shippingCost === 0 ? 'text-emerald-400 font-bold' : ''}>
                           {shippingCost === 0 ? 'Rp 0' : `Rp ${shippingCost.toLocaleString('id-ID')}`}
                         </span>
                       </div>
-                      <div className="border-t border-[#262422] pt-2 flex justify-between text-base font-extrabold text-white">
+                      <div className="border-t border-[#262422] pt-2 flex justify-between text-base font-black text-white">
                         <span>Grand Total:</span>
                         <span className="text-[#F59E0B]">Rp {grandTotal.toLocaleString('id-ID')}</span>
                       </div>
@@ -761,7 +771,7 @@ export default function EpicureanApp() {
 
                     <button
                       type="submit"
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl transition-all shadow-lg"
+                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-3.5 rounded-xl transition-all shadow-lg shadow-emerald-950/40"
                     >
                       Kirim Pre-Order Digital
                     </button>
@@ -771,9 +781,9 @@ export default function EpicureanApp() {
 
               {/* Halaman Upload Bukti & WhatsApp Direct */}
               {currentActiveOrder && (
-                <div className="mt-8 p-6 bg-[#121110] border border-emerald-800 rounded-2xl space-y-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 text-emerald-400 font-bold text-sm">
+                <div className="mt-8 p-6 bg-[#121110] border border-emerald-800/80 rounded-2xl space-y-4 shadow-xl">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center space-x-2 text-emerald-400 font-extrabold text-sm">
                       <CheckCircle className="h-5 w-5" />
                       <span>Pre-Order Terdaftar! (ID: {currentActiveOrder.id})</span>
                     </div>
@@ -782,17 +792,17 @@ export default function EpicureanApp() {
                       href={generateWhatsAppLink(currentActiveOrder)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center space-x-2 transition-all"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold rounded-xl flex items-center justify-center space-x-2 transition-all shadow-lg"
                     >
                       <MessageSquare className="h-4 w-4" />
                       <span>Kirim Tagihan ke WhatsApp Roastery</span>
                     </a>
                   </div>
                   
-                  <div className="text-xs space-y-1 text-[#D4D0C7]">
-                    <p><span className="text-[#8E8B85]">Atas Nama:</span> {currentActiveOrder.customerName} ({currentActiveOrder.companyName})</p>
-                    <p><span className="text-[#8E8B85]">Total Tagihan:</span> <strong className="text-[#F59E0B]">Rp {currentActiveOrder.totalAmount.toLocaleString('id-ID')}</strong></p>
-                    <p><span className="text-[#8E8B85]">Status Approval:</span> <span className="text-yellow-400 font-bold">{currentActiveOrder.status}</span></p>
+                  <div className="text-xs space-y-1 text-[#E2E2E2]">
+                    <p><span className="text-[#A19D95]">Atas Nama:</span> {currentActiveOrder.customerName} ({currentActiveOrder.companyName})</p>
+                    <p><span className="text-[#A19D95]">Total Tagihan:</span> <strong className="text-[#F59E0B]">Rp {currentActiveOrder.totalAmount.toLocaleString('id-ID')}</strong></p>
+                    <p><span className="text-[#A19D95]">Status Approval:</span> <span className="text-yellow-400 font-bold">{currentActiveOrder.status}</span></p>
                   </div>
 
                   {currentActiveOrder.paymentMethod === 'transfer' && (
@@ -800,11 +810,11 @@ export default function EpicureanApp() {
                       <div className="p-3 bg-[#1A1816] rounded-xl border border-[#262422]">
                         <p className="text-xs font-bold text-[#F59E0B]">Instruksi Pembayaran Transfer Direct:</p>
                         <p className="text-xs text-white mt-1">Bank BCA: <strong>7772400244</strong></p>
-                        <p className="text-xs text-[#8E8B85]">a/n MULTI AGRI SENTOSA CV</p>
+                        <p className="text-xs text-[#A19D95]">a/n MULTI AGRI SENTOSA CV</p>
                       </div>
 
                       <form onSubmit={handleUploadPaymentProof} className="space-y-3">
-                        <label className="block text-xs font-bold text-[#8E8B85]">Input Ref / Catatan Pembayaran</label>
+                        <label className="block text-xs font-bold text-[#A19D95]">Input Ref / Catatan Pembayaran</label>
                         <input
                           type="text"
                           required
@@ -836,7 +846,7 @@ export default function EpicureanApp() {
               </div>
               <div>
                 <h2 className="text-lg font-extrabold text-white">Seller Admin Protection</h2>
-                <p className="text-xs text-[#8E8B85] mt-1">Masukkan kata sandi otorisasi untuk mengakses Roastery Manager.</p>
+                <p className="text-xs text-[#A19D95] mt-1">Masukkan kata sandi otorisasi untuk mengakses Roastery Manager.</p>
               </div>
 
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
@@ -855,7 +865,7 @@ export default function EpicureanApp() {
                 )}
                 <button
                   type="submit"
-                  className="w-full bg-[#F59E0B] hover:bg-[#d98a08] text-black font-extrabold py-3 rounded-xl text-xs transition-all"
+                  className="w-full bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-black font-extrabold py-3 rounded-xl text-xs transition-all shadow-lg"
                 >
                   Unlock Access
                 </button>
@@ -870,13 +880,13 @@ export default function EpicureanApp() {
                       <BarChart2 className="h-7 w-7 text-[#F59E0B]" />
                       <span>Dashboard Penjual & Roastery Manager</span>
                     </h1>
-                    <p className="text-xs text-[#8E8B85] mt-1">Kelola produk, approval pembayaran transfer, pantau antrean, dan atur COGS (HPP).</p>
+                    <p className="text-xs text-[#A19D95] mt-1">Kelola produk, approval pembayaran transfer, pantau antrean, dan atur COGS (HPP).</p>
                   </div>
                   <div className="flex items-center space-x-2 bg-[#0F0E0D] p-1.5 rounded-2xl border border-[#262422]">
                     <button
                       onClick={() => setSellerSubTab('orders')}
                       className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-                        sellerSubTab === 'orders' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#8E8B85] hover:text-white'
+                        sellerSubTab === 'orders' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#A19D95] hover:text-white'
                       }`}
                     >
                       Daftar Pesanan ({orders.length})
@@ -884,7 +894,7 @@ export default function EpicureanApp() {
                     <button
                       onClick={() => setSellerSubTab('products')}
                       className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-                        sellerSubTab === 'products' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#8E8B85] hover:text-white'
+                        sellerSubTab === 'products' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#A19D95] hover:text-white'
                       }`}
                     >
                       Produk & COGS (HPP)
@@ -892,7 +902,7 @@ export default function EpicureanApp() {
                     <button
                       onClick={() => setSellerSubTab('recap')}
                       className={`px-4 py-2 rounded-xl text-xs font-extrabold transition-all ${
-                        sellerSubTab === 'recap' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#8E8B85] hover:text-white'
+                        sellerSubTab === 'recap' ? 'bg-[#F59E0B] text-black shadow' : 'text-[#A19D95] hover:text-white'
                       }`}
                     >
                       Rekap Sales & Margin
@@ -905,12 +915,12 @@ export default function EpicureanApp() {
                 <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
                   <div className="flex justify-between items-center border-b border-[#262422] pb-4">
                     <h2 className="text-lg font-extrabold text-white">Daftar Antrean Order & Approval Pembayaran</h2>
-                    <span className="text-xs text-[#8E8B85]">Total {orders.length} Order Masuk</span>
+                    <span className="text-xs text-[#A19D95]">Total {orders.length} Order Masuk</span>
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs text-[#D4D0C7]">
-                      <thead className="bg-[#121110] text-[#8E8B85] uppercase font-bold text-[10px] tracking-wider">
+                    <table className="w-full text-left text-xs text-[#E2E2E2]">
+                      <thead className="bg-[#121110] text-[#A19D95] uppercase font-bold text-[10px] tracking-wider">
                         <tr>
                           <th className="p-4 rounded-l-xl">ID Order</th>
                           <th className="p-4">Pelanggan / Tipe</th>
@@ -925,7 +935,7 @@ export default function EpicureanApp() {
                           <tr key={o.id} className="hover:bg-[#121110]/50 transition-all">
                             <td className="p-4 font-mono font-bold text-[#F59E0B]">
                               <p className="text-sm">{o.id}</p>
-                              <p className="text-[10px] text-[#8E8B85] font-normal">{o.createdAt}</p>
+                              <p className="text-[10px] text-[#A19D95] font-normal">{o.createdAt}</p>
                             </td>
                             <td className="p-4">
                               <p className="font-extrabold text-white text-sm">{o.customerName}</p>
@@ -973,7 +983,7 @@ export default function EpicureanApp() {
                             <td className="p-4 text-center">
                               <button
                                 onClick={() => window.print()}
-                                className="p-2 bg-[#121110] hover:bg-[#262422] border border-[#262422] rounded-xl text-[#8E8B85] hover:text-white transition-all"
+                                className="p-2 bg-[#121110] hover:bg-[#262422] border border-[#262422] rounded-xl text-[#A19D95] hover:text-white transition-all"
                                 title="Cetak Invoice PDF Digital"
                               >
                                 <Printer className="h-4 w-4" />
@@ -992,19 +1002,26 @@ export default function EpicureanApp() {
                   {/* List Produk Seller */}
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => {
-                      // HPP memperhitungkan estimasi susut roasting 15%
                       const adjustedGreenBeanCost = Math.round(p.greenBeanCostPerKg / 0.85);
                       const totalCogs = adjustedGreenBeanCost + p.roastingCostPerKg + p.packagingCostPerKg;
                       const profit = p.pricePerKg - totalCogs;
                       const marginPct = ((profit / p.pricePerKg) * 100).toFixed(1);
                       return (
-                        <div key={p.id} className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl space-y-4 flex flex-col justify-between">
+                        <div key={p.id} className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl space-y-4 flex flex-col justify-between shadow-lg">
                           <div>
                             <div className="flex justify-between items-start">
-                              <span className="text-[10px] font-black tracking-wider text-[#F59E0B] uppercase px-2.5 py-1 bg-[#121110] border border-[#262422] rounded-md">{p.category}</span>
+                              <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
+                                p.category === 'Green Beans' 
+                                  ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
+                                  : p.category === 'Roasted Beans'
+                                  ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
+                                  : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
+                              }`}>
+                                {p.category}
+                              </span>
                               <button 
                                 onClick={() => handleDeleteProduct(p.id)} 
-                                className="p-1.5 text-[#8E8B85] hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-all"
+                                className="p-1.5 text-[#A19D95] hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-all"
                                 title="Hapus Produk"
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -1013,17 +1030,17 @@ export default function EpicureanApp() {
                             <h3 className="text-base font-extrabold text-white mt-3">{p.name}</h3>
                             <div className="grid grid-cols-2 gap-4 mt-4 text-xs border-t border-[#262422] pt-3">
                               <div>
-                                <p className="text-[#8E8B85]">Harga Jual / Kg</p>
+                                <p className="text-[#A19D95]">Harga Jual / Kg</p>
                                 <p className="font-extrabold text-white text-sm mt-0.5">Rp {p.pricePerKg.toLocaleString('id-ID')}</p>
                               </div>
                               <div>
-                                <p className="text-[#8E8B85]">Total COGS (Inc. 15% Loss)</p>
+                                <p className="text-[#A19D95]">Total COGS (Inc. 15% Loss)</p>
                                 <p className="font-extrabold text-rose-400 text-sm mt-0.5">Rp {totalCogs.toLocaleString('id-ID')}</p>
                               </div>
                             </div>
                           </div>
                           <div className="bg-[#121110] border border-[#262422] p-3 rounded-2xl flex justify-between items-center text-xs">
-                            <span className="text-[#8E8B85]">Margin Keuntungan:</span>
+                            <span className="text-[#A19D95]">Margin Keuntungan:</span>
                             <span className="font-black text-emerald-400 text-sm">Rp {profit.toLocaleString('id-ID')} ({marginPct}%)</span>
                           </div>
                         </div>
@@ -1038,7 +1055,7 @@ export default function EpicureanApp() {
                     <form onSubmit={handleSaveProduct} className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-xs font-bold text-[#8E8B85] mb-1">Nama Produk Kopi</label>
+                          <label className="block text-xs font-bold text-[#A19D95] mb-1">Nama Produk Kopi</label>
                           <input
                             type="text"
                             required
@@ -1049,7 +1066,7 @@ export default function EpicureanApp() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-[#8E8B85] mb-1">Kategori Produk</label>
+                          <label className="block text-xs font-bold text-[#A19D95] mb-1">Kategori Produk</label>
                           <select
                             value={productForm.category}
                             onChange={(e) => setProductForm({ ...productForm, category: e.target.value as Product['category'] })}
@@ -1061,7 +1078,7 @@ export default function EpicureanApp() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-[#8E8B85] mb-1">Harga Jual per Kg (IDR)</label>
+                          <label className="block text-xs font-bold text-[#A19D95] mb-1">Harga Jual per Kg (IDR)</label>
                           <input
                             type="number"
                             required
@@ -1076,7 +1093,7 @@ export default function EpicureanApp() {
                         <p className="text-xs font-black text-[#F59E0B] uppercase tracking-wider">RINCIAN KOMPONEN HPP / COGS PER KG</p>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <div>
-                            <label className="block text-xs text-[#8E8B85] mb-1">Modal Green Bean / Kg</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Modal Green Bean / Kg</label>
                             <input
                               type="number"
                               required
@@ -1086,7 +1103,7 @@ export default function EpicureanApp() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-[#8E8B85] mb-1">Biaya Roasting / Kg</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Roasting / Kg</label>
                             <input
                               type="number"
                               required
@@ -1096,7 +1113,7 @@ export default function EpicureanApp() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-[#8E8B85] mb-1">Biaya Packaging / Kg</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Packaging / Kg</label>
                             <input
                               type="number"
                               required
@@ -1110,7 +1127,7 @@ export default function EpicureanApp() {
 
                       <button
                         type="submit"
-                        className="bg-[#F59E0B] hover:bg-[#d98a08] text-black font-extrabold px-6 py-3 rounded-xl text-xs transition-all flex items-center space-x-2"
+                        className="bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-black font-extrabold px-6 py-3 rounded-xl text-xs transition-all flex items-center space-x-2 shadow-lg"
                       >
                         <Plus className="h-4 w-4 stroke-[3]" />
                         <span>Simpan & Publikasikan Produk</span>
@@ -1123,23 +1140,23 @@ export default function EpicureanApp() {
               {sellerSubTab === 'recap' && (
                 <div className="space-y-8">
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl">
-                      <p className="text-xs text-[#8E8B85] font-bold">Total Omzet Penjualan</p>
+                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl shadow-lg">
+                      <p className="text-xs text-[#A19D95] font-bold">Total Omzet Penjualan</p>
                       <p className="text-2xl font-black text-[#F59E0B] mt-2">Rp {totalOmzet.toLocaleString('id-ID')}</p>
                     </div>
 
-                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl">
-                      <p className="text-xs text-[#8E8B85] font-bold">Estimasi HPP / COGS</p>
+                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl shadow-lg">
+                      <p className="text-xs text-[#A19D95] font-bold">Estimasi HPP / COGS</p>
                       <p className="text-2xl font-black text-white mt-2">Rp {totalEstimatedCOGS.toLocaleString('id-ID')}</p>
                     </div>
 
-                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl">
-                      <p className="text-xs text-[#8E8B85] font-bold">Laba Kotor (Gross Profit)</p>
+                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl shadow-lg">
+                      <p className="text-xs text-[#A19D95] font-bold">Laba Kotor (Gross Profit)</p>
                       <p className="text-2xl font-black text-emerald-400 mt-2">Rp {totalGrossProfit.toLocaleString('id-ID')}</p>
                     </div>
 
-                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl">
-                      <p className="text-xs text-[#8E8B85] font-bold">Piutang Kontra Bon (Unpaid)</p>
+                    <div className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl shadow-lg">
+                      <p className="text-xs text-[#A19D95] font-bold">Piutang Kontra Bon (Unpaid)</p>
                       <p className="text-2xl font-black text-purple-400 mt-2">Rp {totalUnpaidKontraBon.toLocaleString('id-ID')}</p>
                     </div>
                   </div>
