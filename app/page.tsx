@@ -719,7 +719,7 @@ export default function EpicureanApp() {
                         <div className="text-[11px] space-y-1">
                           <p className="font-bold text-[#F59E0B]">Ketentuan Kategori Pemesan B2B & Perorangan:</p>
                           <p className="text-[#D4D0C7]">
-                            • <strong className="text-white">Cafe / Bisnis B2B:</strong> Berhak menggunakan fasilitas <strong>Kontra Bon (Net 15/30)</strong>. Wajib menyertakan Nama Cafe/Perusahaan resmi. Setiap pesanan akan diverifikasi oleh Admin.
+                            • <strong className="text-white">Cafe / Bisnis B2B:</strong> Berhak menggunakan fasilitas <strong>Kontra Bon (Net 15/30)</strong>. Wajib menyertakan Nama Cafe/Perusahaan resmi. Setiap pesanan akan diverifikasi oleh Admin. <span className="text-rose-400 font-bold">Pesanan yang tidak sesuai dengan kualifikasi akun bisnis akan ditolak langsung oleh Admin.</span>
                           </p>
                           <p className="text-[#D4D0C7]">
                             • <strong className="text-white">Perorangan:</strong> Wajib menggunakan pembayaran <strong>Direct Transfer (BCA)</strong> sebelum pesanan diproses sangrai (*roasting*).
