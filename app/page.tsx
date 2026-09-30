@@ -1,12 +1,18 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
   Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
-  MessageSquare, ExternalLink
+  MessageSquare, ExternalLink, RefreshCw
 } from 'lucide-react';
+
+// Inisialisasi Supabase Client
+const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
+const supabaseAnonKey = 'sb_publishable_5lONdfpICE-bb0wuuRjnMg_M_R4ddih';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 // Interfaces
 interface Product {
@@ -61,89 +67,79 @@ export default function EpicureanApp() {
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
-  // Default Initial Products
-  const defaultProducts: Product[] = [
-    {
-      id: 'P1',
-      name: 'Arabica Gayo Green Beans Grade 1',
-      category: 'Green Beans',
-      pricePerKg: 110000,
-      pricePer200g: 25000,
-      greenBeanCostPerKg: 90000,
-      roastingCostPerKg: 0,
-      packagingCostPerKg: 5000,
-      packagingCostPer200g: 1500,
-      description: 'Moisture: 12%, Defect < 5%, Single Origin Takengon'
-    },
-    {
-      id: 'P2',
-      name: 'Arabica Gayo Wine Roasted',
-      category: 'Roasted Beans',
-      pricePerKg: 180000,
-      pricePer200g: 42000,
-      greenBeanCostPerKg: 98000,
-      roastingCostPerKg: 20000,
-      packagingCostPerKg: 15000,
-      packagingCostPer200g: 3500,
-      description: 'Notes: Winey, Tropical Fruit, Medium Body'
-    },
-    {
-      id: 'P3',
-      name: 'Bandung Heritage House Blend (70/30)',
-      category: 'Blend Beans',
-      pricePerKg: 145000,
-      pricePer200g: 32000,
-      greenBeanCostPerKg: 75000,
-      roastingCostPerKg: 18000,
-      packagingCostPerKg: 14000,
-      packagingCostPer200g: 3000,
-      description: 'Notes: Caramel, Brown Sugar, Balanced'
-    }
-  ];
+  // States
+  const [products, setProducts] = useState<Product[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Persistent Products via localStorage
-  const [products, setProducts] = useState<Product[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('epicurean_products');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { console.error(e); }
-      }
+  // Load Data dari Supabase
+  const fetchProducts = async () => {
+    const { data, error } = await supabase.from('products').select('*');
+    if (error) {
+      console.error('Error fetching products:', error);
+    } else if (data) {
+      const formatted: Product[] = data.map(item => ({
+        id: item.id,
+        name: item.name,
+        category: item.category,
+        pricePerKg: Number(item.price_per_kg || 0),
+        pricePer200g: Number(item.price_per_200g || 0),
+        greenBeanCostPerKg: Number(item.green_bean_cost_per_kg || 0),
+        roastingCostPerKg: Number(item.roasting_cost_per_kg || 0),
+        packagingCostPerKg: Number(item.packaging_cost_per_kg || 0),
+        packagingCostPer200g: Number(item.packaging_cost_per_200g || 0),
+        description: item.description || ''
+      }));
+      setProducts(formatted);
     }
-    return defaultProducts;
-  });
+  };
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('epicurean_products', JSON.stringify(products));
+  const fetchOrders = async () => {
+    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error fetching orders:', error);
+    } else if (data) {
+      const formatted: Order[] = data.map(item => ({
+        id: item.id,
+        customerType: item.customer_type,
+        customerName: item.customer_name,
+        companyName: item.company_name,
+        customerPhone: item.customer_phone,
+        destinationArea: item.destination_area,
+        shippingAddress: item.shipping_address,
+        shippingMethod: item.shipping_method,
+        shippingCost: Number(item.shipping_cost || 0),
+        paymentMethod: item.payment_method,
+        paymentProof: item.payment_proof,
+        items: item.items || [],
+        subtotal: Number(item.subtotal || 0),
+        totalAmount: Number(item.total_amount || 0),
+        status: item.status,
+        dueDate: item.due_date,
+        createdAt: item.created_at
+      }));
+      setOrders(formatted);
     }
-  }, [products]);
-
-  // Persistent Orders via localStorage
-  const [orders, setOrders] = useState<Order[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('epicurean_orders');
-      if (saved) {
-        try { return JSON.parse(saved); } catch (e) { console.error(e); }
-      }
-    }
-    return [];
-  });
+  };
 
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('epicurean_orders', JSON.stringify(orders));
-    }
-  }, [orders]);
+    const loadData = async () => {
+      setLoading(true);
+      await Promise.all([fetchProducts(), fetchOrders()]);
+      setLoading(false);
+    };
+    loadData();
+  }, []);
 
   // Filter khusus Roasted Beans untuk Custom Blend
   const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
   
   const [blend, setBlend] = useState({
-    bean1Id: roastedProducts[0]?.id || '',
+    bean1Id: '',
     bean1Ratio: 50,
-    bean2Id: roastedProducts[1]?.id || roastedProducts[0]?.id || '',
+    bean2Id: '',
     bean2Ratio: 30,
-    bean3Id: roastedProducts[2]?.id || roastedProducts[0]?.id || '',
+    bean3Id: '',
     bean3Ratio: 20,
     grindSize: 'Biji Utuh (Whole Bean)',
     weightGram: 200
@@ -261,7 +257,7 @@ export default function EpicureanApp() {
     setCart([...cart, newItem]);
   };
 
-  const handleCheckout = (e: React.FormEvent) => {
+  const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
 
@@ -296,12 +292,34 @@ export default function EpicureanApp() {
       createdAt: today.toISOString().split('T')[0]
     };
 
-    setOrders([newOrder, ...orders]);
-    setCurrentActiveOrder(newOrder);
-    setCart([]);
+    const { error } = await supabase.from('orders').insert({
+      id: newOrder.id,
+      customer_type: newOrder.customerType,
+      customer_name: newOrder.customerName,
+      company_name: newOrder.companyName,
+      customer_phone: newOrder.customerPhone,
+      destination_area: newOrder.destinationArea,
+      shipping_address: newOrder.shippingAddress,
+      shipping_method: newOrder.shippingMethod,
+      shipping_cost: newOrder.shippingCost,
+      payment_method: newOrder.paymentMethod,
+      items: newOrder.items,
+      subtotal: newOrder.subtotal,
+      total_amount: newOrder.totalAmount,
+      status: newOrder.status,
+      due_date: newOrder.dueDate,
+      created_at: newOrder.createdAt
+    });
+
+    if (error) {
+      alert('Gagal mengirim order ke server: ' + error.message);
+    } else {
+      setCurrentActiveOrder(newOrder);
+      setCart([]);
+      fetchOrders();
+    }
   };
 
-  // Generate WhatsApp Link
   const generateWhatsAppLink = (order: Order, targetPhone: string) => {
     let text = `*PRE-ORDER B2B EPICUREAN.id*\n`;
     text += `------------------------------------\n`;
@@ -322,16 +340,21 @@ export default function EpicureanApp() {
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
   };
 
-  const handleUploadPaymentProof = (e: React.FormEvent) => {
+  const handleUploadPaymentProof = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentActiveOrder || !paymentProofInput) return;
 
-    const updatedOrders = orders.map(o => 
-      o.id === currentActiveOrder.id ? { ...o, paymentProof: paymentProofInput } : o
-    );
-    setOrders(updatedOrders);
-    setCurrentActiveOrder(prev => prev ? { ...prev, paymentProof: paymentProofInput } : null);
-    alert('Bukti pembayaran berhasil dicatat!');
+    const { error } = await supabase.from('orders').update({
+      payment_proof: paymentProofInput
+    }).eq('id', currentActiveOrder.id);
+
+    if (error) {
+      alert('Gagal menyimpan bukti pembayaran: ' + error.message);
+    } else {
+      setCurrentActiveOrder(prev => prev ? { ...prev, paymentProof: paymentProofInput } : null);
+      fetchOrders();
+      alert('Bukti pembayaran berhasil dicatat ke server!');
+    }
   };
 
   const handlePasswordSubmit = (e: React.FormEvent) => {
@@ -344,40 +367,57 @@ export default function EpicureanApp() {
     }
   };
 
-  const handleSaveProduct = (e: React.FormEvent) => {
+  const handleSaveProduct = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newProd: Product = {
-      id: `P-${Date.now()}`,
+    const newId = `P-${Date.now()}`;
+
+    const { error } = await supabase.from('products').insert({
+      id: newId,
       name: productForm.name,
       category: productForm.category,
-      pricePerKg: productForm.pricePerKg,
-      pricePer200g: productForm.pricePer200g,
-      greenBeanCostPerKg: productForm.greenBeanCostPerKg,
-      roastingCostPerKg: productForm.roastingCostPerKg,
-      packagingCostPerKg: productForm.packagingCostPerKg,
-      packagingCostPer200g: productForm.packagingCostPer200g,
+      price_per_kg: productForm.pricePerKg,
+      price_per_200g: productForm.pricePer200g,
+      green_bean_cost_per_kg: productForm.greenBeanCostPerKg,
+      roasting_cost_per_kg: productForm.roastingCostPerKg,
+      packaging_cost_per_kg: productForm.packagingCostPerKg,
+      packaging_cost_per_200g: productForm.packagingCostPer200g,
       description: productForm.description
-    };
-    setProducts([...products, newProd]);
-    setProductForm({
-      name: '',
-      category: 'Green Beans',
-      pricePerKg: 150000,
-      pricePer200g: 35000,
-      greenBeanCostPerKg: 90000,
-      roastingCostPerKg: 15000,
-      packagingCostPerKg: 10000,
-      packagingCostPer200g: 3000,
-      description: ''
     });
+
+    if (error) {
+      alert('Gagal menyimpan produk: ' + error.message);
+    } else {
+      setProductForm({
+        name: '',
+        category: 'Green Beans',
+        pricePerKg: 150000,
+        pricePer200g: 35000,
+        greenBeanCostPerKg: 90000,
+        roastingCostPerKg: 15000,
+        packagingCostPerKg: 10000,
+        packagingCostPer200g: 3000,
+        description: ''
+      });
+      fetchProducts();
+    }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter(p => p.id !== id));
+  const handleDeleteProduct = async (id: string) => {
+    const { error } = await supabase.from('products').delete().eq('id', id);
+    if (error) {
+      alert('Gagal menghapus produk: ' + error.message);
+    } else {
+      fetchProducts();
+    }
   };
 
-  const updateOrderStatus = (orderId: string, status: Order['status']) => {
-    setOrders(orders.map(o => o.id === orderId ? { ...o, status } : o));
+  const updateOrderStatus = async (orderId: string, status: Order['status']) => {
+    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
+    if (error) {
+      alert('Gagal mengubah status order: ' + error.message);
+    } else {
+      fetchOrders();
+    }
   };
 
   const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
@@ -449,7 +489,7 @@ export default function EpicureanApp() {
 
               {roastedProducts.length === 0 ? (
                 <div className="p-6 bg-[#121110] border border-[#262422] rounded-2xl text-center text-xs text-[#A19D95]">
-                  Belum ada produk ber-kategori <strong>Roasted Beans</strong> pada katalog. Tambahkan produk pada Seller Admin terlebih dahulu.
+                  Belum ada produk ber-kategori <strong>Roasted Beans</strong> pada katalog cloud. Tambahkan produk pada Seller Admin terlebih dahulu.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -585,9 +625,19 @@ export default function EpicureanApp() {
 
             {/* Katalog Standar dengan Pilihan Kemasan 1 Kg & 200g */}
             <section className="space-y-6">
-              <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
+                <button 
+                  onClick={() => fetchProducts()} 
+                  className="p-2 bg-[#1A1816] border border-[#262422] rounded-xl text-xs text-[#A19D95] hover:text-white flex items-center space-x-1"
+                >
+                  <RefreshCw className="h-3.5 w-3.5" />
+                  <span>Sync Cloud</span>
+                </button>
+              </div>
+
               {products.length === 0 ? (
-                <p className="text-xs text-[#A19D95]">Belum ada produk yang tersedia saat ini.</p>
+                <p className="text-xs text-[#A19D95]">Belum ada produk di database server. Silakan tambah produk di Seller Admin.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {products.map((p) => (
@@ -1241,7 +1291,7 @@ export default function EpicureanApp() {
                         className="bg-gradient-to-r from-[#F59E0B] to-[#D97706] text-black font-extrabold px-6 py-3 rounded-xl text-xs transition-all flex items-center space-x-2 shadow-lg"
                       >
                         <Plus className="h-4 w-4 stroke-[3]" />
-                        <span>Simpan & Publikasikan Produk</span>
+                        <span>Simpan & Publikasikan Produk ke Cloud</span>
                       </button>
                     </form>
                   </section>
