@@ -6,7 +6,7 @@ import {
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
   Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
-  MessageSquare, ExternalLink, RefreshCw
+  MessageSquare, ExternalLink, RefreshCw, ShieldAlert
 } from 'lucide-react';
 
 // Inisialisasi Supabase Client
@@ -711,12 +711,27 @@ export default function EpicureanApp() {
                       ))}
                     </div>
 
-                    {/* Kategori Pembeli */}
-                    <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-3">
+                    {/* Kategori Pembeli & Peringatan Verifikasi B2B */}
+                    <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-4">
+                      {/* Banner Informasi Peringatan */}
+                      <div className="p-3 bg-amber-950/40 border border-amber-700/50 rounded-xl flex items-start space-x-3">
+                        <ShieldAlert className="h-5 w-5 text-[#F59E0B] shrink-0 mt-0.5" />
+                        <div className="text-[11px] space-y-1">
+                          <p className="font-bold text-[#F59E0B]">Ketentuan Kategori Pemesan B2B & Perorangan:</p>
+                          <p className="text-[#D4D0C7]">
+                            • <strong className="text-white">Cafe / Bisnis B2B:</strong> Berhak menggunakan fasilitas <strong>Kontra Bon (Net 15/30)</strong>. Wajib menyertakan Nama Cafe/Perusahaan resmi. Setiap pesanan akan diverifikasi oleh Admin.
+                          </p>
+                          <p className="text-[#D4D0C7]">
+                            • <strong className="text-white">Perorangan:</strong> Wajib menggunakan pembayaran <strong>Direct Transfer (BCA)</strong> sebelum pesanan diproses sangrai (*roasting*).
+                          </p>
+                        </div>
+                      </div>
+
                       <p className="text-xs font-bold text-white flex items-center space-x-2">
                         <Building2 className="h-4 w-4 text-[#F59E0B]" />
-                        <span>Kategori Pembeli</span>
+                        <span>Pilih Kategori Pembeli</span>
                       </p>
+
                       <div className="grid grid-cols-2 gap-3">
                         <button
                           type="button"
@@ -728,7 +743,7 @@ export default function EpicureanApp() {
                           <Building2 className="h-4 w-4" />
                           <div>
                             <p className="font-bold">Cafe / Bisnis B2B</p>
-                            <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Bisa Kontra Bon / Transfer</p>
+                            <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Opsi Kontra Bon (Diverifikasi Admin)</p>
                           </div>
                         </button>
                         <button
@@ -835,7 +850,7 @@ export default function EpicureanApp() {
                       {customerType === 'cafe' && (
                         <input
                           type="text"
-                          placeholder="Nama Perusahaan / Cafe *"
+                          placeholder="Nama Perusahaan / Legalitas Cafe *"
                           required
                           value={customerInfo.company}
                           onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
