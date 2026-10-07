@@ -6,7 +6,7 @@ import {
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
   Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
-  MessageSquare, ExternalLink, RefreshCw, ShieldAlert
+  MessageSquare, ExternalLink, RefreshCw, ShieldAlert, Key, Unlock
 } from 'lucide-react';
 
 // Inisialisasi Supabase Client
@@ -28,6 +28,8 @@ interface Product {
   packagingCostPer500g: number;
   packagingCostPer200g: number;
   description: string;
+  isExclusive: boolean;
+  exclusiveCode: string;
 }
 
 interface OrderItem {
@@ -74,6 +76,11 @@ export default function EpicureanApp() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // State Kode Rahasia Cafe (Storefront)
+  const [userEnteredCode, setUserEnteredCode] = useState('');
+  const [unlockedCodes, setUnlockedCodes] = useState<string[]>([]);
+  const [codeSuccessMsg, setCodeSuccessMsg] = useState(false);
+
   // Load Data dari Supabase
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*');
@@ -92,7 +99,9 @@ export default function EpicureanApp() {
         packagingCostPerKg: Number(item.packaging_cost_per_kg || 0),
         packagingCostPer500g: Number(item.packaging_cost_per_500g || 0),
         packagingCostPer200g: Number(item.packaging_cost_per_200g || 0),
-        description: item.description || ''
+        description: item.description || '',
+        isExclusive: Boolean(item.is_exclusive || false),
+        exclusiveCode: (item.exclusive_code || '').toUpperCase().trim()
       }));
       setProducts(formatted);
     }
@@ -135,10 +144,38 @@ export default function EpicureanApp() {
     loadData();
   }, []);
 
+  // Handler Buka Kunci Produk Eksklusif Cafe
+  const handleUnlockCode = (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanCode = userEnteredCode.trim().toUpperCase();
+    if (!cleanCode) return;
+
+    const matchedProducts = products.filter(
+      p => p.isExclusive && p.exclusiveCode === cleanCode
+    );
+
+    if (matchedProducts.length > 0) {
+      if (!unlockedCodes.includes(cleanCode)) {
+        setUnlockedCodes([...unlockedCodes, cleanCode]);
+      }
+      setCodeSuccessMsg(true);
+      setUserEnteredCode('');
+      setTimeout(() => setCodeSuccessMsg(false), 3000);
+    } else {
+      alert('Kode akses tidak ditemukan. Silakan pastikan kode benar atau hubungi Admin Roastery.');
+    }
+  };
+
+  // Filter Produk Sesuai Akses (Umum vs Terbuka via Kode)
+  const visibleProducts = products.filter(p => {
+    if (!p.isExclusive) return true;
+    return unlockedCodes.includes(p.exclusiveCode);
+  });
+
   // Filter khusus Roasted Beans untuk Custom Blend
   const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
   
-  // State Blend 2 Tipe Biji & Rasio Pilihan (50:50, 60:40, 70:30)
+  // State Blend 2 Tipe Biji & Rasio Pilihan
   const [blend, setBlend] = useState({
     bean1Id: '',
     bean2Id: '',
@@ -215,7 +252,9 @@ export default function EpicureanApp() {
     packagingCostPerKg: 10000,
     packagingCostPer500g: 5000,
     packagingCostPer200g: 3000,
-    description: ''
+    description: '',
+    isExclusive: false,
+    exclusiveCode: ''
   });
 
   const addCustomBlendToCart = () => {
@@ -385,7 +424,9 @@ export default function EpicureanApp() {
       packaging_cost_per_kg: productForm.packagingCostPerKg,
       packaging_cost_per_500g: productForm.packagingCostPer500g,
       packaging_cost_per_200g: productForm.packagingCostPer200g,
-      description: productForm.description
+      description: productForm.description,
+      is_exclusive: productForm.isExclusive,
+      exclusive_code: productForm.exclusiveCode.toUpperCase().trim()
     });
 
     if (error) {
@@ -402,9 +443,12 @@ export default function EpicureanApp() {
         packagingCostPerKg: 10000,
         packagingCostPer500g: 5000,
         packagingCostPer200g: 3000,
-        description: ''
+        description: '',
+        isExclusive: false,
+        exclusiveCode: ''
       });
       fetchProducts();
+      alert('Produk baru berhasil disimpan!');
     }
   };
 
@@ -481,6 +525,41 @@ export default function EpicureanApp() {
               <p className="text-[#A19D95] max-w-2xl mx-auto text-sm sm:text-base mt-2 font-medium">
                 Platform Pre-Order Kopi B2B & Custom Blend Roastery.
               </p>
+
+              {/* Panel Buka Kunci Menu Eksklusif Cafe */}
+              <div className="mt-6 max-w-md mx-auto px-4">
+                <form onSubmit={handleUnlockCode} className="flex space-x-2">
+                  <div className="relative flex-1">
+                    <Key className="absolute left-3 top-3 h-4 w-4 text-purple-400" />
+                    <input
+                      type="text"
+                      placeholder="Punya Kode Akses Cafe?"
+                      value={userEnteredCode}
+                      onChange={(e) => setUserEnteredCode(e.target.value)}
+                      className="w-full bg-[#121110] border border-purple-900/60 rounded-xl pl-9 pr-3 py-2.5 text-xs text-white uppercase font-mono placeholder:text-[#A19D95]"
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    className="bg-purple-600 hover:bg-purple-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center space-x-1 transition-all shadow-lg"
+                  >
+                    <Unlock className="h-4 w-4" />
+                    <span>Buka</span>
+                  </button>
+                </form>
+
+                {codeSuccessMsg && (
+                  <p className="text-xs text-emerald-400 font-bold mt-2 animate-bounce flex items-center justify-center space-x-1">
+                    <CheckCircle className="h-3.5 w-3.5" />
+                    <span>Blend Eksklusif Cafe Berhasil Dibuka!</span>
+                  </p>
+                )}
+                {unlockedCodes.length > 0 && (
+                  <p className="text-[11px] text-purple-400 mt-2">
+                    Akses Aktif: <strong className="font-mono">{unlockedCodes.join(', ')}</strong>
+                  </p>
+                )}
+              </div>
             </div>
 
             {/* Custom Blend Configurator */}
@@ -495,7 +574,7 @@ export default function EpicureanApp() {
 
               {roastedProducts.length < 2 ? (
                 <div className="p-6 bg-[#121110] border border-[#262422] rounded-2xl text-center text-xs text-[#A19D95]">
-                  Dibutuhkan minimal 2 produk ber-kategori <strong>Roasted Beans</strong> pada katalog untuk mengaktifkan fitur Custom Blend. Tambahkan produk di Seller Admin.
+                  Dibutuhkan minimal 2 produk ber-kategori <strong>Roasted Beans</strong> pada katalog untuk mengaktifkan fitur Custom Blend.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -534,7 +613,7 @@ export default function EpicureanApp() {
                       </select>
                     </div>
 
-                    {/* Pilihan Rasio Presets (50:50, 60:40, 70:30) */}
+                    {/* Pilihan Rasio Presets */}
                     <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-3">
                       <label className="block text-xs font-bold text-white">Pilih Proporsi Rasio Racikan (A : B)</label>
                       <div className="grid grid-cols-3 gap-3">
@@ -621,7 +700,7 @@ export default function EpicureanApp() {
               )}
             </section>
 
-            {/* Katalog Standar dengan Seleksi Opsi Kemasan Otomatis */}
+            {/* Katalog Standar & Eksklusif Cafe */}
             <section className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
@@ -634,27 +713,39 @@ export default function EpicureanApp() {
                 </button>
               </div>
 
-              {products.length === 0 ? (
+              {visibleProducts.length === 0 ? (
                 <p className="text-xs text-[#A19D95]">Belum ada produk di database server. Silakan tambah produk di Seller Admin.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {products.map((p) => {
+                  {visibleProducts.map((p) => {
                     const has1kg = (p.pricePerKg || 0) > 0;
                     const has500g = (p.pricePer500g || 0) > 0;
                     const has200g = (p.pricePer200g || 0) > 0;
 
                     return (
-                      <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between hover:border-[#33302D] transition-all shadow-lg">
+                      <div key={p.id} className={`bg-[#1A1816] border rounded-2xl p-5 flex flex-col justify-between hover:border-[#33302D] transition-all shadow-lg relative ${
+                        p.isExclusive ? 'border-purple-800/80 bg-purple-950/10' : 'border-[#262422]'
+                      }`}>
                         <div>
-                          <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
-                            p.category === 'Green Beans' 
-                              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
-                              : p.category === 'Roasted Beans'
-                              ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
-                              : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
-                          }`}>
-                            {p.category}
-                          </span>
+                          <div className="flex justify-between items-center">
+                            <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
+                              p.category === 'Green Beans' 
+                                ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
+                                : p.category === 'Roasted Beans'
+                                ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
+                                : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
+                            }`}>
+                              {p.category}
+                            </span>
+
+                            {p.isExclusive && (
+                              <span className="text-[10px] bg-purple-900/80 text-purple-200 border border-purple-500/60 px-2.5 py-0.5 rounded-full font-bold flex items-center space-x-1">
+                                <Lock className="h-3 w-3" />
+                                <span>Khusus Cafe ({p.exclusiveCode})</span>
+                              </span>
+                            )}
+                          </div>
+
                           <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
                           <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
                           
@@ -690,7 +781,7 @@ export default function EpicureanApp() {
                           </div>
                         </div>
 
-                        {/* Tombol Tambah ke Cart Sesuai Ketersediaan Varian */}
+                        {/* Tombol Tambah ke Cart */}
                         <div className="grid grid-cols-3 gap-1.5 mt-5">
                           {has200g ? (
                             <button
@@ -769,10 +860,10 @@ export default function EpicureanApp() {
                         <div className="text-[11px] space-y-1">
                           <p className="font-bold text-[#F59E0B]">Ketentuan Kategori Pemesan B2B & Perorangan:</p>
                           <p className="text-[#D4D0C7]">
-                            • <strong className="text-white">Cafe / Bisnis B2B:</strong> Berhak menggunakan fasilitas <strong>Kontra Bon (Net 15/30)</strong>. Wajib menyertakan Nama Cafe/Perusahaan resmi. Setiap pesanan akan diverifikasi oleh Admin. <span className="text-rose-400 font-bold">Pesanan yang tidak sesuai dengan kualifikasi akun bisnis akan ditolak langsung oleh Admin.</span>
+                            • <strong className="text-white">Cafe / Bisnis B2B:</strong> Berhak menggunakan fasilitas <strong>Kontra Bon (Net 15/30)</strong>. Wajib menyertakan Nama Cafe/Perusahaan resmi. <span className="text-rose-400 font-bold">Pesanan yang tidak sesuai kualifikasi akan ditolak oleh Admin.</span>
                           </p>
                           <p className="text-[#D4D0C7]">
-                            • <strong className="text-white">Perorangan:</strong> Wajib menggunakan pembayaran <strong>Direct Transfer (BCA)</strong> sebelum pesanan diproses sangrai (*roasting*).
+                            • <strong className="text-white">Perorangan:</strong> Wajib menggunakan pembayaran <strong>Direct Transfer (BCA)</strong>.
                           </p>
                         </div>
                       </div>
@@ -793,7 +884,7 @@ export default function EpicureanApp() {
                           <Building2 className="h-4 w-4" />
                           <div>
                             <p className="font-bold">Cafe / Bisnis B2B</p>
-                            <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Opsi Kontra Bon (Diverifikasi Admin)</p>
+                            <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Kontra Bon Available</p>
                           </div>
                         </button>
                         <button
@@ -806,7 +897,7 @@ export default function EpicureanApp() {
                           <User className="h-4 w-4" />
                           <div>
                             <p className="font-bold">Perorangan</p>
-                            <p className="text-[10px] text-emerald-400 mt-0.5 font-bold">Wajib Direct Transfer</p>
+                            <p className="text-[10px] text-emerald-400 mt-0.5 font-bold">Direct Transfer Only</p>
                           </div>
                         </button>
                       </div>
@@ -837,7 +928,7 @@ export default function EpicureanApp() {
                           }`}
                         >
                           <p className="font-bold">Luar Bandung</p>
-                          <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Ekspedisi JNE (Ditanggung Customer)</p>
+                          <p className="text-[10px] text-[#F59E0B] mt-0.5 font-bold">Ekspedisi JNE</p>
                         </button>
                       </div>
                     </div>
@@ -1206,18 +1297,28 @@ export default function EpicureanApp() {
                       const marginPct200g = p.pricePer200g ? ((profit200g / p.pricePer200g) * 100).toFixed(1) : '0';
 
                       return (
-                        <div key={p.id} className="bg-[#1A1816] border border-[#262422] p-6 rounded-3xl space-y-4 flex flex-col justify-between shadow-lg">
+                        <div key={p.id} className={`bg-[#1A1816] border p-6 rounded-3xl space-y-4 flex flex-col justify-between shadow-lg ${
+                          p.isExclusive ? 'border-purple-800/80 bg-purple-950/10' : 'border-[#262422]'
+                        }`}>
                           <div>
                             <div className="flex justify-between items-start">
-                              <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
-                                p.category === 'Green Beans' 
-                                  ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
-                                  : p.category === 'Roasted Beans'
-                                  ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
-                                  : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
-                              }`}>
-                                {p.category}
-                              </span>
+                              <div className="flex flex-col space-y-1">
+                                <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
+                                  p.category === 'Green Beans' 
+                                    ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
+                                    : p.category === 'Roasted Beans'
+                                    ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
+                                    : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
+                                }`}>
+                                  {p.category}
+                                </span>
+                                {p.isExclusive && (
+                                  <span className="text-[10px] text-purple-300 font-mono font-bold flex items-center space-x-1">
+                                    <Lock className="h-3 w-3 text-purple-400" />
+                                    <span>Kode: {p.exclusiveCode}</span>
+                                  </span>
+                                )}
+                              </div>
                               <button 
                                 onClick={() => handleDeleteProduct(p.id)} 
                                 className="p-1.5 text-[#A19D95] hover:text-rose-400 hover:bg-rose-950/30 rounded-lg transition-all"
@@ -1266,8 +1367,8 @@ export default function EpicureanApp() {
                   {/* Form Tambah Produk */}
                   <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
                     <div className="flex justify-between items-center">
-                      <h2 className="text-lg font-extrabold text-white">Tambah Produk & Ketersediaan Varian Kemasan</h2>
-                      <p className="text-xs text-[#F59E0B] font-bold">*Isi angka 0 pada harga jika varian 500g / 200g tidak dijual</p>
+                      <h2 className="text-lg font-extrabold text-white">Tambah Produk & Pengaturan Akses Blend</h2>
+                      <p className="text-xs text-[#F59E0B] font-bold">*Isi angka 0 pada harga jika varian tidak dijual</p>
                     </div>
 
                     <form onSubmit={handleSaveProduct} className="space-y-6">
@@ -1277,7 +1378,7 @@ export default function EpicureanApp() {
                           <input
                             type="text"
                             required
-                            placeholder="Contoh: Arabica Flores Bajawa"
+                            placeholder="Contoh: Signature Blend Kopi Kenangan"
                             value={productForm.name}
                             onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
                             className="w-full bg-[#121110] border border-[#262422] rounded-xl px-4 py-2.5 text-xs text-white"
@@ -1297,7 +1398,56 @@ export default function EpicureanApp() {
                         </div>
                       </div>
 
-                      {/* Penetapan Harga 3 Kemasan (Bisa Diisi 0 jika tidak dijual) */}
+                      {/* Pilihan Akses Blend: Umum vs Khusus Cafe */}
+                      <div className="bg-[#121110] border border-[#262422] p-4 rounded-2xl space-y-3">
+                        <label className="block text-xs font-bold text-white">Tipe Akses Produk / Blend</label>
+                        <div className="grid grid-cols-2 gap-3">
+                          <button
+                            type="button"
+                            onClick={() => setProductForm({ ...productForm, isExclusive: false, exclusiveCode: '' })}
+                            className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                              !productForm.isExclusive 
+                                ? 'bg-[#F59E0B]/10 border-[#F59E0B] text-[#F59E0B]' 
+                                : 'bg-[#1A1816] border-[#262422] text-[#A19D95]'
+                            }`}
+                          >
+                            🌐 Publik / Umum (Tampil untuk Semua)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProductForm({ ...productForm, isExclusive: true })}
+                            className={`p-3 rounded-xl border text-xs font-bold transition-all ${
+                              productForm.isExclusive 
+                                ? 'bg-purple-950/60 border-purple-500 text-purple-300' 
+                                : 'bg-[#1A1816] border-[#262422] text-[#A19D95]'
+                            }`}
+                          >
+                            🔒 Blend Khusus Cafe (Pakai Kode Rahasia)
+                          </button>
+                        </div>
+
+                        {/* Input Kode Rahasia jika Blend Khusus dipilih */}
+                        {productForm.isExclusive && (
+                          <div className="pt-2 space-y-1">
+                            <label className="block text-[11px] font-bold text-purple-400">
+                              Kode Akses Rahasia Cafe (Contoh: CAFE-AMORA)
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              placeholder="Ketik Kode Rahasia..."
+                              value={productForm.exclusiveCode}
+                              onChange={(e) => setProductForm({ ...productForm, exclusiveCode: e.target.value.toUpperCase() })}
+                              className="w-full bg-[#1A1816] border border-purple-800/60 rounded-xl px-3 py-2 text-xs text-white font-mono uppercase"
+                            />
+                            <p className="text-[10px] text-[#A19D95]">
+                              *Produk ini disembunyikan dari umum dan hanya akan muncul di layar Cafe setelah mereka memasukkan kode ini.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Penetapan Harga 3 Kemasan */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 1 Kg (IDR)</label>
