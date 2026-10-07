@@ -203,7 +203,7 @@ export default function EpicureanApp() {
   const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
   const [paymentProofInput, setPaymentProofInput] = useState('');
 
-  // Form Product State (Support 200g, 500g, 1kg)
+  // Form Product State
   const [productForm, setProductForm] = useState({
     name: '',
     category: 'Green Beans' as Product['category'],
@@ -483,7 +483,7 @@ export default function EpicureanApp() {
               </p>
             </div>
 
-            {/* Custom Blend Configurator (2 Tipe Biji & Rasio Fixed) */}
+            {/* Custom Blend Configurator */}
             <section className="bg-[#1A1816] border border-[#262422] rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center space-x-3 mb-6 border-b border-[#262422] pb-4">
                 <Calculator className="h-6 w-6 text-[#F59E0B]" />
@@ -621,7 +621,7 @@ export default function EpicureanApp() {
               )}
             </section>
 
-            {/* Katalog Standar dengan 3 Opsi Kemasan (1 Kg, 500g, 200g) */}
+            {/* Katalog Standar dengan Seleksi Opsi Kemasan Otomatis */}
             <section className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
@@ -638,59 +638,102 @@ export default function EpicureanApp() {
                 <p className="text-xs text-[#A19D95]">Belum ada produk di database server. Silakan tambah produk di Seller Admin.</p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {products.map((p) => (
-                    <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between hover:border-[#33302D] transition-all shadow-lg">
-                      <div>
-                        <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
-                          p.category === 'Green Beans' 
-                            ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
-                            : p.category === 'Roasted Beans'
-                            ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
-                            : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
-                        }`}>
-                          {p.category}
-                        </span>
-                        <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
-                        <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
-                        
-                        <div className="mt-4 space-y-1.5 bg-[#121110] p-3 rounded-xl border border-[#262422]">
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-[#A19D95]">Kemasan 1 Kg:</span>
-                            <span className="text-[#F59E0B] font-black">Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-[#A19D95]">Kemasan 500 Gram:</span>
-                            <span className="text-[#F59E0B] font-black">Rp {(p.pricePer500g || 0).toLocaleString('id-ID')}</span>
-                          </div>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="text-[#A19D95]">Kemasan 200 Gram:</span>
-                            <span className="text-[#F59E0B] font-black">Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</span>
+                  {products.map((p) => {
+                    const has1kg = (p.pricePerKg || 0) > 0;
+                    const has500g = (p.pricePer500g || 0) > 0;
+                    const has200g = (p.pricePer200g || 0) > 0;
+
+                    return (
+                      <div key={p.id} className="bg-[#1A1816] border border-[#262422] rounded-2xl p-5 flex flex-col justify-between hover:border-[#33302D] transition-all shadow-lg">
+                        <div>
+                          <span className={`text-[10px] uppercase font-black tracking-wider px-3 py-1 rounded-full border ${
+                            p.category === 'Green Beans' 
+                              ? 'bg-emerald-950/60 text-emerald-400 border-emerald-800/50' 
+                              : p.category === 'Roasted Beans'
+                              ? 'bg-amber-950/60 text-amber-400 border-amber-800/50'
+                              : 'bg-orange-950/60 text-orange-400 border-orange-800/50'
+                          }`}>
+                            {p.category}
+                          </span>
+                          <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
+                          <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
+                          
+                          <div className="mt-4 space-y-1.5 bg-[#121110] p-3 rounded-xl border border-[#262422]">
+                            {has1kg && (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-[#A19D95]">Kemasan 1 Kg:</span>
+                                <span className="text-[#F59E0B] font-black">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
+                              </div>
+                            )}
+                            {has500g ? (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-[#A19D95]">Kemasan 500 Gram:</span>
+                                <span className="text-[#F59E0B] font-black">Rp {p.pricePer500g.toLocaleString('id-ID')}</span>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between items-center text-[11px] text-rose-400/80 italic">
+                                <span>Kemasan 500 Gram:</span>
+                                <span>Tidak Tersedia</span>
+                              </div>
+                            )}
+                            {has200g ? (
+                              <div className="flex justify-between items-center text-xs">
+                                <span className="text-[#A19D95]">Kemasan 200 Gram:</span>
+                                <span className="text-[#F59E0B] font-black">Rp {p.pricePer200g.toLocaleString('id-ID')}</span>
+                              </div>
+                            ) : (
+                              <div className="flex justify-between items-center text-[11px] text-rose-400/80 italic">
+                                <span>Kemasan 200 Gram:</span>
+                                <span>Tidak Tersedia</span>
+                              </div>
+                            )}
                           </div>
                         </div>
-                      </div>
 
-                      <div className="grid grid-cols-3 gap-1.5 mt-5">
-                        <button
-                          onClick={() => addProductToCart(p, '200g')}
-                          className="bg-[#262422] hover:bg-[#33302d] text-white text-[10px] font-bold py-2 rounded-lg transition-all"
-                        >
-                          + 200g
-                        </button>
-                        <button
-                          onClick={() => addProductToCart(p, '500g')}
-                          className="bg-[#262422] hover:bg-[#33302d] text-white text-[10px] font-bold py-2 rounded-lg transition-all"
-                        >
-                          + 500g
-                        </button>
-                        <button
-                          onClick={() => addProductToCart(p, '1kg')}
-                          className="bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 text-[10px] font-bold py-2 rounded-lg transition-all"
-                        >
-                          + 1 Kg
-                        </button>
+                        {/* Tombol Tambah ke Cart Sesuai Ketersediaan Varian */}
+                        <div className="grid grid-cols-3 gap-1.5 mt-5">
+                          {has200g ? (
+                            <button
+                              onClick={() => addProductToCart(p, '200g')}
+                              className="bg-[#262422] hover:bg-[#33302d] text-white text-[10px] font-bold py-2 rounded-lg transition-all"
+                            >
+                              + 200g
+                            </button>
+                          ) : (
+                            <button disabled className="bg-[#121110] text-[#A19D95]/40 text-[10px] font-bold py-2 rounded-lg border border-[#262422] cursor-not-allowed">
+                              N/A 200g
+                            </button>
+                          )}
+
+                          {has500g ? (
+                            <button
+                              onClick={() => addProductToCart(p, '500g')}
+                              className="bg-[#262422] hover:bg-[#33302d] text-white text-[10px] font-bold py-2 rounded-lg transition-all"
+                            >
+                              + 500g
+                            </button>
+                          ) : (
+                            <button disabled className="bg-[#121110] text-[#A19D95]/40 text-[10px] font-bold py-2 rounded-lg border border-[#262422] cursor-not-allowed">
+                              N/A 500g
+                            </button>
+                          )}
+
+                          {has1kg ? (
+                            <button
+                              onClick={() => addProductToCart(p, '1kg')}
+                              className="bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 text-[10px] font-bold py-2 rounded-lg transition-all"
+                            >
+                              + 1 Kg
+                            </button>
+                          ) : (
+                            <button disabled className="bg-[#121110] text-[#A19D95]/40 text-[10px] font-bold py-2 rounded-lg border border-[#262422] cursor-not-allowed">
+                              N/A 1 Kg
+                            </button>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
             </section>
@@ -1199,20 +1242,20 @@ export default function EpicureanApp() {
                             <div className="bg-[#121110] p-2.5 rounded-2xl border border-[#262422] mt-2 space-y-1">
                               <p className="text-[10px] font-black text-[#F59E0B] uppercase">KEMASAN 500 GRAM</p>
                               <div className="flex justify-between text-xs text-[#A19D95]">
-                                <span>Harga: <strong className="text-white">Rp {(p.pricePer500g || 0).toLocaleString('id-ID')}</strong></span>
-                                <span>COGS: <strong className="text-rose-400">Rp {totalCogs500g.toLocaleString('id-ID')}</strong></span>
+                                <span>Harga: <strong className={p.pricePer500g ? "text-white" : "text-rose-400 font-bold"}>{p.pricePer500g ? `Rp ${p.pricePer500g.toLocaleString('id-ID')}` : 'Tidak Dijual'}</strong></span>
+                                {p.pricePer500g > 0 && <span>COGS: <strong className="text-rose-400">Rp {totalCogs500g.toLocaleString('id-ID')}</strong></span>}
                               </div>
-                              <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profit500g.toLocaleString('id-ID')} ({marginPct500g}%)</p>
+                              {p.pricePer500g > 0 && <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profit500g.toLocaleString('id-ID')} ({marginPct500g}%)</p>}
                             </div>
 
                             {/* Rincian Kemasan 200g */}
                             <div className="bg-[#121110] p-2.5 rounded-2xl border border-[#262422] mt-2 space-y-1">
                               <p className="text-[10px] font-black text-[#F59E0B] uppercase">KEMASAN 200 GRAM</p>
                               <div className="flex justify-between text-xs text-[#A19D95]">
-                                <span>Harga: <strong className="text-white">Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</strong></span>
-                                <span>COGS: <strong className="text-rose-400">Rp {totalCogs200g.toLocaleString('id-ID')}</strong></span>
+                                <span>Harga: <strong className={p.pricePer200g ? "text-white" : "text-rose-400 font-bold"}>{p.pricePer200g ? `Rp ${p.pricePer200g.toLocaleString('id-ID')}` : 'Tidak Dijual'}</strong></span>
+                                {p.pricePer200g > 0 && <span>COGS: <strong className="text-rose-400">Rp {totalCogs200g.toLocaleString('id-ID')}</strong></span>}
                               </div>
-                              <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profit200g.toLocaleString('id-ID')} ({marginPct200g}%)</p>
+                              {p.pricePer200g > 0 && <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profit200g.toLocaleString('id-ID')} ({marginPct200g}%)</p>}
                             </div>
                           </div>
                         </div>
@@ -1220,9 +1263,12 @@ export default function EpicureanApp() {
                     })}
                   </section>
 
-                  {/* Form Tambah Produk (1 Kg, 500g, 200g) */}
+                  {/* Form Tambah Produk */}
                   <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
-                    <h2 className="text-lg font-extrabold text-white">Tambah Produk & COGS (1 Kg, 500g, 200g)</h2>
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-lg font-extrabold text-white">Tambah Produk & Ketersediaan Varian Kemasan</h2>
+                      <p className="text-xs text-[#F59E0B] font-bold">*Isi angka 0 pada harga jika varian 500g / 200g tidak dijual</p>
+                    </div>
 
                     <form onSubmit={handleSaveProduct} className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1251,7 +1297,7 @@ export default function EpicureanApp() {
                         </div>
                       </div>
 
-                      {/* Penetapan Harga 3 Kemasan */}
+                      {/* Penetapan Harga 3 Kemasan (Bisa Diisi 0 jika tidak dijual) */}
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
                           <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 1 Kg (IDR)</label>
@@ -1264,7 +1310,7 @@ export default function EpicureanApp() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 500 Gram (IDR)</label>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga 500g (Isi 0 jika N/A)</label>
                           <input
                             type="number"
                             required
@@ -1274,7 +1320,7 @@ export default function EpicureanApp() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 200 Gram (IDR)</label>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga 200g (Isi 0 jika N/A)</label>
                           <input
                             type="number"
                             required
