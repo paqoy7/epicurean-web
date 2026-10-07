@@ -20,10 +20,12 @@ interface Product {
   name: string;
   category: 'Green Beans' | 'Roasted Beans' | 'Blend Beans';
   pricePerKg: number;
+  pricePer500g: number;
   pricePer200g: number;
   greenBeanCostPerKg: number;
   roastingCostPerKg: number;
   packagingCostPerKg: number;
+  packagingCostPer500g: number;
   packagingCostPer200g: number;
   description: string;
 }
@@ -35,7 +37,7 @@ interface OrderItem {
   pricePerGram: number;
   totalPrice: number;
   blendDetails?: string;
-  packType?: '1kg' | '200g';
+  packType?: '1kg' | '500g' | '200g';
 }
 
 interface Order {
@@ -83,10 +85,12 @@ export default function EpicureanApp() {
         name: item.name,
         category: item.category,
         pricePerKg: Number(item.price_per_kg || 0),
+        pricePer500g: Number(item.price_per_500g || 0),
         pricePer200g: Number(item.price_per_200g || 0),
         greenBeanCostPerKg: Number(item.green_bean_cost_per_kg || 0),
         roastingCostPerKg: Number(item.roasting_cost_per_kg || 0),
         packagingCostPerKg: Number(item.packaging_cost_per_kg || 0),
+        packagingCostPer500g: Number(item.packaging_cost_per_500g || 0),
         packagingCostPer200g: Number(item.packaging_cost_per_200g || 0),
         description: item.description || ''
       }));
@@ -134,13 +138,11 @@ export default function EpicureanApp() {
   // Filter khusus Roasted Beans untuk Custom Blend
   const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
   
+  // State Blend 2 Tipe Biji & Rasio Pilihan (50:50, 60:40, 70:30)
   const [blend, setBlend] = useState({
     bean1Id: '',
-    bean1Ratio: 50,
     bean2Id: '',
-    bean2Ratio: 30,
-    bean3Id: '',
-    bean3Ratio: 20,
+    ratioPreset: '60:40' as '50:50' | '60:40' | '70:30',
     grindSize: 'Biji Utuh (Whole Bean)',
     weightGram: 200
   });
@@ -148,24 +150,32 @@ export default function EpicureanApp() {
   useEffect(() => {
     if (roastedProducts.length > 0) {
       if (!roastedProducts.find(p => p.id === blend.bean1Id)) setBlend(b => ({ ...b, bean1Id: roastedProducts[0].id }));
-      if (!roastedProducts.find(p => p.id === blend.bean2Id)) setBlend(b => ({ ...b, bean2Id: roastedProducts[0].id }));
-      if (!roastedProducts.find(p => p.id === blend.bean3Id)) setBlend(b => ({ ...b, bean3Id: roastedProducts[0].id }));
+      if (!roastedProducts.find(p => p.id === blend.bean2Id)) setBlend(b => ({ ...b, bean2Id: roastedProducts[1]?.id || roastedProducts[0].id }));
     }
   }, [products]);
+
+  // Ekstraksi Rasio Blend
+  const getBlendRatios = (preset: '50:50' | '60:40' | '70:30') => {
+    switch (preset) {
+      case '50:50': return { r1: 50, r2: 50 };
+      case '60:40': return { r1: 60, r2: 40 };
+      case '70:30': return { r1: 70, r2: 30 };
+      default: return { r1: 60, r2: 40 };
+    }
+  };
+
+  const { r1: bean1Ratio, r2: bean2Ratio } = getBlendRatios(blend.ratioPreset);
 
   const roastingAndPackagingCost = 25000;
   const bean1Obj = products.find(p => p.id === blend.bean1Id);
   const bean2Obj = products.find(p => p.id === blend.bean2Id);
-  const bean3Obj = products.find(p => p.id === blend.bean3Id);
 
   const priceBean1 = bean1Obj ? bean1Obj.pricePerKg : 150000;
   const priceBean2 = bean2Obj ? bean2Obj.pricePerKg : 150000;
-  const priceBean3 = bean3Obj ? bean3Obj.pricePerKg : 150000;
 
   const calculatedBlendPricePerKg = Math.round(
-    (blend.bean1Ratio / 100) * priceBean1 +
-    (blend.bean2Ratio / 100) * priceBean2 +
-    (blend.bean3Ratio / 100) * priceBean3 +
+    (bean1Ratio / 100) * priceBean1 +
+    (bean2Ratio / 100) * priceBean2 +
     roastingAndPackagingCost
   );
   const calculatedBlendPricePerGram = calculatedBlendPricePerKg / 1000;
@@ -193,47 +203,28 @@ export default function EpicureanApp() {
   const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
   const [paymentProofInput, setPaymentProofInput] = useState('');
 
-  // Form Product State
+  // Form Product State (Support 200g, 500g, 1kg)
   const [productForm, setProductForm] = useState({
     name: '',
     category: 'Green Beans' as Product['category'],
     pricePerKg: 150000,
+    pricePer500g: 80000,
     pricePer200g: 35000,
     greenBeanCostPerKg: 90000,
     roastingCostPerKg: 15000,
     packagingCostPerKg: 10000,
+    packagingCostPer500g: 5000,
     packagingCostPer200g: 3000,
     description: ''
   });
 
-  const handleRatioChange = (beanNum: 1 | 2, val: number) => {
-    if (beanNum === 1) {
-      const remaining = 100 - val;
-      setBlend(prev => ({
-        ...prev,
-        bean1Ratio: val,
-        bean2Ratio: Math.round(remaining * 0.6),
-        bean3Ratio: Math.round(remaining * 0.4)
-      }));
-    } else {
-      const remaining = 100 - blend.bean1Ratio;
-      const validBean2 = Math.min(val, remaining);
-      setBlend(prev => ({
-        ...prev,
-        bean2Ratio: validBean2,
-        bean3Ratio: remaining - validBean2
-      }));
-    }
-  };
-
   const addCustomBlendToCart = () => {
     const b1Name = bean1Obj ? bean1Obj.name.split(' ')[0] : 'Bean1';
     const b2Name = bean2Obj ? bean2Obj.name.split(' ')[0] : 'Bean2';
-    const b3Name = bean3Obj ? bean3Obj.name.split(' ')[0] : 'Bean3';
 
     const newItem: OrderItem = {
       id: `CB-${Date.now()}`,
-      name: `Custom Blend (${blend.bean1Ratio}% ${b1Name}, ${blend.bean2Ratio}% ${b2Name}, ${blend.bean3Ratio}% ${b3Name})`,
+      name: `Custom Blend (${bean1Ratio}% ${b1Name} : ${bean2Ratio}% ${b2Name})`,
       quantityGram: blend.weightGram,
       pricePerGram: calculatedBlendPricePerGram,
       totalPrice: Math.round(calculatedBlendPricePerGram * blend.weightGram),
@@ -242,13 +233,24 @@ export default function EpicureanApp() {
     setCart([...cart, newItem]);
   };
 
-  const addProductToCart = (prod: Product, packType: '1kg' | '200g') => {
-    const weightGram = packType === '1kg' ? 1000 : 200;
-    const price = packType === '1kg' ? (prod.pricePerKg || 150000) : (prod.pricePer200g || 35000);
+  const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g') => {
+    let weightGram = 1000;
+    let price = prod.pricePerKg || 150000;
+    let packLabel = 'Kemasan 1 Kg';
+
+    if (packType === '500g') {
+      weightGram = 500;
+      price = prod.pricePer500g || 80000;
+      packLabel = 'Kemasan 500 Gram';
+    } else if (packType === '200g') {
+      weightGram = 200;
+      price = prod.pricePer200g || 35000;
+      packLabel = 'Kemasan 200 Gram';
+    }
     
     const newItem: OrderItem = {
       id: `${prod.id}-${packType}-${Date.now()}`,
-      name: `${prod.name} (${packType === '1kg' ? 'Kemasan 1 Kg' : 'Kemasan 200 Gram'})`,
+      name: `${prod.name} (${packLabel})`,
       quantityGram: weightGram,
       pricePerGram: price / weightGram,
       totalPrice: price,
@@ -376,10 +378,12 @@ export default function EpicureanApp() {
       name: productForm.name,
       category: productForm.category,
       price_per_kg: productForm.pricePerKg,
+      price_per_500g: productForm.pricePer500g,
       price_per_200g: productForm.pricePer200g,
       green_bean_cost_per_kg: productForm.greenBeanCostPerKg,
       roasting_cost_per_kg: productForm.roastingCostPerKg,
       packaging_cost_per_kg: productForm.packagingCostPerKg,
+      packaging_cost_per_500g: productForm.packagingCostPer500g,
       packaging_cost_per_200g: productForm.packagingCostPer200g,
       description: productForm.description
     });
@@ -391,10 +395,12 @@ export default function EpicureanApp() {
         name: '',
         category: 'Green Beans',
         pricePerKg: 150000,
+        pricePer500g: 80000,
         pricePer200g: 35000,
         greenBeanCostPerKg: 90000,
         roastingCostPerKg: 15000,
         packagingCostPerKg: 10000,
+        packagingCostPer500g: 5000,
         packagingCostPer200g: 3000,
         description: ''
       });
@@ -477,19 +483,19 @@ export default function EpicureanApp() {
               </p>
             </div>
 
-            {/* Custom Blend Configurator */}
+            {/* Custom Blend Configurator (2 Tipe Biji & Rasio Fixed) */}
             <section className="bg-[#1A1816] border border-[#262422] rounded-3xl p-6 sm:p-8 shadow-2xl">
               <div className="flex items-center space-x-3 mb-6 border-b border-[#262422] pb-4">
                 <Calculator className="h-6 w-6 text-[#F59E0B]" />
                 <div>
-                  <h2 className="text-xl font-extrabold text-white">Custom Blend Configurator</h2>
-                  <p className="text-xs text-[#A19D95]">Khusus pilihan biji kopi dari kategori Roasted Beans</p>
+                  <h2 className="text-xl font-extrabold text-white">Custom Blend Configurator (2 Tipe Biji)</h2>
+                  <p className="text-xs text-[#A19D95]">Kombinasi 2 jenis Roasted Beans dengan pilihan rasio racikan roastery</p>
                 </div>
               </div>
 
-              {roastedProducts.length === 0 ? (
+              {roastedProducts.length < 2 ? (
                 <div className="p-6 bg-[#121110] border border-[#262422] rounded-2xl text-center text-xs text-[#A19D95]">
-                  Belum ada produk ber-kategori <strong>Roasted Beans</strong> pada katalog cloud. Tambahkan produk pada Seller Admin terlebih dahulu.
+                  Dibutuhkan minimal 2 produk ber-kategori <strong>Roasted Beans</strong> pada katalog untuk mengaktifkan fitur Custom Blend. Tambahkan produk di Seller Admin.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -497,67 +503,55 @@ export default function EpicureanApp() {
                     {/* Bean 1 Selection */}
                     <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
                       <div className="flex justify-between items-center text-xs font-bold">
-                        <select
-                          value={blend.bean1Id}
-                          onChange={(e) => setBlend({ ...blend, bean1Id: e.target.value })}
-                          className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
-                        >
-                          {roastedProducts.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
-                          ))}
-                        </select>
-                        <span className="text-[#F59E0B] font-black text-sm">{blend.bean1Ratio}%</span>
+                        <span className="text-[#A19D95]">Biji Kopi Komponen A:</span>
+                        <span className="text-[#F59E0B] font-black text-sm">{bean1Ratio}%</span>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={blend.bean1Ratio}
-                        onChange={(e) => handleRatioChange(1, parseInt(e.target.value))}
-                        className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
-                      />
+                      <select
+                        value={blend.bean1Id}
+                        onChange={(e) => setBlend({ ...blend, bean1Id: e.target.value })}
+                        className="w-full bg-[#1A1816] border border-[#33302D] rounded-xl px-3 py-2 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
+                      >
+                        {roastedProducts.map(b => (
+                          <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
+                        ))}
+                      </select>
                     </div>
 
                     {/* Bean 2 Selection */}
                     <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
                       <div className="flex justify-between items-center text-xs font-bold">
-                        <select
-                          value={blend.bean2Id}
-                          onChange={(e) => setBlend({ ...blend, bean2Id: e.target.value })}
-                          className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
-                        >
-                          {roastedProducts.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
-                          ))}
-                        </select>
-                        <span className="text-[#F59E0B] font-black text-sm">{blend.bean2Ratio}%</span>
+                        <span className="text-[#A19D95]">Biji Kopi Komponen B:</span>
+                        <span className="text-[#F59E0B] font-black text-sm">{bean2Ratio}%</span>
                       </div>
-                      <input
-                        type="range"
-                        min="0"
-                        max={100 - blend.bean1Ratio}
-                        value={blend.bean2Ratio}
-                        onChange={(e) => handleRatioChange(2, parseInt(e.target.value))}
-                        className="w-full accent-[#F59E0B] bg-[#262422] rounded-lg h-2.5 cursor-pointer"
-                      />
+                      <select
+                        value={blend.bean2Id}
+                        onChange={(e) => setBlend({ ...blend, bean2Id: e.target.value })}
+                        className="w-full bg-[#1A1816] border border-[#33302D] rounded-xl px-3 py-2 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
+                      >
+                        {roastedProducts.map(b => (
+                          <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
+                        ))}
+                      </select>
                     </div>
 
-                    {/* Bean 3 Selection */}
-                    <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-2">
-                      <div className="flex justify-between items-center text-xs font-bold">
-                        <select
-                          value={blend.bean3Id}
-                          onChange={(e) => setBlend({ ...blend, bean3Id: e.target.value })}
-                          className="bg-[#1A1816] border border-[#33302D] rounded-lg px-2.5 py-1 text-white font-bold text-xs focus:ring-1 focus:ring-[#F59E0B]"
-                        >
-                          {roastedProducts.map(b => (
-                            <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
-                          ))}
-                        </select>
-                        <span className="text-[#F59E0B] font-black text-sm">{blend.bean3Ratio}%</span>
-                      </div>
-                      <div className="w-full bg-[#262422] h-2.5 rounded-lg overflow-hidden">
-                        <div className="bg-[#F59E0B] h-full" style={{ width: `${blend.bean3Ratio}%` }}></div>
+                    {/* Pilihan Rasio Presets (50:50, 60:40, 70:30) */}
+                    <div className="bg-[#121110] p-4 rounded-2xl border border-[#262422] space-y-3">
+                      <label className="block text-xs font-bold text-white">Pilih Proporsi Rasio Racikan (A : B)</label>
+                      <div className="grid grid-cols-3 gap-3">
+                        {(['50:50', '60:40', '70:30'] as const).map(preset => (
+                          <button
+                            key={preset}
+                            type="button"
+                            onClick={() => setBlend({ ...blend, ratioPreset: preset })}
+                            className={`py-2.5 rounded-xl border text-xs font-black transition-all ${
+                              blend.ratioPreset === preset 
+                                ? 'bg-[#F59E0B] text-black border-[#F59E0B] shadow-lg shadow-[#F59E0B]/20' 
+                                : 'bg-[#1A1816] text-[#A19D95] border-[#262422] hover:text-white'
+                            }`}
+                          >
+                            Rasio {preset}
+                          </button>
+                        ))}
                       </div>
                     </div>
 
@@ -597,6 +591,10 @@ export default function EpicureanApp() {
                       <h3 className="text-xs font-bold text-[#A19D95] uppercase tracking-wider mb-4">Ringkasan Kalkulasi Blend</h3>
                       <div className="space-y-3 text-xs">
                         <div className="flex justify-between">
+                          <span className="text-[#A19D95]">Rasio Blend:</span>
+                          <span className="font-extrabold text-white">{blend.ratioPreset}</span>
+                        </div>
+                        <div className="flex justify-between">
                           <span className="text-[#A19D95]">Harga Blend / Kg:</span>
                           <span className="font-extrabold text-[#F59E0B]">Rp {calculatedBlendPricePerKg.toLocaleString('id-ID')}</span>
                         </div>
@@ -623,7 +621,7 @@ export default function EpicureanApp() {
               )}
             </section>
 
-            {/* Katalog Standar dengan Pilihan Kemasan 1 Kg & 200g */}
+            {/* Katalog Standar dengan 3 Opsi Kemasan (1 Kg, 500g, 200g) */}
             <section className="space-y-6">
               <div className="flex justify-between items-center">
                 <h2 className="text-xl font-extrabold text-white">Katalog Ready-to-Roast</h2>
@@ -655,10 +653,14 @@ export default function EpicureanApp() {
                         <h3 className="text-sm font-extrabold text-white mt-3">{p.name}</h3>
                         <p className="text-xs text-[#A19D95] mt-1 line-clamp-2">{p.description}</p>
                         
-                        <div className="mt-4 space-y-1 bg-[#121110] p-3 rounded-xl border border-[#262422]">
+                        <div className="mt-4 space-y-1.5 bg-[#121110] p-3 rounded-xl border border-[#262422]">
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-[#A19D95]">Kemasan 1 Kg:</span>
                             <span className="text-[#F59E0B] font-black">Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</span>
+                          </div>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="text-[#A19D95]">Kemasan 500 Gram:</span>
+                            <span className="text-[#F59E0B] font-black">Rp {(p.pricePer500g || 0).toLocaleString('id-ID')}</span>
                           </div>
                           <div className="flex justify-between items-center text-xs">
                             <span className="text-[#A19D95]">Kemasan 200 Gram:</span>
@@ -667,18 +669,24 @@ export default function EpicureanApp() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 mt-5">
+                      <div className="grid grid-cols-3 gap-1.5 mt-5">
                         <button
                           onClick={() => addProductToCart(p, '200g')}
-                          className="bg-[#262422] hover:bg-[#33302d] text-white text-[11px] font-bold py-2.5 rounded-xl transition-all"
+                          className="bg-[#262422] hover:bg-[#33302d] text-white text-[10px] font-bold py-2 rounded-lg transition-all"
                         >
-                          + Pack 200g
+                          + 200g
+                        </button>
+                        <button
+                          onClick={() => addProductToCart(p, '500g')}
+                          className="bg-[#262422] hover:bg-[#33302d] text-white text-[10px] font-bold py-2 rounded-lg transition-all"
+                        >
+                          + 500g
                         </button>
                         <button
                           onClick={() => addProductToCart(p, '1kg')}
-                          className="bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 text-[11px] font-bold py-2.5 rounded-xl transition-all"
+                          className="bg-[#F59E0B]/10 hover:bg-[#F59E0B]/20 text-[#F59E0B] border border-[#F59E0B]/30 text-[10px] font-bold py-2 rounded-lg transition-all"
                         >
-                          + Pack 1 Kg
+                          + 1 Kg
                         </button>
                       </div>
                     </div>
@@ -713,7 +721,6 @@ export default function EpicureanApp() {
 
                     {/* Kategori Pembeli & Peringatan Verifikasi B2B */}
                     <div className="bg-[#121110] border border-[#262422] p-4 rounded-xl space-y-4">
-                      {/* Banner Informasi Peringatan */}
                       <div className="p-3 bg-amber-950/40 border border-amber-700/50 rounded-xl flex items-start space-x-3">
                         <ShieldAlert className="h-5 w-5 text-[#F59E0B] shrink-0 mt-0.5" />
                         <div className="text-[11px] space-y-1">
@@ -1139,10 +1146,18 @@ export default function EpicureanApp() {
                   <section className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => {
                       const adjustedGreenBeanCost = Math.round((p.greenBeanCostPerKg || 0) / 0.85);
+
+                      // COGS 1 Kg
                       const totalCogsKg = adjustedGreenBeanCost + (p.roastingCostPerKg || 0) + (p.packagingCostPerKg || 0);
                       const profitKg = (p.pricePerKg || 0) - totalCogsKg;
                       const marginPctKg = p.pricePerKg ? ((profitKg / p.pricePerKg) * 100).toFixed(1) : '0';
 
+                      // COGS 500g
+                      const totalCogs500g = Math.round((adjustedGreenBeanCost + (p.roastingCostPerKg || 0)) * 0.5) + (p.packagingCostPer500g || 0);
+                      const profit500g = (p.pricePer500g || 0) - totalCogs500g;
+                      const marginPct500g = p.pricePer500g ? ((profit500g / p.pricePer500g) * 100).toFixed(1) : '0';
+
+                      // COGS 200g
                       const totalCogs200g = Math.round((adjustedGreenBeanCost + (p.roastingCostPerKg || 0)) * 0.2) + (p.packagingCostPer200g || 0);
                       const profit200g = (p.pricePer200g || 0) - totalCogs200g;
                       const marginPct200g = p.pricePer200g ? ((profit200g / p.pricePer200g) * 100).toFixed(1) : '0';
@@ -1171,23 +1186,33 @@ export default function EpicureanApp() {
                             <h3 className="text-base font-extrabold text-white mt-3">{p.name}</h3>
 
                             {/* Rincian Kemasan 1 Kg */}
-                            <div className="bg-[#121110] p-3 rounded-2xl border border-[#262422] mt-3 space-y-1">
-                              <p className="text-[11px] font-black text-[#F59E0B] uppercase">KEMASAN 1 KG</p>
+                            <div className="bg-[#121110] p-2.5 rounded-2xl border border-[#262422] mt-3 space-y-1">
+                              <p className="text-[10px] font-black text-[#F59E0B] uppercase">KEMASAN 1 KG</p>
                               <div className="flex justify-between text-xs text-[#A19D95]">
-                                <span>Harga Jual: <strong className="text-white">Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</strong></span>
+                                <span>Harga: <strong className="text-white">Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</strong></span>
                                 <span>COGS: <strong className="text-rose-400">Rp {totalCogsKg.toLocaleString('id-ID')}</strong></span>
                               </div>
-                              <p className="text-[11px] text-emerald-400 font-bold text-right pt-1">Margin: Rp {profitKg.toLocaleString('id-ID')} ({marginPctKg}%)</p>
+                              <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profitKg.toLocaleString('id-ID')} ({marginPctKg}%)</p>
+                            </div>
+
+                            {/* Rincian Kemasan 500g */}
+                            <div className="bg-[#121110] p-2.5 rounded-2xl border border-[#262422] mt-2 space-y-1">
+                              <p className="text-[10px] font-black text-[#F59E0B] uppercase">KEMASAN 500 GRAM</p>
+                              <div className="flex justify-between text-xs text-[#A19D95]">
+                                <span>Harga: <strong className="text-white">Rp {(p.pricePer500g || 0).toLocaleString('id-ID')}</strong></span>
+                                <span>COGS: <strong className="text-rose-400">Rp {totalCogs500g.toLocaleString('id-ID')}</strong></span>
+                              </div>
+                              <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profit500g.toLocaleString('id-ID')} ({marginPct500g}%)</p>
                             </div>
 
                             {/* Rincian Kemasan 200g */}
-                            <div className="bg-[#121110] p-3 rounded-2xl border border-[#262422] mt-2 space-y-1">
-                              <p className="text-[11px] font-black text-[#F59E0B] uppercase">KEMASAN 200 GRAM</p>
+                            <div className="bg-[#121110] p-2.5 rounded-2xl border border-[#262422] mt-2 space-y-1">
+                              <p className="text-[10px] font-black text-[#F59E0B] uppercase">KEMASAN 200 GRAM</p>
                               <div className="flex justify-between text-xs text-[#A19D95]">
-                                <span>Harga Jual: <strong className="text-white">Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</strong></span>
+                                <span>Harga: <strong className="text-white">Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</strong></span>
                                 <span>COGS: <strong className="text-rose-400">Rp {totalCogs200g.toLocaleString('id-ID')}</strong></span>
                               </div>
-                              <p className="text-[11px] text-emerald-400 font-bold text-right pt-1">Margin: Rp {profit200g.toLocaleString('id-ID')} ({marginPct200g}%)</p>
+                              <p className="text-[10px] text-emerald-400 font-bold text-right pt-0.5">Margin: Rp {profit200g.toLocaleString('id-ID')} ({marginPct200g}%)</p>
                             </div>
                           </div>
                         </div>
@@ -1195,9 +1220,9 @@ export default function EpicureanApp() {
                     })}
                   </section>
 
-                  {/* Form Tambah Produk Terpisah 1 Kg & 200g */}
+                  {/* Form Tambah Produk (1 Kg, 500g, 200g) */}
                   <section className="bg-[#1A1816] border border-[#262422] p-6 sm:p-8 rounded-3xl space-y-6">
-                    <h2 className="text-lg font-extrabold text-white">Tambah Katalog Produk & Atur COGS (1 Kg vs 200 Gram)</h2>
+                    <h2 className="text-lg font-extrabold text-white">Tambah Produk & COGS (1 Kg, 500g, 200g)</h2>
 
                     <form onSubmit={handleSaveProduct} className="space-y-6">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1226,10 +1251,10 @@ export default function EpicureanApp() {
                         </div>
                       </div>
 
-                      {/* Penetapan Harga */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {/* Penetapan Harga 3 Kemasan */}
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div>
-                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Jual Kemasan 1 Kg (IDR)</label>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 1 Kg (IDR)</label>
                           <input
                             type="number"
                             required
@@ -1239,7 +1264,17 @@ export default function EpicureanApp() {
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Jual Kemasan 200 Gram (IDR)</label>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 500 Gram (IDR)</label>
+                          <input
+                            type="number"
+                            required
+                            value={productForm.pricePer500g}
+                            onChange={(e) => setProductForm({ ...productForm, pricePer500g: parseInt(e.target.value) || 0 })}
+                            className="w-full bg-[#121110] border border-[#262422] rounded-xl px-4 py-2.5 text-xs text-white font-bold"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-[#F59E0B] mb-1">Harga Kemasan 200 Gram (IDR)</label>
                           <input
                             type="number"
                             required
@@ -1277,9 +1312,9 @@ export default function EpicureanApp() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[#262422]">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-[#262422]">
                           <div>
-                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Kemasan Pouch 1 Kg</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Pouch 1 Kg</label>
                             <input
                               type="number"
                               required
@@ -1289,7 +1324,17 @@ export default function EpicureanApp() {
                             />
                           </div>
                           <div>
-                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Kemasan Pouch 200 Gram</label>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Pouch 500 Gram</label>
+                            <input
+                              type="number"
+                              required
+                              value={productForm.packagingCostPer500g}
+                              onChange={(e) => setProductForm({ ...productForm, packagingCostPer500g: parseInt(e.target.value) || 0 })}
+                              className="w-full bg-[#1A1816] border border-[#262422] rounded-xl px-3 py-2 text-xs text-white"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-[#A19D95] mb-1">Biaya Pouch 200 Gram</label>
                             <input
                               type="number"
                               required
