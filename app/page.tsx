@@ -3,10 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { 
-  Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
-  Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
-  Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
-  MessageSquare, ExternalLink, RefreshCw, ShieldAlert, Key, Unlock, Settings, Save, Edit3
+  Coffee, ShoppingCart, Lock, KeyRound, 
+  Trash2, User, Check, X,
+  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -28,6 +27,7 @@ interface Product {
   description: string;
   isExclusive: boolean;
   exclusiveCode: string;
+  allowedResellers?: string[]; // Array username reseller yang diizinkan
 }
 
 interface OrderItem {
@@ -36,7 +36,6 @@ interface OrderItem {
   quantityGram: number;
   pricePerGram: number;
   totalPrice: number;
-  blendDetails?: string;
   packType?: '1kg' | '500g' | '200g';
 }
 
@@ -59,6 +58,33 @@ interface Order {
   dueDate?: string;
   createdAt: string;
 }
+
+interface UserAccount {
+  username: string;
+  password?: string;
+  role: 'pembeli' | 'reseller' | 'seller';
+  companyName?: string;
+  allowedBlends?: string[]; // Nama-nama produk blend yang diizinkan
+}
+
+// DAFTAR AKUN RESELLER & SELLER RESMI DARI TABEL SPREADSHEET
+const presetResellerAccounts: UserAccount[] = [
+  { username: 'BrunswickCafe', password: 'Fitzroy!', role: 'reseller', companyName: 'Brunswick', allowedBlends: ['Brunswick Blend (50 KDH : 50 BNE)'] },
+  { username: 'DagoTerrace', password: 'TerraceB', role: 'reseller', companyName: 'Dago Terrace', allowedBlends: ['Dago Terrace Blend (70 KDH : 30 Robusta)'] },
+  { username: 'RailwayCafe', password: 'RWCoffee', role: 'reseller', companyName: 'Railway', allowedBlends: ['Railway Blend (50 KDH : 50 KWH)'] },
+  { username: 'NaraPark', password: 'NRBlend', role: 'reseller', companyName: 'Nara Park', allowedBlends: ['Blend K50 (50 KDH : 50 Robusta)'] },
+  { username: 'GreensCafe', password: 'GFAR', role: 'reseller', companyName: 'Greens Food', allowedBlends: ['Foresta Blend (70 KDH : 30 Robusta)', 'Blend Tigris (70 Robusta : 30 KDH)'] },
+  { username: 'AstriaSolo', password: 'Blend64', role: 'reseller', companyName: 'Astria Bakery', allowedBlends: ['Astria Blend (60 KDH : 40 Robusta)'] },
+  { username: 'Sasson', password: 'Blend55', role: 'reseller', companyName: 'Sasson', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)'] },
+  { username: 'LunaTirsa', password: 'LTBlend', role: 'reseller', companyName: 'Luna Tirsa', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)'] },
+];
+
+const sellerAccount: UserAccount = {
+  username: 'Epicurean Coffee',
+  password: 'EPCCOFFEE!',
+  role: 'seller',
+  companyName: 'Epicurean Coffee Company'
+};
 
 const defaultProductsFromSpreadsheet: Product[] = [
   // GREEN BEANS
@@ -85,59 +111,39 @@ const defaultProductsFromSpreadsheet: Product[] = [
   { id: 'RB-9', name: 'Melaka', category: 'Roasted Beans', pricePerKg: 170000, pricePer500g: 0, pricePer200g: 170000, greenBeanCostPerKg: 85222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Melaka Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
   { id: 'RB-10', name: 'Bajawa Natural 72 Hours', category: 'Roasted Beans', pricePerKg: 375000, pricePer500g: 0, pricePer200g: 375000, greenBeanCostPerKg: 185000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Bajawa Natural 72 Hours Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
 
-  // BLEND BEANS
-  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-4', name: 'FarmHouse Blend (70 KWH : 30 KNE)', category: 'Blend Beans', pricePerKg: 290000, pricePer500g: 0, pricePer200g: 70000, greenBeanCostPerKg: 229028, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'FarmHouse Blend: 70% Kerinci WH + 30% Kerinci Natural', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-5', name: 'Dago Terrace Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 199653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Dago Terrace Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-6', name: 'Foresta Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 201783, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Foresta Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-7', name: 'Blend Tigris (70 Robusta : 30 KDH)', category: 'Blend Beans', pricePerKg: 210000, pricePer500g: 0, pricePer200g: 50000, greenBeanCostPerKg: 162153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend Tigris: 70% Kerinci Robusta + 30% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-8', name: 'Blend K50 (50 KDH : 50 Robusta)', category: 'Blend Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 55000, greenBeanCostPerKg: 158264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend K50: 50% Kerinci Robusta + 50% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-9', name: 'Blend 60:40 (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 240000, pricePer500g: 0, pricePer200g: 58000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend 60:40: 60% Roasted KDH PTP + 40% Kerinci Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
-  { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: 'EPICUREANVIP' }
+  // BLEND BEANS (EKSLUSIF RESELLER)
+  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: '', allowedResellers: ['RailwayCafe'] },
+  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['AstriaSolo'] },
+  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: '', allowedResellers: ['BrunswickCafe'] },
+  { id: 'BL-4', name: 'FarmHouse Blend (70 KWH : 30 KNE)', category: 'Blend Beans', pricePerKg: 290000, pricePer500g: 0, pricePer200g: 70000, greenBeanCostPerKg: 229028, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'FarmHouse Blend: 70% Kerinci WH + 30% Kerinci Natural', isExclusive: true, exclusiveCode: '', allowedResellers: [] },
+  { id: 'BL-5', name: 'Dago Terrace Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 199653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Dago Terrace Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['DagoTerrace'] },
+  { id: 'BL-6', name: 'Foresta Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 201783, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Foresta Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['GreensCafe'] },
+  { id: 'BL-7', name: 'Blend Tigris (70 Robusta : 30 KDH)', category: 'Blend Beans', pricePerKg: 210000, pricePer500g: 0, pricePer200g: 50000, greenBeanCostPerKg: 162153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend Tigris: 70% Kerinci Robusta + 30% Roasted KDH PTP', isExclusive: true, exclusiveCode: '', allowedResellers: ['GreensCafe'] },
+  { id: 'BL-8', name: 'Blend K50 (50 KDH : 50 Robusta)', category: 'Blend Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 55000, greenBeanCostPerKg: 158264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend K50: 50% Kerinci Robusta + 50% Roasted KDH PTP', isExclusive: true, exclusiveCode: '', allowedResellers: ['NaraPark'] },
+  { id: 'BL-9', name: 'Blend 60:40 (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 240000, pricePer500g: 0, pricePer200g: 58000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend 60:40: 60% Roasted KDH PTP + 40% Kerinci Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: [] },
+  { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: '', allowedResellers: ['Sasson', 'LunaTirsa'] }
 ];
 
 export default function EpicureanApp() {
-  const [activeTab, setActiveTab] = useState<'storefront' | 'seller'>('storefront');
-  const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'passcode' | 'recap'>('orders');
+  const [currentStep, setCurrentStep] = useState<'welcome' | 'auth' | 'main'>('welcome');
+  const [selectedRole, setSelectedRole] = useState<'pembeli' | 'reseller' | 'seller'>('pembeli');
   
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [passwordInput, setPasswordInput] = useState('');
-  const [passwordError, setPasswordError] = useState(false);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  
+  // Auth Form State
+  const [authForm, setAuthForm] = useState({ username: '', password: '', companyName: '' });
+  const [authError, setAuthError] = useState('');
+
+  // Shortlist Tab State
+  const [activeCatalogTab, setActiveCatalogTab] = useState<'all' | 'Green Beans' | 'Roasted Beans' | 'Blend Beans'>('all');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // EDIT PRODUCT MODAL STATE
+  // Edit Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-
-  // Dynamic Passcode State
-  const [globalBlendPasscode, setGlobalBlendPasscode] = useState('EPICUREANVIP');
-  const [newPasscodeForm, setNewPasscodeForm] = useState('');
-
-  const [userEnteredCode, setUserEnteredCode] = useState('');
-  const [unlockedCodes, setUnlockedCodes] = useState<string[]>([]);
-  const [codeSuccessMsg, setCodeSuccessMsg] = useState(false);
-
-  useEffect(() => {
-    const savedCode = localStorage.getItem('epicurean_blend_passcode');
-    if (savedCode) {
-      setGlobalBlendPasscode(savedCode);
-    }
-  }, []);
-
-  const handleUpdateGlobalPasscode = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPasscodeForm.trim()) return;
-    const formatted = newPasscodeForm.trim().toUpperCase();
-    setGlobalBlendPasscode(formatted);
-    localStorage.setItem('epicurean_blend_passcode', formatted);
-    setNewPasscodeForm('');
-    alert(`Passcode Blend berhasil diperbarui menjadi: ${formatted}`);
-  };
 
   const formatSupabaseProducts = (rawData: any[]): Product[] => {
     return rawData.map(item => ({
@@ -154,7 +160,8 @@ export default function EpicureanApp() {
       packagingCostPer200g: Number(item.packaging_cost_per_200g || 0),
       description: item.description || '',
       isExclusive: Boolean(item.is_exclusive || false),
-      exclusiveCode: (item.exclusive_code || '').toUpperCase().trim()
+      exclusiveCode: (item.exclusive_code || '').toUpperCase().trim(),
+      allowedResellers: item.allowed_resellers || []
     }));
   };
 
@@ -177,7 +184,8 @@ export default function EpicureanApp() {
           packaging_cost_per_200g: prod.packagingCostPer200g,
           description: prod.description,
           is_exclusive: prod.isExclusive,
-          exclusive_code: prod.exclusiveCode
+          exclusive_code: prod.exclusiveCode,
+          allowed_resellers: prod.allowedResellers || []
         });
       }
       
@@ -229,86 +237,39 @@ export default function EpicureanApp() {
     loadData();
   }, []);
 
-  const handleUnlockCode = (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanCode = userEnteredCode.trim().toUpperCase();
-    if (!cleanCode) return;
+  // LOGIKA FILTER PRODUK BERDASARKAN USER LOGGED IN & TAB
+  const filteredProducts = products.filter(p => {
+    // Filter Kategori Tab Shortlist
+    if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) {
+      return false;
+    }
 
-    if (cleanCode === globalBlendPasscode || products.some(p => p.isExclusive && p.exclusiveCode === cleanCode)) {
-      if (!unlockedCodes.includes(cleanCode)) {
-        setUnlockedCodes([...unlockedCodes, cleanCode]);
+    // Filter Hak Akses Role
+    if (currentUser?.role === 'seller') {
+      return true; // Seller melihat semua produk
+    }
+
+    if (currentUser?.role === 'reseller') {
+      if (!p.isExclusive) return true; // Produk umum bisa dilihat
+      // Cek apakah produk blend ini diizinkan untuk reseller ini
+      if (currentUser.allowedBlends && currentUser.allowedBlends.includes(p.name)) {
+        return true;
       }
-      setCodeSuccessMsg(true);
-      setUserEnteredCode('');
-      setTimeout(() => setCodeSuccessMsg(false), 3500);
-    } else {
-      alert('Passcode tidak valid. Silakan tanyakan ke Admin Roastery.');
+      if (p.allowedResellers && p.allowedResellers.includes(currentUser.username)) {
+        return true;
+      }
+      return false;
     }
-  };
 
-  const visibleProducts = products.filter(p => {
-    if (!p.isExclusive) return true;
-    return unlockedCodes.includes(globalBlendPasscode) || unlockedCodes.includes(p.exclusiveCode);
+    // Pembeli Umum
+    return !p.isExclusive; // Hanya melihat produk non-eksklusif
   });
-
-  const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
-  
-  const [blend, setBlend] = useState({
-    bean1Id: '',
-    bean2Id: '',
-    ratioPreset: '60:40' as '50:50' | '60:40' | '70:30',
-    grindSize: 'Biji Utuh (Whole Bean)',
-    weightGram: 200
-  });
-
-  useEffect(() => {
-    if (roastedProducts.length > 0) {
-      if (!roastedProducts.find(p => p.id === blend.bean1Id)) setBlend(b => ({ ...b, bean1Id: roastedProducts[0].id }));
-      if (!roastedProducts.find(p => p.id === blend.bean2Id)) setBlend(b => ({ ...b, bean2Id: roastedProducts[1]?.id || roastedProducts[0].id }));
-    }
-  }, [products]);
-
-  const getBlendRatios = (preset: '50:50' | '60:40' | '70:30') => {
-    switch (preset) {
-      case '50:50': return { r1: 50, r2: 50 };
-      case '60:40': return { r1: 60, r2: 40 };
-      case '70:30': return { r1: 70, r2: 30 };
-      default: return { r1: 60, r2: 40 };
-    }
-  };
-
-  const { r1: bean1Ratio, r2: bean2Ratio } = getBlendRatios(blend.ratioPreset);
-  const bean1Obj = products.find(p => p.id === blend.bean1Id);
-  const bean2Obj = products.find(p => p.id === blend.bean2Id);
-
-  const priceBean1 = bean1Obj ? bean1Obj.pricePerKg : 170000;
-  const priceBean2 = bean2Obj ? bean2Obj.pricePerKg : 170000;
-
-  const calculateBlendTotalPrice = (weightGram: number, p1: number, p2: number, r1: number, r2: number) => {
-    const baseRawPricePerKg = (r1 / 100) * p1 + (r2 / 100) * p2;
-    if (weightGram >= 1000) {
-      const totalKg = weightGram / 1000;
-      return Math.round((baseRawPricePerKg + 27500) * totalKg);
-    } else if (weightGram >= 500) {
-      const portion = (baseRawPricePerKg / 1000) * weightGram;
-      return Math.round(portion * 1.12 + 10000);
-    } else {
-      const portion = (baseRawPricePerKg / 1000) * weightGram;
-      return Math.round(portion * 1.20 + 7500);
-    }
-  };
-
-  const totalCustomBlendPrice = calculateBlendTotalPrice(blend.weightGram, priceBean1, priceBean2, bean1Ratio, bean2Ratio);
 
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
   const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
   const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('kontra_bon_30');
   const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
-
-  useEffect(() => {
-    if (customerType === 'perorangan') setPaymentMethod('transfer');
-  }, [customerType]);
 
   const totalCartWeightKg = cart.reduce((acc, item) => acc + item.quantityGram, 0) / 1000;
   const jneRatePerKg = 18000;
@@ -334,19 +295,56 @@ export default function EpicureanApp() {
     exclusiveCode: ''
   });
 
-  const addCustomBlendToCart = () => {
-    const b1Name = bean1Obj ? bean1Obj.name.split(' ')[0] : 'Bean1';
-    const b2Name = bean2Obj ? bean2Obj.name.split(' ')[0] : 'Bean2';
+  const handleRoleSelection = (role: 'pembeli' | 'reseller' | 'seller') => {
+    setSelectedRole(role);
+    setAuthError('');
+    setAuthForm({ username: '', password: '', companyName: '' });
+    setCurrentStep('auth');
+  };
 
-    const newItem: OrderItem = {
-      id: `CB-${Date.now()}`,
-      name: `Custom Blend (${bean1Ratio}% ${b1Name} : ${bean2Ratio}% ${b2Name})`,
-      quantityGram: blend.weightGram,
-      pricePerGram: totalCustomBlendPrice / blend.weightGram,
-      totalPrice: totalCustomBlendPrice,
-      blendDetails: `Gilingan: ${blend.grindSize}`
-    };
-    setCart([...cart, newItem]);
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError('');
+
+    if (selectedRole === 'seller') {
+      if (authForm.username === sellerAccount.username && authForm.password === sellerAccount.password) {
+        setCurrentUser(sellerAccount);
+        setCurrentStep('main');
+      } else {
+        setAuthError('Username atau Password Seller salah!');
+      }
+    } else if (selectedRole === 'reseller') {
+      const foundReseller = presetResellerAccounts.find(
+        r => r.username.toLowerCase() === authForm.username.trim().toLowerCase() && r.password === authForm.password
+      );
+      if (foundReseller) {
+        setCurrentUser(foundReseller);
+        setCustomerInfo(prev => ({ ...prev, company: foundReseller.companyName || '', name: foundReseller.username }));
+        setCurrentStep('main');
+      } else {
+        setAuthError('Username atau Password Reseller tidak ditemukan!');
+      }
+    } else {
+      // Pembeli Umum (Bisa Login/Daftar Bebas)
+      if (!authForm.username.trim()) {
+        setAuthError('Ketik nama atau username Anda.');
+        return;
+      }
+      const buyerUser: UserAccount = {
+        username: authForm.username.trim(),
+        role: 'pembeli',
+        companyName: authForm.companyName || 'Pembeli Perorangan'
+      };
+      setCurrentUser(buyerUser);
+      setCustomerInfo(prev => ({ ...prev, name: buyerUser.username, company: buyerUser.companyName || '' }));
+      setCurrentStep('main');
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    setCurrentStep('welcome');
+    setCart([]);
   };
 
   const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g') => {
@@ -394,8 +392,8 @@ export default function EpicureanApp() {
     const newOrder: Order = {
       id: `ORD-${Date.now().toString().slice(-6)}`,
       customerType: customerType,
-      customerName: customerInfo.name,
-      companyName: customerType === 'cafe' ? customerInfo.company : 'Pembeli Perorangan',
+      customerName: customerInfo.name || currentUser?.username || 'Buyer',
+      companyName: customerType === 'cafe' ? (customerInfo.company || currentUser?.companyName || 'Cafe') : 'Pembeli Perorangan',
       customerPhone: customerInfo.phone,
       destinationArea: destination,
       shippingAddress: customerInfo.address,
@@ -443,7 +441,7 @@ export default function EpicureanApp() {
     text += `------------------------------------\n`;
     text += `*ID Order:* ${order.id}\n`;
     text += `*Pemesan:* ${order.customerName} (${order.companyName})\n`;
-    text += `*Kategori:* ${order.customerType.toUpperCase()}\n`;
+    text += `*Role Account:* ${currentUser?.role.toUpperCase()}\n`;
     text += `*Metode Bayar:* ${order.paymentMethod.replace('_', ' ').toUpperCase()}\n`;
     text += `------------------------------------\n`;
     text += `*Rincian Pesanan:*\n`;
@@ -458,17 +456,6 @@ export default function EpicureanApp() {
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
   };
 
-  const handlePasswordSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (passwordInput === 'EPCCOFFEE!') {
-      setIsAuthenticated(true);
-      setPasswordError(false);
-    } else {
-      setPasswordError(true);
-    }
-  };
-
-  // EDIT PRODUK FUNCTIONS
   const handleOpenEditModal = (prod: Product) => {
     setEditingProduct({ ...prod });
     setIsEditModalOpen(true);
@@ -485,8 +472,7 @@ export default function EpicureanApp() {
       price_per_200g: editingProduct.pricePer200g,
       green_bean_cost_per_kg: editingProduct.greenBeanCostPerKg,
       description: editingProduct.description,
-      is_exclusive: editingProduct.isExclusive,
-      exclusive_code: editingProduct.exclusiveCode.toUpperCase().trim()
+      is_exclusive: editingProduct.isExclusive
     }).eq('id', editingProduct.id);
 
     if (error) {
@@ -516,8 +502,7 @@ export default function EpicureanApp() {
       packaging_cost_per_500g: productForm.packagingCostPer500g,
       packaging_cost_per_200g: productForm.packagingCostPer200g,
       description: productForm.description,
-      is_exclusive: productForm.isExclusive,
-      exclusive_code: productForm.exclusiveCode.toUpperCase().trim()
+      is_exclusive: productForm.isExclusive
     });
 
     if (error) {
@@ -549,6 +534,149 @@ export default function EpicureanApp() {
 
   const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
 
+  // STEP 1: LANDING WELCOME PAGE (LAYOUT EXPLICIT MATCH GAMBAR)
+  if (currentStep === 'welcome') {
+    return (
+      <div className="min-h-screen bg-black text-[#E8E2D5] font-serif flex flex-col items-center justify-center p-4">
+        <div className="max-w-2xl w-full text-center space-y-8 py-12 px-6 border border-[#2B261F] rounded-3xl bg-[#080808] shadow-2xl">
+          {/* LOGO SIMBOL */}
+          <div className="text-[#D4AF37] flex justify-center">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" />
+              <path d="M12 22V10" />
+              <path d="M12 10C12 10 16 8 18 10" />
+              <path d="M12 14C12 14 8 12 6 14" />
+            </svg>
+          </div>
+
+          <div>
+            <h1 className="text-3xl sm:text-5xl tracking-widest text-[#D4AF37] uppercase font-normal">
+              EPICUREAN
+            </h1>
+            <p className="text-sm italic text-[#A69C83] tracking-widest mt-1">Coffee Company</p>
+            <p className="text-xs italic text-[#776E5E] mt-4 tracking-wider">
+              Website Orders Coffee Beans Official From Epicurean
+            </p>
+          </div>
+
+          <h2 className="text-xl tracking-widest text-[#E5D7B8] font-bold uppercase pt-4 border-t border-[#1F1C18]">
+            SELAMAT DATANG!
+          </h2>
+
+          {/* 3 TOMBOL PILIHAN ROLE (SAYA PEMBELI / RESELLER / SELLER) */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+            <button
+              onClick={() => handleRoleSelection('pembeli')}
+              className="bg-[#14120F] hover:bg-[#D4AF37] hover:text-black border border-[#A69C83] rounded-2xl p-6 text-center transition-all duration-300 shadow-lg group"
+            >
+              <User className="h-6 w-6 text-[#D4AF37] group-hover:text-black mx-auto mb-3" />
+              <span className="text-sm font-bold font-serif tracking-wide block">Saya Pembeli</span>
+            </button>
+
+            <button
+              onClick={() => handleRoleSelection('reseller')}
+              className="bg-[#14120F] hover:bg-[#D4AF37] hover:text-black border border-[#A69C83] rounded-2xl p-6 text-center transition-all duration-300 shadow-lg group"
+            >
+              <Tag className="h-6 w-6 text-[#D4AF37] group-hover:text-black mx-auto mb-3" />
+              <span className="text-sm font-bold font-serif tracking-wide block">Saya Reseller</span>
+            </button>
+
+            <button
+              onClick={() => handleRoleSelection('seller')}
+              className="bg-[#14120F] hover:bg-[#D4AF37] hover:text-black border border-[#A69C83] rounded-2xl p-6 text-center transition-all duration-300 shadow-lg group"
+            >
+              <ShieldCheck className="h-6 w-6 text-[#D4AF37] group-hover:text-black mx-auto mb-3" />
+              <span className="text-sm font-bold font-serif tracking-wide block">Saya Seller</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // STEP 2: FORM SIGN IN / LOG IN SESUAI ROLE
+  if (currentStep === 'auth') {
+    return (
+      <div className="min-h-screen bg-black text-[#E8E2D5] font-serif flex flex-col items-center justify-center p-4">
+        <div className="max-w-md w-full bg-[#080808] border border-[#2B261F] rounded-3xl p-8 space-y-6 shadow-2xl">
+          <button
+            onClick={() => setCurrentStep('welcome')}
+            className="text-xs italic text-[#A69C83] hover:text-[#D4AF37] flex items-center space-x-1"
+          >
+            ← Kembali ke Pilihan
+          </button>
+
+          <div className="text-center space-y-2">
+            <h2 className="text-xl font-serif text-[#D4AF37] uppercase tracking-wider">
+              Log In - {selectedRole.toUpperCase()}
+            </h2>
+            <p className="text-xs italic text-[#A69C83]">
+              {selectedRole === 'seller' && 'Masukkan kredensial akun seller roastery resmi.'}
+              {selectedRole === 'reseller' && 'Masukkan Username Cafe & Password Reseller khusus.'}
+              {selectedRole === 'pembeli' && 'Masukkan Nama / Username untuk melanjutkan belanja.'}
+            </p>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs italic">
+            <div>
+              <label className="block text-[#A69C83] mb-1">
+                {selectedRole === 'pembeli' ? 'Nama Pemesan / Username *' : 'Username *'}
+              </label>
+              <input
+                type="text"
+                required
+                placeholder={selectedRole === 'reseller' ? 'Contoh: BrunswickCafe' : 'Ketik username...'}
+                value={authForm.username}
+                onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
+                className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
+              />
+            </div>
+
+            {selectedRole !== 'pembeli' && (
+              <div>
+                <label className="block text-[#A69C83] mb-1">Password *</label>
+                <input
+                  type="password"
+                  required
+                  placeholder="Ketik password..."
+                  value={authForm.password}
+                  onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
+                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            )}
+
+            {selectedRole === 'pembeli' && (
+              <div>
+                <label className="block text-[#A69C83] mb-1">Nama Cafe / Perusahaan (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: Kopi Kita Cafe"
+                  value={authForm.companyName}
+                  onChange={(e) => setAuthForm({ ...authForm, companyName: e.target.value })}
+                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
+                />
+              </div>
+            )}
+
+            {authError && (
+              <p className="text-xs text-rose-500 italic text-center font-bold">{authError}</p>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold py-3 rounded-xl transition-all shadow-md mt-2 flex items-center justify-center space-x-2"
+            >
+              <span>Masuk Beranda</span>
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+        </div>
+      </div>
+    );
+  }
+
+  // STEP 3: BERANDA UTAMA PLATFORM
   return (
     <div className="min-h-screen bg-[#111111] text-[#E8E2D5] font-serif antialiased selection:bg-[#D4AF37] selection:text-black">
       {/* HEADER VINTAGE */}
@@ -568,220 +696,86 @@ export default function EpicureanApp() {
             </div>
           </div>
 
-          <div className="hidden lg:block text-center text-xs italic text-[#A69C83] font-serif tracking-wide">
-            Website Orders Coffee Beans Official From Epicurean
-          </div>
-
-          <div className="flex items-center bg-[#1A1815] border border-[#2B261F] p-1 rounded-full">
+          {/* INFORMASI AKUN LOGGED IN */}
+          <div className="flex items-center space-x-4 bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full">
+            <div className="text-right text-xs italic">
+              <p className="text-[#E5D7B8] font-bold">{currentUser?.username}</p>
+              <p className="text-[10px] text-[#D4AF37] uppercase tracking-wider">{currentUser?.role}</p>
+            </div>
             <button
-              onClick={() => setActiveTab('storefront')}
-              className={`px-6 py-1.5 rounded-full text-xs italic font-serif transition-all ${
-                activeTab === 'storefront' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#D4AF37]'
-              }`}
+              onClick={handleLogout}
+              title="Logout"
+              className="p-1.5 bg-[#0A0A0A] border border-[#2B261F] rounded-full text-[#A69C83] hover:text-rose-400 transition-all"
             >
-              Buyer
-            </button>
-            <button
-              onClick={() => setActiveTab('seller')}
-              className={`px-6 py-1.5 rounded-full text-xs italic font-serif transition-all ${
-                activeTab === 'seller' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#D4AF37]'
-              }`}
-            >
-              Seller
+              <LogOut className="h-3.5 w-3.5" />
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
-        {activeTab === 'storefront' ? (
-          <div className="space-y-12">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+        {currentUser?.role !== 'seller' ? (
+          /* STOREFRONT (PEMBELI / RESELLER) */
+          <div className="space-y-10">
             {/* HERO */}
-            <div className="text-center py-10 px-4 space-y-4">
-              <h1 className="text-4xl sm:text-6xl font-normal tracking-wide text-[#E5D7B8] uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
+            <div className="text-center py-6 px-4 space-y-2">
+              <h1 className="text-3xl sm:text-5xl font-normal tracking-wide text-[#E5D7B8] uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
                 EPICUREAN
               </h1>
-              <p className="text-lg sm:text-xl italic text-[#D4AF37] font-serif tracking-widest -mt-2">
-                Coffee Company
+              <p className="text-base italic text-[#D4AF37] font-serif tracking-widest">
+                Coffee Company Catalog
               </p>
-              <p className="text-xs sm:text-sm italic text-[#A69C83] max-w-xl mx-auto font-serif">
-                Website Orders Coffee Beans Official From Epicurean
-              </p>
-
-              {/* UNLOCK PASSCODE */}
-              <div className="mt-8 max-w-md mx-auto">
-                <form onSubmit={handleUnlockCode} className="bg-[#0A0A0A] border border-[#3A3328] rounded-full p-1.5 flex items-center justify-between shadow-2xl">
-                  <input
-                    type="text"
-                    placeholder="Have referal code?"
-                    value={userEnteredCode}
-                    onChange={(e) => setUserEnteredCode(e.target.value)}
-                    className="bg-transparent text-xs italic text-[#E5D7B8] px-5 py-2 w-full focus:outline-none placeholder:text-[#665D4B]"
-                  />
-                  <button
-                    type="submit"
-                    className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif italic text-xs font-bold px-6 py-2 rounded-full flex items-center space-x-1.5 transition-all shadow-md shrink-0"
-                  >
-                    <Lock className="h-3.5 w-3.5 text-[#111111]" />
-                    <span>Unlock</span>
-                  </button>
-                </form>
-
-                {codeSuccessMsg && (
-                  <p className="text-xs text-emerald-400 italic mt-3 font-serif">
-                    ✓ Exclusive Menu Unlocked!
-                  </p>
-                )}
-              </div>
             </div>
 
-            {/* CUSTOM BLEND CONFIGURATOR */}
-            <section className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
-              <div className="border-b border-[#2B261F] pb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="text-lg font-serif italic text-[#E5D7B8]">Custom Blend Configurator</h2>
-                  <p className="text-xs text-[#A69C83] italic">Kalkulasi rasio racikan komponen dengan kalkulasi harga eceran terproteksi</p>
-                </div>
-                <Calculator className="h-5 w-5 text-[#D4AF37]" />
-              </div>
-
-              {roastedProducts.length < 2 ? (
-                <p className="text-xs text-[#A69C83] italic text-center py-6">Dibutuhkan minimal 2 produk ber-kategori <strong>Roasted Beans</strong> untuk mengaktifkan Custom Blend.</p>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                  <div className="lg:col-span-2 space-y-5">
-                    {/* Bean 1 Selection */}
-                    <div className="bg-[#14120F] p-4 rounded-2xl border border-[#2B261F] space-y-2">
-                      <div className="flex justify-between text-xs italic text-[#A69C83]">
-                        <span>Component A (Biji Utama):</span>
-                        <span className="text-[#D4AF37] font-bold">{bean1Ratio}%</span>
-                      </div>
-                      <select
-                        value={blend.bean1Id}
-                        onChange={(e) => setBlend({ ...blend, bean1Id: e.target.value })}
-                        className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-xl px-3 py-2 text-xs italic text-[#E5D7B8] focus:outline-none"
-                      >
-                        {roastedProducts.map(b => (
-                          <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Bean 2 Selection */}
-                    <div className="bg-[#14120F] p-4 rounded-2xl border border-[#2B261F] space-y-2">
-                      <div className="flex justify-between text-xs italic text-[#A69C83]">
-                        <span>Component B (Biji Pendukung):</span>
-                        <span className="text-[#D4AF37] font-bold">{bean2Ratio}%</span>
-                      </div>
-                      <select
-                        value={blend.bean2Id}
-                        onChange={(e) => setBlend({ ...blend, bean2Id: e.target.value })}
-                        className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-xl px-3 py-2 text-xs italic text-[#E5D7B8] focus:outline-none"
-                      >
-                        {roastedProducts.map(b => (
-                          <option key={b.id} value={b.id}>{b.name} (Rp {(b.pricePerKg || 0).toLocaleString('id-ID')}/Kg)</option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Preset Rasio */}
-                    <div className="space-y-2">
-                      <label className="text-xs italic text-[#A69C83]">Pilih Rasio Racikan (A : B):</label>
-                      <div className="grid grid-cols-3 gap-3">
-                        {(['50:50', '60:40', '70:30'] as const).map(preset => (
-                          <button
-                            key={preset}
-                            type="button"
-                            onClick={() => setBlend({ ...blend, ratioPreset: preset })}
-                            className={`py-2 rounded-xl text-xs font-serif italic border transition-all ${
-                              blend.ratioPreset === preset 
-                                ? 'bg-[#E5D7B8] text-[#111111] border-[#E5D7B8] font-bold shadow-md' 
-                                : 'bg-[#14120F] text-[#A69C83] border-[#2B261F] hover:text-[#E5D7B8]'
-                            }`}
-                          >
-                            Ratio {preset}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Grind & Weight */}
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-xs italic text-[#A69C83] mb-1">Grind Size</label>
-                        <select
-                          value={blend.grindSize}
-                          onChange={(e) => setBlend({ ...blend, grindSize: e.target.value })}
-                          className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-xs italic text-[#E5D7B8]"
-                        >
-                          <option>Biji Utuh (Whole Bean)</option>
-                          <option>Kasar (French Press)</option>
-                          <option>Sedang (Filter/Drip)</option>
-                          <option>Halus (Espresso)</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-xs italic text-[#A69C83] mb-1">Quantity (Gram)</label>
-                        <input
-                          type="number"
-                          min="200"
-                          step="50"
-                          value={blend.weightGram}
-                          onChange={(e) => setBlend({ ...blend, weightGram: Math.max(200, parseInt(e.target.value) || 200) })}
-                          className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-xs text-[#E5D7B8]"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Summary Card */}
-                  <div className="bg-[#14120F] border border-[#2B261F] rounded-2xl p-5 flex flex-col justify-between">
-                    <div className="space-y-3 text-xs italic">
-                      <h3 className="font-serif text-[#D4AF37] border-b border-[#2B261F] pb-2">Blend Order Summary</h3>
-                      <div className="flex justify-between text-[#A69C83]">
-                        <span>Blend Ratio:</span>
-                        <span className="text-[#E5D7B8] font-bold">{blend.ratioPreset}</span>
-                      </div>
-                      <div className="flex justify-between text-[#A69C83]">
-                        <span>Weight:</span>
-                        <span className="text-[#E5D7B8]">{blend.weightGram} Gram</span>
-                      </div>
-                      <div className="border-t border-[#2B261F] pt-3 flex justify-between text-sm font-serif font-bold text-[#E5D7B8]">
-                        <span>Total Tagihan:</span>
-                        <span className="text-[#D4AF37]">Rp {totalCustomBlendPrice.toLocaleString('id-ID')}</span>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={addCustomBlendToCart}
-                      className="w-full mt-6 bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif italic font-bold py-3 rounded-xl transition-all shadow-md flex items-center justify-center space-x-2"
-                    >
-                      <Plus className="h-4 w-4" />
-                      <span>Add Blend to Cart</span>
-                    </button>
-                  </div>
-                </div>
-              )}
-            </section>
-
-            {/* KATALOG PRODUK */}
+            {/* TAB SHORTLIST KATEGORI COFFEE BEANS */}
             <section className="space-y-6">
-              <div className="flex justify-between items-center border-b border-[#2B261F] pb-3">
-                <h2 className="text-xl font-serif italic text-[#E5D7B8]">Official Coffee Catalog</h2>
-                <button 
-                  onClick={() => fetchProducts()} 
-                  className="p-2 bg-[#0A0A0A] border border-[#2B261F] rounded-xl text-xs italic text-[#A69C83] hover:text-[#D4AF37] flex items-center space-x-1"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  <span>Sync Cloud</span>
-                </button>
+              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-[#2B261F] pb-4 gap-4">
+                <h2 className="text-lg font-serif italic text-[#E5D7B8]">Katalog Produk Coffee Beans</h2>
+                
+                {/* SHORTLIST TABS */}
+                <div className="flex items-center space-x-2 bg-[#0A0A0A] border border-[#2B261F] p-1 rounded-full">
+                  <button
+                    onClick={() => setActiveCatalogTab('all')}
+                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
+                      activeCatalogTab === 'all' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
+                    }`}
+                  >
+                    Semua
+                  </button>
+                  <button
+                    onClick={() => setActiveCatalogTab('Green Beans')}
+                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
+                      activeCatalogTab === 'Green Beans' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
+                    }`}
+                  >
+                    Green Beans
+                  </button>
+                  <button
+                    onClick={() => setActiveCatalogTab('Roasted Beans')}
+                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
+                      activeCatalogTab === 'Roasted Beans' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
+                    }`}
+                  >
+                    Roasted Beans
+                  </button>
+                  <button
+                    onClick={() => setActiveCatalogTab('Blend Beans')}
+                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
+                      activeCatalogTab === 'Blend Beans' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
+                    }`}
+                  >
+                    House Blend
+                  </button>
+                </div>
               </div>
 
-              {visibleProducts.length === 0 ? (
-                <p className="text-xs text-[#A69C83] italic text-center py-8">Katalog produk belum tersedia.</p>
+              {filteredProducts.length === 0 ? (
+                <p className="text-xs text-[#A69C83] italic text-center py-12">
+                  Tidak ada produk dalam kategori ini yang tersedia untuk akun Anda.
+                </p>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {visibleProducts.map((p) => {
+                  {filteredProducts.map((p) => {
                     const has1kg = (p.pricePerKg || 0) > 0;
                     const has200g = (p.pricePer200g || 0) > 0;
 
@@ -797,7 +791,7 @@ export default function EpicureanApp() {
                             {p.isExclusive && (
                               <span className="text-[10px] text-purple-300 font-serif italic flex items-center space-x-1">
                                 <Lock className="h-3 w-3" />
-                                <span>Exclusive</span>
+                                <span>VIP Blend</span>
                               </span>
                             )}
                           </div>
@@ -808,18 +802,18 @@ export default function EpicureanApp() {
                           <div className="mt-4 space-y-1.5 bg-[#14120F] p-3 rounded-xl border border-[#2B261F] text-xs italic">
                             {has1kg && (
                               <div className="flex justify-between text-[#A69C83]">
-                                <span>Kemasan 1 Kg:</span>
+                                <span>Harga 1 Kg:</span>
                                 <span className="text-[#D4AF37] font-bold">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
                               </div>
                             )}
                             {has200g ? (
                               <div className="flex justify-between text-[#A69C83]">
-                                <span>Kemasan 200 Gram:</span>
+                                <span>Harga 200 Gram:</span>
                                 <span className="text-[#D4AF37] font-bold">Rp {p.pricePer200g.toLocaleString('id-ID')}</span>
                               </div>
                             ) : (
                               <div className="flex justify-between text-[11px] text-rose-400/80">
-                                <span>Kemasan 200 Gram:</span>
+                                <span>Harga 200 Gram:</span>
                                 <span>N/A</span>
                               </div>
                             )}
@@ -876,27 +870,6 @@ export default function EpicureanApp() {
 
                     <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3">
                       <p className="text-xs font-serif italic text-[#D4AF37]">Buyer Profile & Verification</p>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
-                        <button
-                          type="button"
-                          onClick={() => setCustomerType('cafe')}
-                          className={`p-2.5 rounded-lg border italic font-serif transition-all ${
-                            customerType === 'cafe' ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#E5D7B8]' : 'border-[#2B261F] text-[#A69C83]'
-                          }`}
-                        >
-                          Cafe / Bisnis B2B
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setCustomerType('perorangan')}
-                          className={`p-2.5 rounded-lg border italic font-serif transition-all ${
-                            customerType === 'perorangan' ? 'border-[#D4AF37] bg-[#D4AF37]/10 text-[#E5D7B8]' : 'border-[#2B261F] text-[#A69C83]'
-                          }`}
-                        >
-                          Perorangan
-                        </button>
-                      </div>
-
                       <input
                         type="text"
                         placeholder="Nama Lengkap Pemesan *"
@@ -905,16 +878,14 @@ export default function EpicureanApp() {
                         onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                         className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-xs italic text-[#E5D7B8]"
                       />
-                      {customerType === 'cafe' && (
-                        <input
-                          type="text"
-                          placeholder="Nama Cafe / Perusahaan Resmi *"
-                          required
-                          value={customerInfo.company}
-                          onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
-                          className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-xs italic text-[#E5D7B8]"
-                        />
-                      )}
+                      <input
+                        type="text"
+                        placeholder="Nama Cafe / Perusahaan *"
+                        required
+                        value={customerInfo.company}
+                        onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
+                        className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-xs italic text-[#E5D7B8]"
+                      />
                       <input
                         type="text"
                         placeholder="Nomor WhatsApp *"
@@ -941,18 +912,14 @@ export default function EpicureanApp() {
                         <input type="radio" name="payment" checked={paymentMethod === 'transfer'} onChange={() => setPaymentMethod('transfer')} className="accent-[#D4AF37]" />
                         <span className="text-[#E5D7B8]">Direct Bank Transfer (BCA: 7772400244)</span>
                       </label>
-                      {customerType === 'cafe' && (
-                        <>
-                          <label className="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_15'} onChange={() => setPaymentMethod('kontra_bon_15')} className="accent-[#D4AF37]" />
-                            <span className="text-[#E5D7B8]">Kontra Bon (Net 15 Days)</span>
-                          </label>
-                          <label className="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_30'} onChange={() => setPaymentMethod('kontra_bon_30')} className="accent-[#D4AF37]" />
-                            <span className="text-[#E5D7B8]">Kontra Bon (Net 30 Days)</span>
-                          </label>
-                        </>
-                      )}
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_15'} onChange={() => setPaymentMethod('kontra_bon_15')} className="accent-[#D4AF37]" />
+                        <span className="text-[#E5D7B8]">Kontra Bon (Net 15 Days)</span>
+                      </label>
+                      <label className="flex items-center space-x-2 cursor-pointer">
+                        <input type="radio" name="payment" checked={paymentMethod === 'kontra_bon_30'} onChange={() => setPaymentMethod('kontra_bon_30')} className="accent-[#D4AF37]" />
+                        <span className="text-[#E5D7B8]">Kontra Bon (Net 30 Days)</span>
+                      </label>
                     </div>
 
                     <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-2 text-xs italic">
@@ -1008,181 +975,58 @@ export default function EpicureanApp() {
             </section>
           </div>
         ) : (
-          /* SELLER ADMIN VIEW */
-          !isAuthenticated ? (
-            <div className="max-w-md mx-auto my-16 p-8 bg-[#0A0A0A] border border-[#2B261F] rounded-3xl text-center space-y-6 shadow-2xl">
-              <KeyRound className="h-8 w-8 text-[#D4AF37] mx-auto" />
-              <h2 className="text-lg font-serif italic text-[#E5D7B8]">Seller Protection Access</h2>
-              <form onSubmit={handlePasswordSubmit} className="space-y-4">
-                <input
-                  type="password"
-                  placeholder="Password..."
-                  value={passwordInput}
-                  onChange={(e) => setPasswordInput(e.target.value)}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-xs text-center text-[#E5D7B8] focus:outline-none"
-                />
-                {passwordError && <p className="text-xs text-rose-500 italic">Password salah!</p>}
-                <button type="submit" className="w-full bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif italic font-bold py-2.5 rounded-xl text-xs">
-                  Unlock Admin
-                </button>
-              </form>
+          /* DASHBOARD SELLER ADMIN */
+          <div className="space-y-8">
+            <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex justify-between items-center">
+              <h1 className="text-xl font-serif italic text-[#E5D7B8]">Epicurean Roastery Manager</h1>
             </div>
-          ) : (
+
             <div className="space-y-8">
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex justify-between items-center">
-                <h1 className="text-xl font-serif italic text-[#E5D7B8]">Epicurean Roastery Manager</h1>
-                <div className="flex space-x-2">
-                  <button onClick={() => setSellerSubTab('orders')} className={`px-4 py-2 rounded-xl text-xs italic font-serif ${sellerSubTab === 'orders' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>Orders ({orders.length})</button>
-                  <button onClick={() => setSellerSubTab('products')} className={`px-4 py-2 rounded-xl text-xs italic font-serif ${sellerSubTab === 'products' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>Products & COGS</button>
-                  <button onClick={() => setSellerSubTab('passcode')} className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1 ${sellerSubTab === 'passcode' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>
-                    <Settings className="h-3.5 w-3.5" />
-                    <span>Passcode Blend</span>
-                  </button>
-                  <button onClick={() => setSellerSubTab('recap')} className={`px-4 py-2 rounded-xl text-xs italic font-serif ${sellerSubTab === 'recap' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>Recap Sales</button>
+              {/* DAFTAR AKUN RESELLER INFO CARD */}
+              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4">
+                <h3 className="text-sm font-serif text-[#D4AF37]">Daftar Akun Reseller & Akses Menu Blend</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs italic">
+                  {presetResellerAccounts.map(r => (
+                    <div key={r.username} className="bg-[#14120F] p-3 rounded-xl border border-[#2B261F] flex justify-between">
+                      <div>
+                        <p className="text-[#E5D7B8] font-bold">{r.companyName} ({r.username})</p>
+                        <p className="text-[11px] text-[#A69C83]">Akses: {r.allowedBlends?.join(', ')}</p>
+                      </div>
+                      <span className="text-[10px] text-emerald-400 font-mono">PWD: {r.password}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              {sellerSubTab === 'passcode' && (
-                <div className="max-w-xl mx-auto bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-5">
-                  <div className="flex items-center space-x-3 border-b border-[#2B261F] pb-3">
-                    <Key className="h-5 w-5 text-[#D4AF37]" />
-                    <h3 className="text-base font-serif italic text-[#E5D7B8]">Pengaturan Passcode Blend Eksklusif</h3>
-                  </div>
-
-                  <p className="text-xs text-[#A69C83] italic">
-                    Passcode aktif saat ini: <strong className="text-[#D4AF37] font-mono font-bold">{globalBlendPasscode}</strong>
-                  </p>
-
-                  <form onSubmit={handleUpdateGlobalPasscode} className="space-y-4">
-                    <div>
-                      <label className="block text-xs italic text-[#A69C83] mb-1">Ketik Passcode Baru</label>
-                      <input
-                        type="text"
-                        required
-                        placeholder="Contoh: CAFEVIP2026"
-                        value={newPasscodeForm}
-                        onChange={(e) => setNewPasscodeForm(e.target.value)}
-                        className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-2.5 text-xs text-[#E5D7B8] uppercase font-mono"
-                      />
-                    </div>
-                    <button
-                      type="submit"
-                      className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold px-6 py-2.5 rounded-xl text-xs flex items-center space-x-2"
-                    >
-                      <Save className="h-4 w-4" />
-                      <span>Simpan Passcode Baru</span>
-                    </button>
-                  </form>
-                </div>
-              )}
-
-              {sellerSubTab === 'products' && (
-                <div className="space-y-8">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {products.map((p) => (
-                      <div key={p.id} className="bg-[#0A0A0A] border border-[#2B261F] p-5 rounded-2xl space-y-3 relative">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] italic text-[#D4AF37]">{p.category}</span>
-                          <div className="flex space-x-2">
-                            <button onClick={() => handleOpenEditModal(p)} className="text-[#D4AF37] hover:text-amber-300 p-1 bg-[#14120F] rounded-md border border-[#2B261F]">
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => handleDeleteProduct(p.id)} className="text-[#A69C83] hover:text-rose-400 p-1 bg-[#14120F] rounded-md border border-[#2B261F]">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <h3 className="text-sm font-serif text-[#E5D7B8]">{p.name}</h3>
-                        <div className="text-xs italic text-[#A69C83]">
-                          <p>1 Kg: Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</p>
-                          <p>200g: Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</p>
-                          <p className="text-rose-400">HPP Greenbeans: Rp {(p.greenBeanCostPerKg || 0).toLocaleString('id-ID')}/Kg</p>
+              {/* DAFTAR PRODUK & EDIT COGS */}
+              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
+                <h3 className="text-sm font-serif text-[#E5D7B8]">Katalog Produk & COGS Master</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {products.map((p) => (
+                    <div key={p.id} className="bg-[#14120F] border border-[#2B261F] p-5 rounded-2xl space-y-3 relative">
+                      <div className="flex justify-between items-start">
+                        <span className="text-[10px] italic text-[#D4AF37]">{p.category}</span>
+                        <div className="flex space-x-2">
+                          <button onClick={() => handleOpenEditModal(p)} className="text-[#D4AF37] hover:text-amber-300 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
+                            <Edit3 className="h-3.5 w-3.5" />
+                          </button>
+                          <button onClick={() => handleDeleteProduct(p.id)} className="text-[#A69C83] hover:text-rose-400 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
                         </div>
                       </div>
-                    ))}
-                  </div>
-
-                  <form onSubmit={handleSaveProduct} className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
-                    <h3 className="text-sm font-serif text-[#E5D7B8]">Add New Product & COGS</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <input
-                        type="text"
-                        placeholder="Nama Produk *"
-                        required
-                        value={productForm.name}
-                        onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                        className="bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                      />
-                      <select
-                        value={productForm.category}
-                        onChange={(e) => setProductForm({ ...productForm, category: e.target.value as Product['category'] })}
-                        className="bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                      >
-                        <option value="Green Beans">Green Beans</option>
-                        <option value="Roasted Beans">Roasted Beans</option>
-                        <option value="Blend Beans">Blend Beans</option>
-                      </select>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-4 border-t border-[#2B261F] pt-3">
-                      <div>
-                        <label className="block mb-1 text-[#D4AF37]">Harga 1 Kg (IDR)</label>
-                        <input type="number" value={productForm.pricePerKg} onChange={(e) => setProductForm({ ...productForm, pricePerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-[#D4AF37]">Harga 200g (IDR)</label>
-                        <input type="number" value={productForm.pricePer200g} onChange={(e) => setProductForm({ ...productForm, pricePer200g: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
-                      </div>
-                      <div>
-                        <label className="block mb-1 text-[#D4AF37]">HPP Greenbeans / Kg</label>
-                        <input type="number" value={productForm.greenBeanCostPerKg} onChange={(e) => setProductForm({ ...productForm, greenBeanCostPerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
+                      <h3 className="text-sm font-serif text-[#E5D7B8]">{p.name}</h3>
+                      <div className="text-xs italic text-[#A69C83]">
+                        <p>1 Kg: Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</p>
+                        <p>200g: Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</p>
+                        <p className="text-rose-400">HPP Greenbeans: Rp {(p.greenBeanCostPerKg || 0).toLocaleString('id-ID')}/Kg</p>
                       </div>
                     </div>
-
-                    <button type="submit" className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold px-6 py-2.5 rounded-xl text-xs">
-                      Save & Publish Product
-                    </button>
-                  </form>
+                  ))}
                 </div>
-              )}
-
-              {sellerSubTab === 'orders' && (
-                <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
-                  <h3 className="font-serif text-[#E5D7B8]">Incoming Orders</h3>
-                  <div className="space-y-3">
-                    {orders.map((o) => (
-                      <div key={o.id} className="bg-[#14120F] p-4 rounded-xl border border-[#2B261F] flex justify-between items-center">
-                        <div>
-                          <p className="font-serif text-[#D4AF37]">{o.id} - {o.customerName} ({o.companyName})</p>
-                          <p className="text-[11px] text-[#A69C83]">{o.paymentMethod.replace('_', ' ').toUpperCase()} | Total: Rp {o.totalAmount.toLocaleString('id-ID')}</p>
-                        </div>
-                        <select
-                          value={o.status}
-                          onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
-                          className="bg-[#0A0A0A] border border-[#2B261F] px-3 py-1 rounded-lg text-xs italic text-[#E5D7B8]"
-                        >
-                          <option value="Pending Approval">Pending Approval</option>
-                          <option value="Roasting Process">Roasting Process</option>
-                          <option value="Ready for Shipping">Ready for Shipping</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Rejected">Rejected</option>
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {sellerSubTab === 'recap' && (
-                <div className="grid grid-cols-2 gap-6">
-                  <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl">
-                    <p className="text-xs text-[#A69C83] italic">Total Omzet</p>
-                    <p className="text-2xl font-serif text-[#D4AF37] mt-1">Rp {totalOmzet.toLocaleString('id-ID')}</p>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
-          )
+          </div>
         )}
       </main>
 
