@@ -61,6 +61,45 @@ interface Order {
   createdAt: string;
 }
 
+// DATASET LENGKAP DARI 5 TABEL HPP (GREENBEANS, ROASTEDBEANS, BLENDBEANS)
+const defaultProductsFromSpreadsheet: Product[] = [
+  // --- GREEN BEANS ---
+  { id: 'GB-1', name: 'Greenbeans Wanoja Avisani S', category: 'Green Beans', pricePerKg: 284000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 282500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Avisani S (Crop 2026)', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-2', name: 'Greenbeans Wanoja Fullwash', category: 'Green Beans', pricePerKg: 198000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 190500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Fullwash', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-3', name: 'Greenbeans Wanoja Natural', category: 'Green Beans', pricePerKg: 248000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 245500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Natural', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-4', name: 'Greenbeans Wanoja MTW', category: 'Green Beans', pricePerKg: 280000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 2500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja MTW', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-5', name: 'Greenbeans Kerinci Fullwash', category: 'Green Beans', pricePerKg: 172000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 162722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Fullwash', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-6', name: 'Greenbeans Kerinci Natural', category: 'Green Beans', pricePerKg: 190000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 177722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Natural', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-7', name: 'Greenbeans Kerinci Wethull (Semiwash)', category: 'Green Beans', pricePerKg: 168000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 157722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Semiwash', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-8', name: 'Greenbeans Kerinci Robusta', category: 'Green Beans', pricePerKg: 92000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 87722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Robusta', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-9', name: 'Greenbeans Flores Fullwash', category: 'Green Beans', pricePerKg: 195000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 182220, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Flores Fullwash', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-10', name: 'Greenbeans Bajawa Natural 72 Hours', category: 'Green Beans', pricePerKg: 200000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 187500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Bajawa Natural 72 Hours', isExclusive: false, exclusiveCode: '' },
+
+  // --- ROASTED BEANS ---
+  { id: 'RB-1', name: 'Wanoja Avisani', category: 'Roasted Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 284000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Avisani Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-2', name: 'Wanoja Fullwash', category: 'Roasted Beans', pricePerKg: 350000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 193000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-3', name: 'Wanoja Natural', category: 'Roasted Beans', pricePerKg: 450000, pricePer500g: 0, pricePer200g: 150000, greenBeanCostPerKg: 243000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Natural Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-4', name: 'Wanoja MTW', category: 'Roasted Beans', pricePerKg: 496250, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 280000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Wanoja MTW Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-5', name: 'Kerinci Fullwash', category: 'Roasted Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 160222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-6', name: 'Kerinci Natural', category: 'Roasted Beans', pricePerKg: 390000, pricePer500g: 0, pricePer200g: 140000, greenBeanCostPerKg: 175222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Natural Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-7', name: 'Kerinci WH (Semiwash)', category: 'Roasted Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 110000, greenBeanCostPerKg: 155222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci WH Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-8', name: 'Kerinci Robusta', category: 'Roasted Beans', pricePerKg: 170000, pricePer500g: 0, pricePer200g: 100000, greenBeanCostPerKg: 85222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Robusta Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-9', name: 'Melaka', category: 'Roasted Beans', pricePerKg: 170000, pricePer500g: 0, pricePer200g: 170000, greenBeanCostPerKg: 85222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Melaka Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-10', name: 'Bajawa Natural 72 Hours', category: 'Roasted Beans', pricePerKg: 375000, pricePer500g: 0, pricePer200g: 375000, greenBeanCostPerKg: 185000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Bajawa Natural 72 Hours Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+
+  // --- BLEND BEANS ---
+  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-4', name: 'FarmHouse Blend (70 KWH : 30 KNE)', category: 'Blend Beans', pricePerKg: 290000, pricePer500g: 0, pricePer200g: 70000, greenBeanCostPerKg: 229028, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'FarmHouse Blend: 70% Kerinci WH + 30% Kerinci Natural', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-5', name: 'Dago Terrace Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 199653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Dago Terrace Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-6', name: 'Foresta Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 201783, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Foresta Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-7', name: 'Blend Tigris (70 Robusta : 30 KDH)', category: 'Blend Beans', pricePerKg: 210000, pricePer500g: 0, pricePer200g: 50000, greenBeanCostPerKg: 162153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend Tigris: 70% Kerinci Robusta + 30% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-8', name: 'Blend K50 (50 KDH : 50 Robusta)', category: 'Blend Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 55000, greenBeanCostPerKg: 158264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend K50: 50% Kerinci Robusta + 50% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-9', name: 'Blend 60:40 (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 240000, pricePer500g: 0, pricePer200g: 58000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend 60:40: 60% Roasted KDH PTP + 40% Kerinci Robusta', isExclusive: true, exclusiveCode: 'EPICUREANVIP' },
+  { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: 'EPICUREANVIP' }
+];
+
 export default function EpicureanApp() {
   const [activeTab, setActiveTab] = useState<'storefront' | 'seller'>('storefront');
   const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'passcode' | 'recap'>('orders');
@@ -73,7 +112,7 @@ export default function EpicureanApp() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Dynamic Passcode State (Bisa Diubah di Seller Admin)
+  // Dynamic Passcode State
   const [globalBlendPasscode, setGlobalBlendPasscode] = useState('EPICUREANVIP');
   const [newPasscodeForm, setNewPasscodeForm] = useState('');
 
@@ -98,31 +137,57 @@ export default function EpicureanApp() {
     alert(`Passcode Blend berhasil diperbarui menjadi: ${formatted}`);
   };
 
+  const formatSupabaseProducts = (rawData: any[]): Product[] => {
+    return rawData.map(item => ({
+      id: item.id,
+      name: item.name,
+      category: item.category,
+      pricePerKg: Number(item.price_per_kg || 0),
+      pricePer500g: Number(item.price_per_500g || 0),
+      pricePer200g: Number(item.price_per_200g || 0),
+      greenBeanCostPerKg: Number(item.green_bean_cost_per_kg || 0),
+      roastingCostPerKg: Number(item.roasting_cost_per_kg || 0),
+      packagingCostPerKg: Number(item.packaging_cost_per_kg || 0),
+      packagingCostPer500g: Number(item.packaging_cost_per_500g || 0),
+      packagingCostPer200g: Number(item.packaging_cost_per_200g || 0),
+      description: item.description || '',
+      isExclusive: Boolean(item.is_exclusive || false),
+      exclusiveCode: (item.exclusive_code || '').toUpperCase().trim()
+    }));
+  };
+
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*');
-    if (error) {
-      console.error('Error fetching products:', error);
-    } else if (data && data.length > 0) {
-      const formatted: Product[] = data.map(item => ({
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        pricePerKg: Number(item.price_per_kg || 0),
-        pricePer500g: Number(item.price_per_500g || 0),
-        pricePer200g: Number(item.price_per_200g || 0),
-        greenBeanCostPerKg: Number(item.green_bean_cost_per_kg || 0),
-        roastingCostPerKg: Number(item.roasting_cost_per_kg || 0),
-        packagingCostPerKg: Number(item.packaging_cost_per_kg || 0),
-        packagingCostPer500g: Number(item.packaging_cost_per_500g || 0),
-        packagingCostPer200g: Number(item.packaging_cost_per_200g || 0),
-        description: item.description || '',
-        isExclusive: Boolean(item.is_exclusive || false),
-        exclusiveCode: (item.exclusive_code || '').toUpperCase().trim()
-      }));
-      setProducts(formatted);
+    
+    if (error || !data || data.length < defaultProductsFromSpreadsheet.length) {
+      // Direct Upsert Dataset ke Supabase jika produk kurang
+      for (const prod of defaultProductsFromSpreadsheet) {
+        await supabase.from('products').upsert({
+          id: prod.id,
+          name: prod.name,
+          category: prod.category,
+          price_per_kg: prod.pricePerKg,
+          price_per_500g: prod.pricePer500g,
+          price_per_200g: prod.pricePer200g,
+          green_bean_cost_per_kg: prod.greenBeanCostPerKg,
+          roasting_cost_per_kg: prod.roastingCostPerKg,
+          packaging_cost_per_kg: prod.packagingCostPerKg,
+          packaging_cost_per_500g: prod.packagingCostPer500g,
+          packaging_cost_per_200g: prod.packagingCostPer200g,
+          description: prod.description,
+          is_exclusive: prod.isExclusive,
+          exclusive_code: prod.exclusiveCode
+        });
+      }
+      
+      const { data: updatedData } = await supabase.from('products').select('*');
+      if (updatedData) {
+        setProducts(formatSupabaseProducts(updatedData));
+      } else {
+        setProducts(defaultProductsFromSpreadsheet);
+      }
     } else {
-      // Fallback Data dari Spreadsheet HPP jika DB Kosong
-      setProducts(defaultProductsFromSpreadsheet);
+      setProducts(formatSupabaseProducts(data));
     }
   };
 
@@ -218,7 +283,7 @@ export default function EpicureanApp() {
   const priceBean1 = bean1Obj ? bean1Obj.pricePerKg : 170000;
   const priceBean2 = bean2Obj ? bean2Obj.pricePerKg : 170000;
 
-  // Rumus Proteksi COGS Custom Blend
+  // RUMUS PROTEKSI MARGIN CUSTOM BLEND
   const calculateBlendTotalPrice = (weightGram: number, p1: number, p2: number, r1: number, r2: number) => {
     const baseRawPricePerKg = (r1 / 100) * p1 + (r2 / 100) * p2;
     if (weightGram >= 1000) {
@@ -252,7 +317,6 @@ export default function EpicureanApp() {
   const grandTotal = cartSubtotal + shippingCost;
 
   const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
-  const [paymentProofInput, setPaymentProofInput] = useState('');
 
   const [productForm, setProductForm] = useState({
     name: '',
@@ -1088,31 +1152,3 @@ export default function EpicureanApp() {
     </div>
   );
 }
-
-// Default Dataset Sesuai 5 Gambar Tabel HPP Lengkap
-const defaultProductsFromSpreadsheet: Product[] = [
-  // GREENBEANS
-  { id: 'GB-1', name: 'Greenbeans Wanoja Avisani S', category: 'Green Beans', pricePerKg: 284000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 282500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Avisani S (Crop 2026)', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-2', name: 'Greenbeans Wanoja Fullwash', category: 'Green Beans', pricePerKg: 198000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 190500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Fullwash', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-3', name: 'Greenbeans Wanoja Natural', category: 'Green Beans', pricePerKg: 248000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 245500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Natural', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-4', name: 'Greenbeans Wanoja MTW', category: 'Green Beans', pricePerKg: 280000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 2500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja MTW', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-5', name: 'Greenbeans Kerinci Fullwash', category: 'Green Beans', pricePerKg: 172000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 162722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Fullwash', isExclusive: false, exclusiveCode: '' },
-
-  // ROASTED BEANS
-  { id: 'RB-1', name: 'Wanoja Avisani', category: 'Roasted Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 284000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Avisani Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-2', name: 'Wanoja Fullwash', category: 'Roasted Beans', pricePerKg: 350000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 193000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-3', name: 'Wanoja Natural', category: 'Roasted Beans', pricePerKg: 450000, pricePer500g: 0, pricePer200g: 150000, greenBeanCostPerKg: 243000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Natural Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-4', name: 'Kerinci Fullwash', category: 'Roasted Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 160222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-
-  // BLEND BEANS (GAMBAR 5)
-  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: 'RAILWAY50' },
-  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: 'ASTRIA60' },
-  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: 'BRUNSWICK50' },
-  { id: 'BL-4', name: 'FarmHouse Blend (70 KWH : 30 KNE)', category: 'Blend Beans', pricePerKg: 290000, pricePer500g: 0, pricePer200g: 70000, greenBeanCostPerKg: 229028, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'FarmHouse Blend: 70% Kerinci WH + 30% Kerinci Natural', isExclusive: true, exclusiveCode: 'FARM70' },
-  { id: 'BL-5', name: 'Dago Terrace Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 199653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Dago Terrace Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'DAGO70' },
-  { id: 'BL-6', name: 'Foresta Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 201783, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Foresta Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'FORESTA70' },
-  { id: 'BL-7', name: 'Blend Tigris (70 Robusta : 30 KDH)', category: 'Blend Beans', pricePerKg: 210000, pricePer500g: 0, pricePer200g: 50000, greenBeanCostPerKg: 162153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend Tigris: 70% Kerinci Robusta + 30% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'TIGRIS70' },
-  { id: 'BL-8', name: 'Blend K50 (50 KDH : 50 Robusta)', category: 'Blend Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 55000, greenBeanCostPerKg: 158264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend K50: 50% Kerinci Robusta + 50% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'K50BLEND' },
-  { id: 'BL-9', name: 'Blend 60:40 (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 240000, pricePer500g: 0, pricePer200g: 58000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend 60:40: 60% Roasted KDH PTP + 40% Kerinci Robusta', isExclusive: true, exclusiveCode: 'BLEND6040' },
-  { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: 'LUNATIRSA50' }
-];
