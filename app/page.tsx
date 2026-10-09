@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock, KeyRound, 
   Trash2, User, Check, X,
-  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag
+  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, BarChart2, Package
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -27,7 +27,7 @@ interface Product {
   description: string;
   isExclusive: boolean;
   exclusiveCode: string;
-  allowedResellers?: string[]; // Array username reseller yang diizinkan
+  allowedResellers?: string[];
 }
 
 interface OrderItem {
@@ -64,10 +64,9 @@ interface UserAccount {
   password?: string;
   role: 'pembeli' | 'reseller' | 'seller';
   companyName?: string;
-  allowedBlends?: string[]; // Nama-nama produk blend yang diizinkan
+  allowedBlends?: string[];
 }
 
-// DAFTAR AKUN RESELLER & SELLER RESMI DARI TABEL SPREADSHEET
 const presetResellerAccounts: UserAccount[] = [
   { username: 'BrunswickCafe', password: 'Fitzroy!', role: 'reseller', companyName: 'Brunswick', allowedBlends: ['Brunswick Blend (50 KDH : 50 BNE)'] },
   { username: 'DagoTerrace', password: 'TerraceB', role: 'reseller', companyName: 'Dago Terrace', allowedBlends: ['Dago Terrace Blend (70 KDH : 30 Robusta)'] },
@@ -111,7 +110,7 @@ const defaultProductsFromSpreadsheet: Product[] = [
   { id: 'RB-9', name: 'Melaka', category: 'Roasted Beans', pricePerKg: 170000, pricePer500g: 0, pricePer200g: 170000, greenBeanCostPerKg: 85222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Melaka Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
   { id: 'RB-10', name: 'Bajawa Natural 72 Hours', category: 'Roasted Beans', pricePerKg: 375000, pricePer500g: 0, pricePer200g: 375000, greenBeanCostPerKg: 185000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Bajawa Natural 72 Hours Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
 
-  // BLEND BEANS (EKSLUSIF RESELLER)
+  // BLEND BEANS
   { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: '', allowedResellers: ['RailwayCafe'] },
   { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['AstriaSolo'] },
   { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: '', allowedResellers: ['BrunswickCafe'] },
@@ -129,19 +128,17 @@ export default function EpicureanApp() {
   const [selectedRole, setSelectedRole] = useState<'pembeli' | 'reseller' | 'seller'>('pembeli');
   
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
-  
-  // Auth Form State
+  const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'recap'>('orders');
+
   const [authForm, setAuthForm] = useState({ username: '', password: '', companyName: '' });
   const [authError, setAuthError] = useState('');
 
-  // Shortlist Tab State
   const [activeCatalogTab, setActiveCatalogTab] = useState<'all' | 'Green Beans' | 'Roasted Beans' | 'Blend Beans'>('all');
 
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Edit Modal State
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -237,21 +234,15 @@ export default function EpicureanApp() {
     loadData();
   }, []);
 
-  // LOGIKA FILTER PRODUK BERDASARKAN USER LOGGED IN & TAB
   const filteredProducts = products.filter(p => {
-    // Filter Kategori Tab Shortlist
     if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) {
       return false;
     }
-
-    // Filter Hak Akses Role
     if (currentUser?.role === 'seller') {
-      return true; // Seller melihat semua produk
+      return true;
     }
-
     if (currentUser?.role === 'reseller') {
-      if (!p.isExclusive) return true; // Produk umum bisa dilihat
-      // Cek apakah produk blend ini diizinkan untuk reseller ini
+      if (!p.isExclusive) return true;
       if (currentUser.allowedBlends && currentUser.allowedBlends.includes(p.name)) {
         return true;
       }
@@ -260,9 +251,7 @@ export default function EpicureanApp() {
       }
       return false;
     }
-
-    // Pembeli Umum
-    return !p.isExclusive; // Hanya melihat produk non-eksklusif
+    return !p.isExclusive;
   });
 
   const [cart, setCart] = useState<OrderItem[]>([]);
@@ -325,7 +314,6 @@ export default function EpicureanApp() {
         setAuthError('Username atau Password Reseller tidak ditemukan!');
       }
     } else {
-      // Pembeli Umum (Bisa Login/Daftar Bebas)
       if (!authForm.username.trim()) {
         setAuthError('Ketik nama atau username Anda.');
         return;
@@ -509,6 +497,21 @@ export default function EpicureanApp() {
       alert('Gagal menyimpan produk: ' + error.message);
     } else {
       fetchProducts();
+      setProductForm({
+        name: '',
+        category: 'Roasted Beans',
+        pricePerKg: 200000,
+        pricePer500g: 0,
+        pricePer200g: 100000,
+        greenBeanCostPerKg: 100000,
+        roastingCostPerKg: 20000,
+        packagingCostPerKg: 7500,
+        packagingCostPer500g: 5000,
+        packagingCostPer200g: 3000,
+        description: '',
+        isExclusive: false,
+        exclusiveCode: ''
+      });
       alert('Produk baru berhasil disimpan ke database!');
     }
   };
@@ -534,12 +537,11 @@ export default function EpicureanApp() {
 
   const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
 
-  // STEP 1: LANDING WELCOME PAGE (LAYOUT EXPLICIT MATCH GAMBAR)
+  // STEP 1: WELCOME SCREEN
   if (currentStep === 'welcome') {
     return (
       <div className="min-h-screen bg-black text-[#E8E2D5] font-serif flex flex-col items-center justify-center p-4">
         <div className="max-w-2xl w-full text-center space-y-8 py-12 px-6 border border-[#2B261F] rounded-3xl bg-[#080808] shadow-2xl">
-          {/* LOGO SIMBOL */}
           <div className="text-[#D4AF37] flex justify-center">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
               <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" />
@@ -563,7 +565,6 @@ export default function EpicureanApp() {
             SELAMAT DATANG!
           </h2>
 
-          {/* 3 TOMBOL PILIHAN ROLE (SAYA PEMBELI / RESELLER / SELLER) */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
             <button
               onClick={() => handleRoleSelection('pembeli')}
@@ -594,7 +595,7 @@ export default function EpicureanApp() {
     );
   }
 
-  // STEP 2: FORM SIGN IN / LOG IN SESUAI ROLE
+  // STEP 2: AUTH SCREEN
   if (currentStep === 'auth') {
     return (
       <div className="min-h-screen bg-black text-[#E8E2D5] font-serif flex flex-col items-center justify-center p-4">
@@ -676,7 +677,7 @@ export default function EpicureanApp() {
     );
   }
 
-  // STEP 3: BERANDA UTAMA PLATFORM
+  // STEP 3: MAIN APP
   return (
     <div className="min-h-screen bg-[#111111] text-[#E8E2D5] font-serif antialiased selection:bg-[#D4AF37] selection:text-black">
       {/* HEADER VINTAGE */}
@@ -696,7 +697,6 @@ export default function EpicureanApp() {
             </div>
           </div>
 
-          {/* INFORMASI AKUN LOGGED IN */}
           <div className="flex items-center space-x-4 bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full">
             <div className="text-right text-xs italic">
               <p className="text-[#E5D7B8] font-bold">{currentUser?.username}</p>
@@ -717,7 +717,6 @@ export default function EpicureanApp() {
         {currentUser?.role !== 'seller' ? (
           /* STOREFRONT (PEMBELI / RESELLER) */
           <div className="space-y-10">
-            {/* HERO */}
             <div className="text-center py-6 px-4 space-y-2">
               <h1 className="text-3xl sm:text-5xl font-normal tracking-wide text-[#E5D7B8] uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
                 EPICUREAN
@@ -732,7 +731,6 @@ export default function EpicureanApp() {
               <div className="flex flex-col sm:flex-row justify-between items-center border-b border-[#2B261F] pb-4 gap-4">
                 <h2 className="text-lg font-serif italic text-[#E5D7B8]">Katalog Produk Coffee Beans</h2>
                 
-                {/* SHORTLIST TABS */}
                 <div className="flex items-center space-x-2 bg-[#0A0A0A] border border-[#2B261F] p-1 rounded-full">
                   <button
                     onClick={() => setActiveCatalogTab('all')}
@@ -975,57 +973,189 @@ export default function EpicureanApp() {
             </section>
           </div>
         ) : (
-          /* DASHBOARD SELLER ADMIN */
+          /* DASHBOARD SELLER ADMIN LENGKAP */
           <div className="space-y-8">
-            <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex justify-between items-center">
+            <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
               <h1 className="text-xl font-serif italic text-[#E5D7B8]">Epicurean Roastery Manager</h1>
+              
+              {/* SUB-NAVIGASI SELLER ADMIN */}
+              <div className="flex space-x-2 bg-[#14120F] border border-[#2B261F] p-1 rounded-2xl">
+                <button
+                  onClick={() => setSellerSubTab('orders')}
+                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
+                    sellerSubTab === 'orders' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
+                  }`}
+                >
+                  <Package className="h-3.5 w-3.5" />
+                  <span>Orders ({orders.length})</span>
+                </button>
+                <button
+                  onClick={() => setSellerSubTab('products')}
+                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
+                    sellerSubTab === 'products' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
+                  }`}
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Products & COGS</span>
+                </button>
+                <button
+                  onClick={() => setSellerSubTab('recap')}
+                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
+                    sellerSubTab === 'recap' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
+                  }`}
+                >
+                  <BarChart2 className="h-3.5 w-3.5" />
+                  <span>Recap Sales</span>
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-8">
-              {/* DAFTAR AKUN RESELLER INFO CARD */}
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4">
-                <h3 className="text-sm font-serif text-[#D4AF37]">Daftar Akun Reseller & Akses Menu Blend</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs italic">
-                  {presetResellerAccounts.map(r => (
-                    <div key={r.username} className="bg-[#14120F] p-3 rounded-xl border border-[#2B261F] flex justify-between">
-                      <div>
-                        <p className="text-[#E5D7B8] font-bold">{r.companyName} ({r.username})</p>
-                        <p className="text-[11px] text-[#A69C83]">Akses: {r.allowedBlends?.join(', ')}</p>
-                      </div>
-                      <span className="text-[10px] text-emerald-400 font-mono">PWD: {r.password}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* DAFTAR PRODUK & EDIT COGS */}
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
-                <h3 className="text-sm font-serif text-[#E5D7B8]">Katalog Produk & COGS Master</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {products.map((p) => (
-                    <div key={p.id} className="bg-[#14120F] border border-[#2B261F] p-5 rounded-2xl space-y-3 relative">
-                      <div className="flex justify-between items-start">
-                        <span className="text-[10px] italic text-[#D4AF37]">{p.category}</span>
-                        <div className="flex space-x-2">
-                          <button onClick={() => handleOpenEditModal(p)} className="text-[#D4AF37] hover:text-amber-300 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
-                            <Edit3 className="h-3.5 w-3.5" />
-                          </button>
-                          <button onClick={() => handleDeleteProduct(p.id)} className="text-[#A69C83] hover:text-rose-400 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+            {/* TAB 1: LIST ORDERS (DAPAT DIPANTAU DAN DIUBAH STATUS) */}
+            {sellerSubTab === 'orders' && (
+              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
+                <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Daftar Pre-Order Masuk</h3>
+                {orders.length === 0 ? (
+                  <p className="text-[#A69C83] py-8 text-center">Belum ada orderan yang masuk.</p>
+                ) : (
+                  <div className="space-y-3">
+                    {orders.map((o) => (
+                      <div key={o.id} className="bg-[#14120F] p-4 rounded-xl border border-[#2B261F] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div>
+                          <p className="font-serif text-[#D4AF37] text-sm">{o.id} - {o.customerName} ({o.companyName})</p>
+                          <p className="text-[11px] text-[#A69C83] mt-0.5">{o.paymentMethod.replace('_', ' ').toUpperCase()} | Total: <strong className="text-[#E5D7B8]">Rp {o.totalAmount.toLocaleString('id-ID')}</strong></p>
+                          <p className="text-[10px] text-[#776E5E] mt-1">Item: {o.items.map(i => i.name).join(', ')}</p>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] text-[#A69C83]">Status:</span>
+                          <select
+                            value={o.status}
+                            onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
+                            className="bg-[#0A0A0A] border border-[#2B261F] px-3 py-1.5 rounded-lg text-xs italic text-[#E5D7B8] focus:outline-none"
+                          >
+                            <option value="Pending Approval">Pending Approval</option>
+                            <option value="Roasting Process">Roasting Process</option>
+                            <option value="Ready for Shipping">Ready for Shipping</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
                         </div>
                       </div>
-                      <h3 className="text-sm font-serif text-[#E5D7B8]">{p.name}</h3>
-                      <div className="text-xs italic text-[#A69C83]">
-                        <p>1 Kg: Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</p>
-                        <p>200g: Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</p>
-                        <p className="text-rose-400">HPP Greenbeans: Rp {(p.greenBeanCostPerKg || 0).toLocaleString('id-ID')}/Kg</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB 2: PRODUCTS & AMBAH PRODUK BARU */}
+            {sellerSubTab === 'products' && (
+              <div className="space-y-8">
+                {/* DAFTAR AKUN RESELLER INFO CARD */}
+                <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4">
+                  <h3 className="text-sm font-serif text-[#D4AF37]">Daftar Akun Reseller & Akses Menu Blend</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs italic">
+                    {presetResellerAccounts.map(r => (
+                      <div key={r.username} className="bg-[#14120F] p-3 rounded-xl border border-[#2B261F] flex justify-between">
+                        <div>
+                          <p className="text-[#E5D7B8] font-bold">{r.companyName} ({r.username})</p>
+                          <p className="text-[11px] text-[#A69C83]">Akses: {r.allowedBlends?.join(', ')}</p>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-mono">PWD: {r.password}</span>
                       </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* FORM TAMBAH PRODUK BARU */}
+                <form onSubmit={handleSaveProduct} className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
+                  <h3 className="text-sm font-serif text-[#E5D7B8] border-b border-[#2B261F] pb-2">Tambah Produk Baru & COGS</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <input
+                      type="text"
+                      placeholder="Nama Produk *"
+                      required
+                      value={productForm.name}
+                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                      className="bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                    />
+                    <select
+                      value={productForm.category}
+                      onChange={(e) => setProductForm({ ...productForm, category: e.target.value as Product['category'] })}
+                      className="bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                    >
+                      <option value="Green Beans">Green Beans</option>
+                      <option value="Roasted Beans">Roasted Beans</option>
+                      <option value="Blend Beans">Blend Beans</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-[#2B261F] pt-3">
+                    <div>
+                      <label className="block mb-1 text-[#D4AF37]">Harga 1 Kg (IDR)</label>
+                      <input type="number" value={productForm.pricePerKg} onChange={(e) => setProductForm({ ...productForm, pricePerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
                     </div>
-                  ))}
+                    <div>
+                      <label className="block mb-1 text-[#D4AF37]">Harga 200g (IDR)</label>
+                      <input type="number" value={productForm.pricePer200g} onChange={(e) => setProductForm({ ...productForm, pricePer200g: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
+                    </div>
+                    <div>
+                      <label className="block mb-1 text-[#D4AF37]">HPP Greenbeans / Kg</label>
+                      <input type="number" value={productForm.greenBeanCostPerKg} onChange={(e) => setProductForm({ ...productForm, greenBeanCostPerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
+                    </div>
+                  </div>
+
+                  <button type="submit" className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold px-6 py-2.5 rounded-xl text-xs flex items-center space-x-1.5">
+                    <Plus className="h-4 w-4" />
+                    <span>Simpan & Publikasikan Produk</span>
+                  </button>
+                </form>
+
+                {/* DAFTAR PRODUK & EDIT COGS */}
+                <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
+                  <h3 className="text-sm font-serif text-[#E5D7B8]">Katalog Produk & Master COGS</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {products.map((p) => (
+                      <div key={p.id} className="bg-[#14120F] border border-[#2B261F] p-5 rounded-2xl space-y-3 relative">
+                        <div className="flex justify-between items-start">
+                          <span className="text-[10px] italic text-[#D4AF37]">{p.category}</span>
+                          <div className="flex space-x-2">
+                            <button onClick={() => handleOpenEditModal(p)} className="text-[#D4AF37] hover:text-amber-300 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button onClick={() => handleDeleteProduct(p.id)} className="text-[#A69C83] hover:text-rose-400 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <h3 className="text-sm font-serif text-[#E5D7B8]">{p.name}</h3>
+                        <div className="text-xs italic text-[#A69C83]">
+                          <p>1 Kg: Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</p>
+                          <p>200g: Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</p>
+                          <p className="text-rose-400">HPP Greenbeans: Rp {(p.greenBeanCostPerKg || 0).toLocaleString('id-ID')}/Kg</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
+
+            {/* TAB 3: RECAP SALES & OMAZET KEUNTUNGAN */}
+            {sellerSubTab === 'recap' && (
+              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
+                <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Ringkasan Penjualan & Keuntungan</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <div className="bg-[#14120F] border border-[#2B261F] p-6 rounded-2xl">
+                    <p className="text-xs text-[#A69C83] italic">Total Omzet Penjualan</p>
+                    <p className="text-3xl font-serif text-[#D4AF37] mt-2 font-bold">Rp {totalOmzet.toLocaleString('id-ID')}</p>
+                    <p className="text-[10px] text-[#776E5E] italic mt-2">*Akumulasi dari pesanan yang tidak di-reject</p>
+                  </div>
+                  <div className="bg-[#14120F] border border-[#2B261F] p-6 rounded-2xl">
+                    <p className="text-xs text-[#A69C83] italic">Total Transaksi Pesanan</p>
+                    <p className="text-3xl font-serif text-[#E5D7B8] mt-2 font-bold">{orders.filter(o => o.status !== 'Rejected').length} Pesanan</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
