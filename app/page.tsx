@@ -6,7 +6,7 @@ import {
   Coffee, ShoppingCart, Calculator, Truck, CreditCard, 
   Plus, FileText, BarChart2, CheckCircle, Lock, KeyRound, 
   Trash2, Printer, AlertTriangle, Building2, User, Upload, Check, X,
-  MessageSquare, ExternalLink, RefreshCw, ShieldAlert, Key, Unlock
+  MessageSquare, ExternalLink, RefreshCw, ShieldAlert, Key, Unlock, Settings, Save
 } from 'lucide-react';
 
 // Inisialisasi Supabase Client
@@ -14,7 +14,6 @@ const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
 const supabaseAnonKey = 'sb_publishable_5lONdfpICE-bb0wuuRjnMg_M_R4ddih';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Interfaces
 interface Product {
   id: string;
   name: string;
@@ -64,29 +63,46 @@ interface Order {
 
 export default function EpicureanApp() {
   const [activeTab, setActiveTab] = useState<'storefront' | 'seller'>('storefront');
-  const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'recap'>('orders');
+  const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'passcode' | 'recap'>('orders');
   
-  // Auth Password State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [passwordError, setPasswordError] = useState(false);
 
-  // States
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // State Kode Rahasia Cafe (Storefront)
+  // Dynamic Passcode State (Bisa Diubah di Seller Admin)
+  const [globalBlendPasscode, setGlobalBlendPasscode] = useState('EPICUREANVIP');
+  const [newPasscodeForm, setNewPasscodeForm] = useState('');
+
   const [userEnteredCode, setUserEnteredCode] = useState('');
   const [unlockedCodes, setUnlockedCodes] = useState<string[]>([]);
   const [codeSuccessMsg, setCodeSuccessMsg] = useState(false);
 
-  // Load Data dari Supabase
+  useEffect(() => {
+    const savedCode = localStorage.getItem('epicurean_blend_passcode');
+    if (savedCode) {
+      setGlobalBlendPasscode(savedCode);
+    }
+  }, []);
+
+  const handleUpdateGlobalPasscode = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPasscodeForm.trim()) return;
+    const formatted = newPasscodeForm.trim().toUpperCase();
+    setGlobalBlendPasscode(formatted);
+    localStorage.setItem('epicurean_blend_passcode', formatted);
+    setNewPasscodeForm('');
+    alert(`Passcode Blend berhasil diperbarui menjadi: ${formatted}`);
+  };
+
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*');
     if (error) {
       console.error('Error fetching products:', error);
-    } else if (data) {
+    } else if (data && data.length > 0) {
       const formatted: Product[] = data.map(item => ({
         id: item.id,
         name: item.name,
@@ -104,6 +120,9 @@ export default function EpicureanApp() {
         exclusiveCode: (item.exclusive_code || '').toUpperCase().trim()
       }));
       setProducts(formatted);
+    } else {
+      // Fallback Data dari Spreadsheet HPP jika DB Kosong
+      setProducts(defaultProductsFromSpreadsheet);
     }
   };
 
@@ -144,17 +163,12 @@ export default function EpicureanApp() {
     loadData();
   }, []);
 
-  // Handler Buka Kunci Produk Eksklusif Cafe
   const handleUnlockCode = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanCode = userEnteredCode.trim().toUpperCase();
     if (!cleanCode) return;
 
-    const matchedProducts = products.filter(
-      p => p.isExclusive && p.exclusiveCode === cleanCode
-    );
-
-    if (matchedProducts.length > 0) {
+    if (cleanCode === globalBlendPasscode || products.some(p => p.isExclusive && p.exclusiveCode === cleanCode)) {
       if (!unlockedCodes.includes(cleanCode)) {
         setUnlockedCodes([...unlockedCodes, cleanCode]);
       }
@@ -162,20 +176,17 @@ export default function EpicureanApp() {
       setUserEnteredCode('');
       setTimeout(() => setCodeSuccessMsg(false), 3500);
     } else {
-      alert('Referal/Access code not found. Please try again.');
+      alert('Passcode tidak valid. Silakan tanyakan ke Admin Roastery.');
     }
   };
 
-  // Filter Produk Sesuai Akses
   const visibleProducts = products.filter(p => {
     if (!p.isExclusive) return true;
-    return unlockedCodes.includes(p.exclusiveCode);
+    return unlockedCodes.includes(globalBlendPasscode) || unlockedCodes.includes(p.exclusiveCode);
   });
 
-  // Filter khusus Roasted Beans untuk Custom Blend
   const roastedProducts = products.filter(p => p.category === 'Roasted Beans');
   
-  // State Blend 2 Tipe Biji
   const [blend, setBlend] = useState({
     bean1Id: '',
     bean2Id: '',
@@ -201,21 +212,29 @@ export default function EpicureanApp() {
   };
 
   const { r1: bean1Ratio, r2: bean2Ratio } = getBlendRatios(blend.ratioPreset);
-  const roastingAndPackagingCost = 25000;
   const bean1Obj = products.find(p => p.id === blend.bean1Id);
   const bean2Obj = products.find(p => p.id === blend.bean2Id);
 
-  const priceBean1 = bean1Obj ? bean1Obj.pricePerKg : 150000;
-  const priceBean2 = bean2Obj ? bean2Obj.pricePerKg : 150000;
+  const priceBean1 = bean1Obj ? bean1Obj.pricePerKg : 170000;
+  const priceBean2 = bean2Obj ? bean2Obj.pricePerKg : 170000;
 
-  const calculatedBlendPricePerKg = Math.round(
-    (bean1Ratio / 100) * priceBean1 +
-    (bean2Ratio / 100) * priceBean2 +
-    roastingAndPackagingCost
-  );
-  const calculatedBlendPricePerGram = calculatedBlendPricePerKg / 1000;
+  // Rumus Proteksi COGS Custom Blend
+  const calculateBlendTotalPrice = (weightGram: number, p1: number, p2: number, r1: number, r2: number) => {
+    const baseRawPricePerKg = (r1 / 100) * p1 + (r2 / 100) * p2;
+    if (weightGram >= 1000) {
+      const totalKg = weightGram / 1000;
+      return Math.round((baseRawPricePerKg + 27500) * totalKg);
+    } else if (weightGram >= 500) {
+      const portion = (baseRawPricePerKg / 1000) * weightGram;
+      return Math.round(portion * 1.12 + 10000);
+    } else {
+      const portion = (baseRawPricePerKg / 1000) * weightGram;
+      return Math.round(portion * 1.20 + 7500);
+    }
+  };
 
-  // Cart & Customer State
+  const totalCustomBlendPrice = calculateBlendTotalPrice(blend.weightGram, priceBean1, priceBean2, bean1Ratio, bean2Ratio);
+
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
   const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
@@ -223,9 +242,7 @@ export default function EpicureanApp() {
   const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
 
   useEffect(() => {
-    if (customerType === 'perorangan') {
-      setPaymentMethod('transfer');
-    }
+    if (customerType === 'perorangan') setPaymentMethod('transfer');
   }, [customerType]);
 
   const totalCartWeightKg = cart.reduce((acc, item) => acc + item.quantityGram, 0) / 1000;
@@ -234,20 +251,18 @@ export default function EpicureanApp() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
   const grandTotal = cartSubtotal + shippingCost;
 
-  // Active Submitted Order
   const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
   const [paymentProofInput, setPaymentProofInput] = useState('');
 
-  // Form Product State
   const [productForm, setProductForm] = useState({
     name: '',
     category: 'Roasted Beans' as Product['category'],
-    pricePerKg: 150000,
-    pricePer500g: 80000,
-    pricePer200g: 35000,
-    greenBeanCostPerKg: 90000,
-    roastingCostPerKg: 15000,
-    packagingCostPerKg: 10000,
+    pricePerKg: 200000,
+    pricePer500g: 0,
+    pricePer200g: 100000,
+    greenBeanCostPerKg: 100000,
+    roastingCostPerKg: 20000,
+    packagingCostPerKg: 7500,
     packagingCostPer500g: 5000,
     packagingCostPer200g: 3000,
     description: '',
@@ -263,8 +278,8 @@ export default function EpicureanApp() {
       id: `CB-${Date.now()}`,
       name: `Custom Blend (${bean1Ratio}% ${b1Name} : ${bean2Ratio}% ${b2Name})`,
       quantityGram: blend.weightGram,
-      pricePerGram: calculatedBlendPricePerGram,
-      totalPrice: Math.round(calculatedBlendPricePerGram * blend.weightGram),
+      pricePerGram: totalCustomBlendPrice / blend.weightGram,
+      totalPrice: totalCustomBlendPrice,
       blendDetails: `Gilingan: ${blend.grindSize}`
     };
     setCart([...cart, newItem]);
@@ -272,16 +287,16 @@ export default function EpicureanApp() {
 
   const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g') => {
     let weightGram = 1000;
-    let price = prod.pricePerKg || 150000;
+    let price = prod.pricePerKg || 200000;
     let packLabel = 'Kemasan 1 Kg';
 
     if (packType === '500g') {
       weightGram = 500;
-      price = prod.pricePer500g || 80000;
+      price = prod.pricePer500g || 100000;
       packLabel = 'Kemasan 500 Gram';
     } else if (packType === '200g') {
       weightGram = 200;
-      price = prod.pricePer200g || 35000;
+      price = prod.pricePer200g || 50000;
       packLabel = 'Kemasan 200 Gram';
     }
     
@@ -379,23 +394,6 @@ export default function EpicureanApp() {
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
   };
 
-  const handleUploadPaymentProof = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentActiveOrder || !paymentProofInput) return;
-
-    const { error } = await supabase.from('orders').update({
-      payment_proof: paymentProofInput
-    }).eq('id', currentActiveOrder.id);
-
-    if (error) {
-      alert('Gagal menyimpan bukti pembayaran: ' + error.message);
-    } else {
-      setCurrentActiveOrder(prev => prev ? { ...prev, paymentProof: paymentProofInput } : null);
-      fetchOrders();
-      alert('Bukti pembayaran berhasil dicatat ke server!');
-    }
-  };
-
   const handlePasswordSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (passwordInput === 'EPCCOFFEE!') {
@@ -430,23 +428,8 @@ export default function EpicureanApp() {
     if (error) {
       alert('Gagal menyimpan produk: ' + error.message);
     } else {
-      setProductForm({
-        name: '',
-        category: 'Roasted Beans',
-        pricePerKg: 150000,
-        pricePer500g: 80000,
-        pricePer200g: 35000,
-        greenBeanCostPerKg: 90000,
-        roastingCostPerKg: 15000,
-        packagingCostPerKg: 10000,
-        packagingCostPer500g: 5000,
-        packagingCostPer200g: 3000,
-        description: '',
-        isExclusive: false,
-        exclusiveCode: ''
-      });
       fetchProducts();
-      alert('Produk baru berhasil disimpan ke katalog!');
+      alert('Produk baru berhasil disimpan ke database!');
     }
   };
 
@@ -470,22 +453,14 @@ export default function EpicureanApp() {
   };
 
   const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
-  const totalEstimatedCOGS = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + Math.round(o.subtotal * 0.65), 0);
-  const totalGrossProfit = totalOmzet - totalEstimatedCOGS;
-  const totalUnpaidKontraBon = orders
-    .filter(o => o.paymentMethod.startsWith('kontra_bon') && o.status !== 'Rejected')
-    .reduce((acc, o) => acc + o.totalAmount, 0);
 
   return (
     <div className="min-h-screen bg-[#111111] text-[#E8E2D5] font-serif antialiased selection:bg-[#D4AF37] selection:text-black">
-      {/* CLASSIC VINTAGE HEADER BAR */}
+      {/* HEADER VINTAGE */}
       <header className="p-4 sm:p-6 max-w-7xl mx-auto">
         <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between shadow-2xl gap-4">
-          
-          {/* Logo Kiri dengan Ikon Daun Klasik */}
           <div className="flex items-center space-x-4 border-b sm:border-b-0 sm:border-r border-[#2B261F] pb-3 sm:pb-0 sm:pr-6">
             <div className="text-[#D4AF37]">
-              {/* SVG Simbol Logo Klasik */}
               <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                 <path d="M12 2L15 8L21 9L16.5 14L18 20L12 17L6 20L7.5 14L3 9L9 8L12 2Z" />
               </svg>
@@ -498,19 +473,15 @@ export default function EpicureanApp() {
             </div>
           </div>
 
-          {/* Sub-teks Tengah */}
           <div className="hidden lg:block text-center text-xs italic text-[#A69C83] font-serif tracking-wide">
             Website Orders Coffee Beans Official From Epicurean
           </div>
 
-          {/* Switcher Mode (Buyer / Seller) Klasik */}
           <div className="flex items-center bg-[#1A1815] border border-[#2B261F] p-1 rounded-full">
             <button
               onClick={() => setActiveTab('storefront')}
               className={`px-6 py-1.5 rounded-full text-xs italic font-serif transition-all ${
-                activeTab === 'storefront' 
-                  ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' 
-                  : 'text-[#A69C83] hover:text-[#D4AF37]'
+                activeTab === 'storefront' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#D4AF37]'
               }`}
             >
               Buyer
@@ -518,24 +489,20 @@ export default function EpicureanApp() {
             <button
               onClick={() => setActiveTab('seller')}
               className={`px-6 py-1.5 rounded-full text-xs italic font-serif transition-all ${
-                activeTab === 'seller' 
-                  ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' 
-                  : 'text-[#A69C83] hover:text-[#D4AF37]'
+                activeTab === 'seller' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#D4AF37]'
               }`}
             >
               Seller
             </button>
           </div>
-
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
         {activeTab === 'storefront' ? (
           <div className="space-y-12">
-            
-            {/* HERO SECTION KLASIK */}
-            <div className="text-center py-12 px-4 space-y-4">
+            {/* HERO */}
+            <div className="text-center py-10 px-4 space-y-4">
               <h1 className="text-4xl sm:text-6xl font-normal tracking-wide text-[#E5D7B8] uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
                 EPICUREAN
               </h1>
@@ -546,7 +513,7 @@ export default function EpicureanApp() {
                 Website Orders Coffee Beans Official From Epicurean
               </p>
 
-              {/* BAR REFERAL CODE ELEGANT */}
+              {/* UNLOCK PASSCODE */}
               <div className="mt-8 max-w-md mx-auto">
                 <form onSubmit={handleUnlockCode} className="bg-[#0A0A0A] border border-[#3A3328] rounded-full p-1.5 flex items-center justify-between shadow-2xl">
                   <input
@@ -567,12 +534,7 @@ export default function EpicureanApp() {
 
                 {codeSuccessMsg && (
                   <p className="text-xs text-emerald-400 italic mt-3 font-serif">
-                    ✓ Exclusive menu successfully unlocked!
-                  </p>
-                )}
-                {unlockedCodes.length > 0 && (
-                  <p className="text-[11px] text-[#D4AF37] mt-2 italic font-serif">
-                    Unlocked Passcode: <strong>{unlockedCodes.join(', ')}</strong>
+                    ✓ Exclusive Menu Unlocked!
                   </p>
                 )}
               </div>
@@ -583,7 +545,7 @@ export default function EpicureanApp() {
               <div className="border-b border-[#2B261F] pb-4 flex items-center justify-between">
                 <div>
                   <h2 className="text-lg font-serif italic text-[#E5D7B8]">Custom Blend Configurator</h2>
-                  <p className="text-xs text-[#A69C83] italic">Racik 2 jenis roasted beans pilihan dengan rasio persentase yang presisi</p>
+                  <p className="text-xs text-[#A69C83] italic">Kalkulasi rasio racikan komponen dengan kalkulasi harga eceran terproteksi</p>
                 </div>
                 <Calculator className="h-5 w-5 text-[#D4AF37]" />
               </div>
@@ -686,16 +648,12 @@ export default function EpicureanApp() {
                         <span className="text-[#E5D7B8] font-bold">{blend.ratioPreset}</span>
                       </div>
                       <div className="flex justify-between text-[#A69C83]">
-                        <span>Price per Kg:</span>
-                        <span className="text-[#D4AF37]">Rp {calculatedBlendPricePerKg.toLocaleString('id-ID')}</span>
-                      </div>
-                      <div className="flex justify-between text-[#A69C83]">
                         <span>Weight:</span>
                         <span className="text-[#E5D7B8]">{blend.weightGram} Gram</span>
                       </div>
                       <div className="border-t border-[#2B261F] pt-3 flex justify-between text-sm font-serif font-bold text-[#E5D7B8]">
                         <span>Total Tagihan:</span>
-                        <span className="text-[#D4AF37]">Rp {Math.round(calculatedBlendPricePerGram * blend.weightGram).toLocaleString('id-ID')}</span>
+                        <span className="text-[#D4AF37]">Rp {totalCustomBlendPrice.toLocaleString('id-ID')}</span>
                       </div>
                     </div>
 
@@ -720,7 +678,7 @@ export default function EpicureanApp() {
                   className="p-2 bg-[#0A0A0A] border border-[#2B261F] rounded-xl text-xs italic text-[#A69C83] hover:text-[#D4AF37] flex items-center space-x-1"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  <span>Sync</span>
+                  <span>Sync Cloud</span>
                 </button>
               </div>
 
@@ -730,7 +688,6 @@ export default function EpicureanApp() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {visibleProducts.map((p) => {
                     const has1kg = (p.pricePerKg || 0) > 0;
-                    const has500g = (p.pricePer500g || 0) > 0;
                     const has200g = (p.pricePer200g || 0) > 0;
 
                     return (
@@ -745,7 +702,7 @@ export default function EpicureanApp() {
                             {p.isExclusive && (
                               <span className="text-[10px] text-purple-300 font-serif italic flex items-center space-x-1">
                                 <Lock className="h-3 w-3" />
-                                <span>VIP Code: {p.exclusiveCode}</span>
+                                <span>Exclusive</span>
                               </span>
                             )}
                           </div>
@@ -756,50 +713,31 @@ export default function EpicureanApp() {
                           <div className="mt-4 space-y-1.5 bg-[#14120F] p-3 rounded-xl border border-[#2B261F] text-xs italic">
                             {has1kg && (
                               <div className="flex justify-between text-[#A69C83]">
-                                <span>1 Kg:</span>
+                                <span>Kemasan 1 Kg:</span>
                                 <span className="text-[#D4AF37] font-bold">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
-                              </div>
-                            )}
-                            {has500g ? (
-                              <div className="flex justify-between text-[#A69C83]">
-                                <span>500 Gram:</span>
-                                <span className="text-[#D4AF37] font-bold">Rp {p.pricePer500g.toLocaleString('id-ID')}</span>
-                              </div>
-                            ) : (
-                              <div className="flex justify-between text-[11px] text-rose-400/80">
-                                <span>500 Gram:</span>
-                                <span>N/A</span>
                               </div>
                             )}
                             {has200g ? (
                               <div className="flex justify-between text-[#A69C83]">
-                                <span>200 Gram:</span>
+                                <span>Kemasan 200 Gram:</span>
                                 <span className="text-[#D4AF37] font-bold">Rp {p.pricePer200g.toLocaleString('id-ID')}</span>
                               </div>
                             ) : (
                               <div className="flex justify-between text-[11px] text-rose-400/80">
-                                <span>200 Gram:</span>
+                                <span>Kemasan 200 Gram:</span>
                                 <span>N/A</span>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-3 gap-1.5 mt-5">
+                        <div className="grid grid-cols-2 gap-2 mt-5">
                           {has200g ? (
                             <button onClick={() => addProductToCart(p, '200g')} className="bg-[#14120F] hover:bg-[#2B261F] text-[#E5D7B8] text-[10px] italic py-2 rounded-lg border border-[#2B261F]">
                               + 200g
                             </button>
                           ) : (
-                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A</button>
-                          )}
-
-                          {has500g ? (
-                            <button onClick={() => addProductToCart(p, '500g')} className="bg-[#14120F] hover:bg-[#2B261F] text-[#E5D7B8] text-[10px] italic py-2 rounded-lg border border-[#2B261F]">
-                              + 500g
-                            </button>
-                          ) : (
-                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A</button>
+                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A 200g</button>
                           )}
 
                           {has1kg ? (
@@ -807,7 +745,7 @@ export default function EpicureanApp() {
                               + 1 Kg
                             </button>
                           ) : (
-                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A</button>
+                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A 1 Kg</button>
                           )}
                         </div>
                       </div>
@@ -841,10 +779,8 @@ export default function EpicureanApp() {
                       ))}
                     </div>
 
-                    {/* Form Pemesan */}
                     <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3">
                       <p className="text-xs font-serif italic text-[#D4AF37]">Buyer Profile & Verification</p>
-                      
                       <div className="grid grid-cols-2 gap-2 text-xs">
                         <button
                           type="button"
@@ -904,12 +840,11 @@ export default function EpicureanApp() {
                   </div>
 
                   <div className="space-y-5">
-                    {/* Payment Method */}
                     <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-2 text-xs italic">
                       <p className="font-serif text-[#D4AF37]">Payment Terms</p>
                       <label className="flex items-center space-x-2 cursor-pointer">
                         <input type="radio" name="payment" checked={paymentMethod === 'transfer'} onChange={() => setPaymentMethod('transfer')} className="accent-[#D4AF37]" />
-                        <span className="text-[#E5D7B8]">Direct Bank Transfer (BCA: 7772400244 CV MULTI AGRI SENTOSA)</span>
+                        <span className="text-[#E5D7B8]">Direct Bank Transfer (BCA: 7772400244)</span>
                       </label>
                       {customerType === 'cafe' && (
                         <>
@@ -931,7 +866,7 @@ export default function EpicureanApp() {
                         <span>Rp {cartSubtotal.toLocaleString('id-ID')}</span>
                       </div>
                       <div className="flex justify-between text-[#A69C83]">
-                        <span>Ongkir ({destination === 'bandung' ? 'Kota Bandung' : 'Luar Bandung'}):</span>
+                        <span>Ongkir:</span>
                         <span>Rp {shippingCost.toLocaleString('id-ID')}</span>
                       </div>
                       <div className="border-t border-[#2B261F] pt-2 flex justify-between text-base font-serif font-bold text-[#E5D7B8]">
@@ -950,7 +885,6 @@ export default function EpicureanApp() {
                 </form>
               )}
 
-              {/* WA DIRECT */}
               {currentActiveOrder && (
                 <div className="mt-6 p-5 bg-[#14120F] border border-[#2B261F] rounded-2xl space-y-3">
                   <p className="text-xs italic text-[#D4AF37] font-serif">Order Registered! (ID: {currentActiveOrder.id})</p>
@@ -962,7 +896,7 @@ export default function EpicureanApp() {
                       className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-serif italic rounded-xl flex items-center justify-center space-x-2"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      <span>Send to Admin 1 (081931364302)</span>
+                      <span>Send to Admin 1</span>
                     </a>
                     <a
                       href={generateWhatsAppLink(currentActiveOrder, '6289654225095')}
@@ -971,7 +905,7 @@ export default function EpicureanApp() {
                       className="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-serif italic rounded-xl flex items-center justify-center space-x-2"
                     >
                       <MessageSquare className="h-4 w-4" />
-                      <span>Send to Admin 2 (089654225095)</span>
+                      <span>Send to Admin 2</span>
                     </a>
                   </div>
                 </div>
@@ -1005,13 +939,50 @@ export default function EpicureanApp() {
                 <div className="flex space-x-2">
                   <button onClick={() => setSellerSubTab('orders')} className={`px-4 py-2 rounded-xl text-xs italic font-serif ${sellerSubTab === 'orders' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>Orders ({orders.length})</button>
                   <button onClick={() => setSellerSubTab('products')} className={`px-4 py-2 rounded-xl text-xs italic font-serif ${sellerSubTab === 'products' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>Products & COGS</button>
+                  <button onClick={() => setSellerSubTab('passcode')} className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1 ${sellerSubTab === 'passcode' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>
+                    <Settings className="h-3.5 w-3.5" />
+                    <span>Passcode Blend</span>
+                  </button>
                   <button onClick={() => setSellerSubTab('recap')} className={`px-4 py-2 rounded-xl text-xs italic font-serif ${sellerSubTab === 'recap' ? 'bg-[#E5D7B8] text-[#111111] font-bold' : 'text-[#A69C83]'}`}>Recap Sales</button>
                 </div>
               </div>
 
+              {sellerSubTab === 'passcode' && (
+                <div className="max-w-xl mx-auto bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-5">
+                  <div className="flex items-center space-x-3 border-b border-[#2B261F] pb-3">
+                    <Key className="h-5 w-5 text-[#D4AF37]" />
+                    <h3 className="text-base font-serif italic text-[#E5D7B8]">Pengaturan Passcode Blend Eksklusif</h3>
+                  </div>
+
+                  <p className="text-xs text-[#A69C83] italic">
+                    Passcode aktif saat ini: <strong className="text-[#D4AF37] font-mono font-bold">{globalBlendPasscode}</strong>
+                  </p>
+
+                  <form onSubmit={handleUpdateGlobalPasscode} className="space-y-4">
+                    <div>
+                      <label className="block text-xs italic text-[#A69C83] mb-1">Ketik Passcode Baru</label>
+                      <input
+                        type="text"
+                        required
+                        placeholder="Contoh: CAFEVIP2026"
+                        value={newPasscodeForm}
+                        onChange={(e) => setNewPasscodeForm(e.target.value)}
+                        className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-2.5 text-xs text-[#E5D7B8] uppercase font-mono"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold px-6 py-2.5 rounded-xl text-xs flex items-center space-x-2"
+                    >
+                      <Save className="h-4 w-4" />
+                      <span>Simpan Passcode Baru</span>
+                    </button>
+                  </form>
+                </div>
+              )}
+
               {sellerSubTab === 'products' && (
                 <div className="space-y-8">
-                  {/* List Produk Seller */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     {products.map((p) => (
                       <div key={p.id} className="bg-[#0A0A0A] border border-[#2B261F] p-5 rounded-2xl space-y-3 relative">
@@ -1022,23 +993,21 @@ export default function EpicureanApp() {
                           </button>
                         </div>
                         <h3 className="text-sm font-serif text-[#E5D7B8]">{p.name}</h3>
-                        {p.isExclusive && <p className="text-[10px] text-purple-400 italic font-mono">VIP Code: {p.exclusiveCode}</p>}
                         <div className="text-xs italic text-[#A69C83]">
                           <p>1 Kg: Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</p>
-                          <p>500g: Rp {(p.pricePer500g || 0).toLocaleString('id-ID')}</p>
                           <p>200g: Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</p>
+                          <p className="text-rose-400">HPP Greenbeans: Rp {(p.greenBeanCostPerKg || 0).toLocaleString('id-ID')}/Kg</p>
                         </div>
                       </div>
                     ))}
                   </div>
 
-                  {/* Form Input Produk Baru */}
                   <form onSubmit={handleSaveProduct} className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
-                    <h3 className="text-sm font-serif text-[#E5D7B8]">Add New Product & VIP Code</h3>
+                    <h3 className="text-sm font-serif text-[#E5D7B8]">Add New Product & COGS</h3>
                     <div className="grid grid-cols-2 gap-4">
                       <input
                         type="text"
-                        placeholder="Nama Kopi / Blend *"
+                        placeholder="Nama Produk *"
                         required
                         value={productForm.name}
                         onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
@@ -1055,41 +1024,18 @@ export default function EpicureanApp() {
                       </select>
                     </div>
 
-                    {/* Akses Mode */}
-                    <div className="flex space-x-4 border-t border-[#2B261F] pt-3">
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" checked={!productForm.isExclusive} onChange={() => setProductForm({ ...productForm, isExclusive: false, exclusiveCode: '' })} className="accent-[#D4AF37]" />
-                        <span>Public (Semua Pembeli)</span>
-                      </label>
-                      <label className="flex items-center space-x-2 cursor-pointer">
-                        <input type="radio" checked={productForm.isExclusive} onChange={() => setProductForm({ ...productForm, isExclusive: true })} className="accent-[#D4AF37]" />
-                        <span>Exclusive Cafe (Gunakan VIP Code)</span>
-                      </label>
-                    </div>
-
-                    {productForm.isExclusive && (
-                      <input
-                        type="text"
-                        placeholder="Masukkan Passcode VIP (Contoh: CAFE-AMORA)"
-                        required
-                        value={productForm.exclusiveCode}
-                        onChange={(e) => setProductForm({ ...productForm, exclusiveCode: e.target.value.toUpperCase() })}
-                        className="w-full bg-[#14120F] border border-purple-900 rounded-xl px-3 py-2 text-[#E5D7B8] uppercase font-mono"
-                      />
-                    )}
-
                     <div className="grid grid-cols-3 gap-4 border-t border-[#2B261F] pt-3">
                       <div>
                         <label className="block mb-1 text-[#D4AF37]">Harga 1 Kg (IDR)</label>
                         <input type="number" value={productForm.pricePerKg} onChange={(e) => setProductForm({ ...productForm, pricePerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
                       </div>
                       <div>
-                        <label className="block mb-1 text-[#D4AF37]">Harga 500g (Isi 0 jika N/A)</label>
-                        <input type="number" value={productForm.pricePer500g} onChange={(e) => setProductForm({ ...productForm, pricePer500g: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
+                        <label className="block mb-1 text-[#D4AF37]">Harga 200g (IDR)</label>
+                        <input type="number" value={productForm.pricePer200g} onChange={(e) => setProductForm({ ...productForm, pricePer200g: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
                       </div>
                       <div>
-                        <label className="block mb-1 text-[#D4AF37]">Harga 200g (Isi 0 jika N/A)</label>
-                        <input type="number" value={productForm.pricePer200g} onChange={(e) => setProductForm({ ...productForm, pricePer200g: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
+                        <label className="block mb-1 text-[#D4AF37]">HPP Greenbeans / Kg</label>
+                        <input type="number" value={productForm.greenBeanCostPerKg} onChange={(e) => setProductForm({ ...productForm, greenBeanCostPerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
                       </div>
                     </div>
 
@@ -1133,10 +1079,6 @@ export default function EpicureanApp() {
                     <p className="text-xs text-[#A69C83] italic">Total Omzet</p>
                     <p className="text-2xl font-serif text-[#D4AF37] mt-1">Rp {totalOmzet.toLocaleString('id-ID')}</p>
                   </div>
-                  <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl">
-                    <p className="text-xs text-[#A69C83] italic">Unpaid Kontra Bon</p>
-                    <p className="text-2xl font-serif text-purple-300 mt-1">Rp {totalUnpaidKontraBon.toLocaleString('id-ID')}</p>
-                  </div>
                 </div>
               )}
             </div>
@@ -1146,3 +1088,31 @@ export default function EpicureanApp() {
     </div>
   );
 }
+
+// Default Dataset Sesuai 5 Gambar Tabel HPP Lengkap
+const defaultProductsFromSpreadsheet: Product[] = [
+  // GREENBEANS
+  { id: 'GB-1', name: 'Greenbeans Wanoja Avisani S', category: 'Green Beans', pricePerKg: 284000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 282500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Avisani S (Crop 2026)', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-2', name: 'Greenbeans Wanoja Fullwash', category: 'Green Beans', pricePerKg: 198000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 190500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Fullwash', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-3', name: 'Greenbeans Wanoja Natural', category: 'Green Beans', pricePerKg: 248000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 245500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Natural', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-4', name: 'Greenbeans Wanoja MTW', category: 'Green Beans', pricePerKg: 280000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 2500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja MTW', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-5', name: 'Greenbeans Kerinci Fullwash', category: 'Green Beans', pricePerKg: 172000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 162722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Fullwash', isExclusive: false, exclusiveCode: '' },
+
+  // ROASTED BEANS
+  { id: 'RB-1', name: 'Wanoja Avisani', category: 'Roasted Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 284000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Avisani Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-2', name: 'Wanoja Fullwash', category: 'Roasted Beans', pricePerKg: 350000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 193000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-3', name: 'Wanoja Natural', category: 'Roasted Beans', pricePerKg: 450000, pricePer500g: 0, pricePer200g: 150000, greenBeanCostPerKg: 243000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Natural Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-4', name: 'Kerinci Fullwash', category: 'Roasted Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 160222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+
+  // BLEND BEANS (GAMBAR 5)
+  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: 'RAILWAY50' },
+  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: 'ASTRIA60' },
+  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: 'BRUNSWICK50' },
+  { id: 'BL-4', name: 'FarmHouse Blend (70 KWH : 30 KNE)', category: 'Blend Beans', pricePerKg: 290000, pricePer500g: 0, pricePer200g: 70000, greenBeanCostPerKg: 229028, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'FarmHouse Blend: 70% Kerinci WH + 30% Kerinci Natural', isExclusive: true, exclusiveCode: 'FARM70' },
+  { id: 'BL-5', name: 'Dago Terrace Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 199653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Dago Terrace Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'DAGO70' },
+  { id: 'BL-6', name: 'Foresta Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 201783, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Foresta Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: 'FORESTA70' },
+  { id: 'BL-7', name: 'Blend Tigris (70 Robusta : 30 KDH)', category: 'Blend Beans', pricePerKg: 210000, pricePer500g: 0, pricePer200g: 50000, greenBeanCostPerKg: 162153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend Tigris: 70% Kerinci Robusta + 30% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'TIGRIS70' },
+  { id: 'BL-8', name: 'Blend K50 (50 KDH : 50 Robusta)', category: 'Blend Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 55000, greenBeanCostPerKg: 158264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend K50: 50% Kerinci Robusta + 50% Roasted KDH PTP', isExclusive: true, exclusiveCode: 'K50BLEND' },
+  { id: 'BL-9', name: 'Blend 60:40 (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 240000, pricePer500g: 0, pricePer200g: 58000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend 60:40: 60% Roasted KDH PTP + 40% Kerinci Robusta', isExclusive: true, exclusiveCode: 'BLEND6040' },
+  { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: 'LUNATIRSA50' }
+];
