@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock, KeyRound, 
   Trash2, User, Check, X,
-  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, BarChart2, Package
+  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -32,10 +32,12 @@ interface Product {
 
 interface OrderItem {
   id: string;
+  productId: string;
   name: string;
-  quantityGram: number;
-  pricePerGram: number;
-  totalPrice: number;
+  quantityGram: number; // Berat per unit (1000g atau 200g)
+  unitPrice: number;    // Harga per 1 unit kemasan
+  quantity: number;     // Jumlah unit (x1, x20, dst)
+  totalPrice: number;   // unitPrice * quantity
   packType?: '1kg' | '500g' | '200g';
 }
 
@@ -56,6 +58,8 @@ interface Order {
   totalAmount: number;
   status: 'Pending Approval' | 'Roasting Process' | 'Ready for Shipping' | 'Delivered' | 'Rejected';
   dueDate?: string;
+  estimatedRoastingDate?: string;
+  estimatedShippingDate?: string;
   createdAt: string;
 }
 
@@ -123,6 +127,34 @@ const defaultProductsFromSpreadsheet: Product[] = [
   { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: '', allowedResellers: ['Sasson', 'LunaTirsa'] }
 ];
 
+const calculateOrderSchedule = () => {
+  const today = new Date();
+  const dayOfWeek = today.getDay();
+
+  let roastingDate = new Date(today);
+  let shippingDate = new Date(today);
+
+  if (dayOfWeek === 1 || dayOfWeek === 2) {
+    const daysUntilRab = 3 - dayOfWeek;
+    roastingDate.setDate(today.getDate() + daysUntilRab);
+    
+    const daysUntilNextSen = 8 - dayOfWeek;
+    shippingDate.setDate(today.getDate() + daysUntilNextSen);
+  } else {
+    const daysUntilNextRab = (3 - dayOfWeek + 7) % 7 || 7;
+    roastingDate.setDate(today.getDate() + daysUntilNextRab);
+
+    const daysUntilNextSen = (1 - dayOfWeek + 14) % 7 + 7;
+    shippingDate.setDate(today.getDate() + daysUntilNextSen);
+  }
+
+  const opt: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short', year: 'numeric' };
+  return {
+    roasting: roastingDate.toLocaleDateString('id-ID', opt),
+    shipping: shippingDate.toLocaleDateString('id-ID', opt)
+  };
+};
+
 export default function EpicureanApp() {
   const [currentStep, setCurrentStep] = useState<'welcome' | 'auth' | 'main'>('welcome');
   const [selectedRole, setSelectedRole] = useState<'pembeli' | 'reseller' | 'seller'>('pembeli');
@@ -141,6 +173,8 @@ export default function EpicureanApp() {
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  const scheduleInfo = calculateOrderSchedule();
 
   const formatSupabaseProducts = (rawData: any[]): Product[] => {
     return rawData.map(item => ({
@@ -164,7 +198,6 @@ export default function EpicureanApp() {
 
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*');
-    
     if (error || !data || data.length < defaultProductsFromSpreadsheet.length) {
       for (const prod of defaultProductsFromSpreadsheet) {
         await supabase.from('products').upsert({
@@ -185,13 +218,9 @@ export default function EpicureanApp() {
           allowed_resellers: prod.allowedResellers || []
         });
       }
-      
       const { data: updatedData } = await supabase.from('products').select('*');
-      if (updatedData) {
-        setProducts(formatSupabaseProducts(updatedData));
-      } else {
-        setProducts(defaultProductsFromSpreadsheet);
-      }
+      if (updatedData) setProducts(formatSupabaseProducts(updatedData));
+      else setProducts(defaultProductsFromSpreadsheet);
     } else {
       setProducts(formatSupabaseProducts(data));
     }
@@ -219,6 +248,8 @@ export default function EpicureanApp() {
         totalAmount: Number(item.total_amount || 0),
         status: item.status,
         dueDate: item.due_date,
+        estimatedRoastingDate: item.estimated_roasting_date,
+        estimatedShippingDate: item.estimated_shipping_date,
         createdAt: item.created_at
       }));
       setOrders(formatted);
@@ -235,20 +266,12 @@ export default function EpicureanApp() {
   }, []);
 
   const filteredProducts = products.filter(p => {
-    if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) {
-      return false;
-    }
-    if (currentUser?.role === 'seller') {
-      return true;
-    }
+    if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) return false;
+    if (currentUser?.role === 'seller') return true;
     if (currentUser?.role === 'reseller') {
       if (!p.isExclusive) return true;
-      if (currentUser.allowedBlends && currentUser.allowedBlends.includes(p.name)) {
-        return true;
-      }
-      if (p.allowedResellers && p.allowedResellers.includes(currentUser.username)) {
-        return true;
-      }
+      if (currentUser.allowedBlends && currentUser.allowedBlends.includes(p.name)) return true;
+      if (p.allowedResellers && p.allowedResellers.includes(currentUser.username)) return true;
       return false;
     }
     return !p.isExclusive;
@@ -260,7 +283,8 @@ export default function EpicureanApp() {
   const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('kontra_bon_30');
   const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
 
-  const totalCartWeightKg = cart.reduce((acc, item) => acc + item.quantityGram, 0) / 1000;
+  // HITUNG TOTAL BERAT DAN KINERJA ONGKIR
+  const totalCartWeightKg = cart.reduce((acc, item) => acc + ((item.quantityGram * item.quantity) / 1000), 0);
   const jneRatePerKg = 18000;
   const shippingCost = destination === 'bandung' ? 0 : Math.ceil(totalCartWeightKg) * jneRatePerKg;
   const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
@@ -335,30 +359,64 @@ export default function EpicureanApp() {
     setCart([]);
   };
 
+  // FUNGSI LOGIKA MENGGABUNGKAN ITEM DENGAN KUANTITAS (X1, X20, DST)
   const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g') => {
     let weightGram = 1000;
-    let price = prod.pricePerKg || 200000;
-    let packLabel = 'Kemasan 1 Kg';
+    let unitPrice = prod.pricePerKg || 200000;
+    let packLabel = '1 Kg';
 
     if (packType === '500g') {
       weightGram = 500;
-      price = prod.pricePer500g || 100000;
-      packLabel = 'Kemasan 500 Gram';
+      unitPrice = prod.pricePer500g || 100000;
+      packLabel = '500 Gram';
     } else if (packType === '200g') {
       weightGram = 200;
-      price = prod.pricePer200g || 50000;
-      packLabel = 'Kemasan 200 Gram';
+      unitPrice = prod.pricePer200g || 50000;
+      packLabel = '200 Gram';
     }
-    
-    const newItem: OrderItem = {
-      id: `${prod.id}-${packType}-${Date.now()}`,
-      name: `${prod.name} (${packLabel})`,
-      quantityGram: weightGram,
-      pricePerGram: price / weightGram,
-      totalPrice: price,
-      packType: packType
-    };
-    setCart([...cart, newItem]);
+
+    const itemUniqueKey = `${prod.id}-${packType}`;
+    const existingIndex = cart.findIndex(i => i.id === itemUniqueKey);
+
+    if (existingIndex > -1) {
+      // Jika barang sudah ada di keranjang, tambahkan kuantitasnya
+      const updatedCart = [...cart];
+      const newQty = updatedCart[existingIndex].quantity + 1;
+      updatedCart[existingIndex].quantity = newQty;
+      updatedCart[existingIndex].totalPrice = newQty * unitPrice;
+      setCart(updatedCart);
+    } else {
+      // Tambahkan item baru ke keranjang
+      const newItem: OrderItem = {
+        id: itemUniqueKey,
+        productId: prod.id,
+        name: `${prod.name} (${packLabel})`,
+        quantityGram: weightGram,
+        unitPrice: unitPrice,
+        quantity: 1,
+        totalPrice: unitPrice,
+        packType: packType
+      };
+      setCart([...cart, newItem]);
+    }
+  };
+
+  // UBAH KUANTITAS SECARA MANUAL / TOMBOL +/-
+  const updateCartQuantity = (itemId: string, newQty: number) => {
+    if (newQty <= 0) {
+      setCart(cart.filter(i => i.id !== itemId));
+      return;
+    }
+    setCart(cart.map(item => {
+      if (item.id === itemId) {
+        return {
+          ...item,
+          quantity: newQty,
+          totalPrice: item.unitPrice * newQty
+        };
+      }
+      return item;
+    }));
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -393,6 +451,8 @@ export default function EpicureanApp() {
       totalAmount: grandTotal,
       status: 'Pending Approval',
       dueDate: dueDateStr || undefined,
+      estimatedRoastingDate: scheduleInfo.roasting,
+      estimatedShippingDate: scheduleInfo.shipping,
       createdAt: today.toISOString().split('T')[0]
     };
 
@@ -412,6 +472,8 @@ export default function EpicureanApp() {
       total_amount: newOrder.totalAmount,
       status: newOrder.status,
       due_date: newOrder.dueDate,
+      estimated_roasting_date: newOrder.estimatedRoastingDate,
+      estimated_shipping_date: newOrder.estimatedShippingDate,
       created_at: newOrder.createdAt
     });
 
@@ -432,9 +494,13 @@ export default function EpicureanApp() {
     text += `*Role Account:* ${currentUser?.role.toUpperCase()}\n`;
     text += `*Metode Bayar:* ${order.paymentMethod.replace('_', ' ').toUpperCase()}\n`;
     text += `------------------------------------\n`;
+    text += `*JADWAL PRODUKSI & PENGIRIMAN:*\n`;
+    text += `🔥 *Estimasi Roasting:* ${order.estimatedRoastingDate || scheduleInfo.roasting}\n`;
+    text += `🚚 *Estimasi Shipping:* ${order.estimatedShippingDate || scheduleInfo.shipping}\n`;
+    text += `------------------------------------\n`;
     text += `*Rincian Pesanan:*\n`;
     order.items.forEach(item => {
-      text += `- ${item.name} (${item.quantityGram}g) : Rp ${item.totalPrice.toLocaleString('id-ID')}\n`;
+      text += `- ${item.name} x ${item.quantity} : Rp ${item.totalPrice.toLocaleString('id-ID')}\n`;
     });
     text += `------------------------------------\n`;
     text += `*Ongkir (${order.shippingMethod}):* Rp ${order.shippingCost.toLocaleString('id-ID')}\n`;
@@ -519,20 +585,14 @@ export default function EpicureanApp() {
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
     const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) {
-      alert('Gagal menghapus produk: ' + error.message);
-    } else {
-      fetchProducts();
-    }
+    if (error) alert('Gagal menghapus produk: ' + error.message);
+    else fetchProducts();
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
-    if (error) {
-      alert('Gagal mengubah status order: ' + error.message);
-    } else {
-      fetchOrders();
-    }
+    if (error) alert('Gagal mengubah status order: ' + error.message);
+    else fetchOrders();
   };
 
   const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
@@ -717,13 +777,51 @@ export default function EpicureanApp() {
         {currentUser?.role !== 'seller' ? (
           /* STOREFRONT (PEMBELI / RESELLER) */
           <div className="space-y-10">
-            <div className="text-center py-6 px-4 space-y-2">
+            <div className="text-center py-4 px-4 space-y-2">
               <h1 className="text-3xl sm:text-5xl font-normal tracking-wide text-[#E5D7B8] uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
                 EPICUREAN
               </h1>
               <p className="text-base italic text-[#D4AF37] font-serif tracking-widest">
                 Coffee Company Catalog
               </p>
+            </div>
+
+            {/* BANNER INFORMASI JADWAL ROASTING & SHIPPING UNTUK PEMBELI */}
+            <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 shadow-2xl space-y-4">
+              <div className="flex items-center space-x-2 border-b border-[#2B261F] pb-3">
+                <Calendar className="h-5 w-5 text-[#D4AF37]" />
+                <h3 className="text-base font-serif italic text-[#E5D7B8]">Jadwal Rutin Produksi & Pengiriman Roastery</h3>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs italic">
+                <div className="bg-[#14120F] border border-rose-900/60 p-4 rounded-2xl space-y-1">
+                  <div className="flex items-center space-x-2 text-rose-400 font-bold">
+                    <Clock className="h-4 w-4" />
+                    <span>Last Order (Cut-Off): SELASA</span>
+                  </div>
+                  <p className="text-[#A69C83] text-[11px]">Batas pemesanan minggu ini ditutup setiap hari Selasa.</p>
+                </div>
+
+                <div className="bg-[#14120F] border border-emerald-900/60 p-4 rounded-2xl space-y-1">
+                  <div className="flex items-center space-x-2 text-emerald-400 font-bold">
+                    <Coffee className="h-4 w-4" />
+                    <span>Jadwal Roasting: RABU - KAMIS</span>
+                  </div>
+                  <p className="text-[#A69C83] text-[11px]">Proses Sangrai Biji Kopi Fresh Roasting setiap hari Rabu & Kamis.</p>
+                </div>
+
+                <div className="bg-[#14120F] border border-sky-900/60 p-4 rounded-2xl space-y-1">
+                  <div className="flex items-center space-x-2 text-sky-400 font-bold">
+                    <Truck className="h-4 w-4" />
+                    <span>Pengiriman: SENIN - SELASA</span>
+                  </div>
+                  <p className="text-[#A69C83] text-[11px]">Pengiriman pesanan dilakukan pada hari Senin & Selasa minggu depannya.</p>
+                </div>
+              </div>
+
+              <div className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-2xl text-xs italic text-center text-[#E5D7B8]">
+                ⚠️ <em>Catatan: Pesanan yang masuk antara hari <strong>Rabu - Minggu</strong> akan diproses & di-roasting pada siklus batch minggu berikutnya.</em>
+              </div>
             </div>
 
             {/* TAB SHORTLIST KATEGORI COFFEE BEANS */}
@@ -842,7 +940,7 @@ export default function EpicureanApp() {
               )}
             </section>
 
-            {/* CHECKOUT FORM */}
+            {/* CHECKOUT FORM DENGAN KONTROL KUANTITAS (X20, DST) */}
             <section className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 sm:p-8 shadow-2xl space-y-6">
               <div className="flex items-center space-x-2 border-b border-[#2B261F] pb-4">
                 <ShoppingCart className="h-5 w-5 text-[#D4AF37]" />
@@ -854,16 +952,66 @@ export default function EpicureanApp() {
               ) : (
                 <form onSubmit={handleCheckout} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                   <div className="space-y-5">
+                    {/* LIST KERANJANG TERGABUNG DENGAN QUANTITY INPUT */}
                     <div className="space-y-2">
                       {cart.map((item) => (
-                        <div key={item.id} className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-xl flex justify-between items-center text-xs italic">
-                          <div>
-                            <p className="text-[#E5D7B8] font-serif">{item.name}</p>
-                            <p className="text-[#A69C83] text-[11px]">{item.quantityGram} Gram</p>
+                        <div key={item.id} className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-xl flex justify-between items-center text-xs italic gap-3">
+                          <div className="flex-1">
+                            <p className="text-[#E5D7B8] font-serif font-bold">{item.name}</p>
+                            <p className="text-[#A69C83] text-[11px]">@ Rp {item.unitPrice.toLocaleString('id-ID')}</p>
                           </div>
-                          <p className="text-[#D4AF37] font-bold">Rp {item.totalPrice.toLocaleString('id-ID')}</p>
+
+                          {/* KONTROL KUANTITAS (BISA DIKETIK / TOMBOL MINUS PLUS) */}
+                          <div className="flex items-center space-x-1.5 bg-[#0A0A0A] border border-[#2B261F] px-2 py-1 rounded-lg">
+                            <button
+                              type="button"
+                              onClick={() => updateCartQuantity(item.id, item.quantity - 1)}
+                              className="p-1 text-[#A69C83] hover:text-rose-400"
+                            >
+                              <Minus className="h-3 w-3" />
+                            </button>
+
+                            <input
+                              type="number"
+                              min={1}
+                              value={item.quantity}
+                              onChange={(e) => updateCartQuantity(item.id, parseInt(e.target.value) || 1)}
+                              className="w-10 text-center bg-transparent text-[#E5D7B8] font-bold text-xs focus:outline-none"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => updateCartQuantity(item.id, item.quantity + 1)}
+                              className="p-1 text-[#A69C83] hover:text-emerald-400"
+                            >
+                              <Plus className="h-3 w-3" />
+                            </button>
+                          </div>
+
+                          <div className="text-right min-w-[90px]">
+                            <p className="text-[#D4AF37] font-bold">Rp {item.totalPrice.toLocaleString('id-ID')}</p>
+                            <button
+                              type="button"
+                              onClick={() => updateCartQuantity(item.id, 0)}
+                              className="text-[10px] text-rose-400/70 hover:text-rose-400 italic"
+                            >
+                              Hapus
+                            </button>
+                          </div>
                         </div>
                       ))}
+                    </div>
+
+                    <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-2 text-xs italic">
+                      <p className="font-serif text-[#D4AF37]">Estimasi Jadwal Pesanan Anda</p>
+                      <div className="flex justify-between text-[#E5D7B8]">
+                        <span>Estimasi Roasting:</span>
+                        <span className="font-bold text-emerald-400">{scheduleInfo.roasting}</span>
+                      </div>
+                      <div className="flex justify-between text-[#E5D7B8]">
+                        <span>Estimasi Shipping:</span>
+                        <span className="font-bold text-sky-400">{scheduleInfo.shipping}</span>
+                      </div>
                     </div>
 
                     <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3">
@@ -978,7 +1126,6 @@ export default function EpicureanApp() {
             <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
               <h1 className="text-xl font-serif italic text-[#E5D7B8]">Epicurean Roastery Manager</h1>
               
-              {/* SUB-NAVIGASI SELLER ADMIN */}
               <div className="flex space-x-2 bg-[#14120F] border border-[#2B261F] p-1 rounded-2xl">
                 <button
                   onClick={() => setSellerSubTab('orders')}
@@ -1010,7 +1157,7 @@ export default function EpicureanApp() {
               </div>
             </div>
 
-            {/* TAB 1: LIST ORDERS (DAPAT DIPANTAU DAN DIUBAH STATUS) */}
+            {/* TAB 1: LIST ORDERS */}
             {sellerSubTab === 'orders' && (
               <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
                 <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Daftar Pre-Order Masuk</h3>
@@ -1023,7 +1170,8 @@ export default function EpicureanApp() {
                         <div>
                           <p className="font-serif text-[#D4AF37] text-sm">{o.id} - {o.customerName} ({o.companyName})</p>
                           <p className="text-[11px] text-[#A69C83] mt-0.5">{o.paymentMethod.replace('_', ' ').toUpperCase()} | Total: <strong className="text-[#E5D7B8]">Rp {o.totalAmount.toLocaleString('id-ID')}</strong></p>
-                          <p className="text-[10px] text-[#776E5E] mt-1">Item: {o.items.map(i => i.name).join(', ')}</p>
+                          <p className="text-[10px] text-emerald-400 mt-0.5">🔥 Roasting: {o.estimatedRoastingDate || '-'} | 🚚 Shipping: {o.estimatedShippingDate || '-'}</p>
+                          <p className="text-[10px] text-[#776E5E] mt-1">Item: {o.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-[10px] text-[#A69C83]">Status:</span>
@@ -1046,10 +1194,9 @@ export default function EpicureanApp() {
               </div>
             )}
 
-            {/* TAB 2: PRODUCTS & AMBAH PRODUK BARU */}
+            {/* TAB 2: PRODUCTS & COGS */}
             {sellerSubTab === 'products' && (
               <div className="space-y-8">
-                {/* DAFTAR AKUN RESELLER INFO CARD */}
                 <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4">
                   <h3 className="text-sm font-serif text-[#D4AF37]">Daftar Akun Reseller & Akses Menu Blend</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs italic">
@@ -1065,7 +1212,6 @@ export default function EpicureanApp() {
                   </div>
                 </div>
 
-                {/* FORM TAMBAH PRODUK BARU */}
                 <form onSubmit={handleSaveProduct} className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
                   <h3 className="text-sm font-serif text-[#E5D7B8] border-b border-[#2B261F] pb-2">Tambah Produk Baru & COGS</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1109,7 +1255,6 @@ export default function EpicureanApp() {
                   </button>
                 </form>
 
-                {/* DAFTAR PRODUK & EDIT COGS */}
                 <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
                   <h3 className="text-sm font-serif text-[#E5D7B8]">Katalog Produk & Master COGS</h3>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -1139,7 +1284,7 @@ export default function EpicureanApp() {
               </div>
             )}
 
-            {/* TAB 3: RECAP SALES & OMAZET KEUNTUNGAN */}
+            {/* TAB 3: RECAP SALES */}
             {sellerSubTab === 'recap' && (
               <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
                 <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Ringkasan Penjualan & Keuntungan</h3>
@@ -1147,7 +1292,6 @@ export default function EpicureanApp() {
                   <div className="bg-[#14120F] border border-[#2B261F] p-6 rounded-2xl">
                     <p className="text-xs text-[#A69C83] italic">Total Omzet Penjualan</p>
                     <p className="text-3xl font-serif text-[#D4AF37] mt-2 font-bold">Rp {totalOmzet.toLocaleString('id-ID')}</p>
-                    <p className="text-[10px] text-[#776E5E] italic mt-2">*Akumulasi dari pesanan yang tidak di-reject</p>
                   </div>
                   <div className="bg-[#14120F] border border-[#2B261F] p-6 rounded-2xl">
                     <p className="text-xs text-[#A69C83] italic">Total Transaksi Pesanan</p>
