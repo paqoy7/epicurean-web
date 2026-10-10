@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock, KeyRound, 
   Trash2, User, Check, X,
-  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, QrCode, CreditCard
+  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -51,7 +51,7 @@ interface Order {
   shippingAddress: string;
   shippingMethod: string;
   shippingCost: number;
-  paymentMethod: 'qris' | 'transfer' | 'kontra_bon_15' | 'kontra_bon_30';
+  paymentMethod: 'transfer' | 'kontra_bon_15' | 'kontra_bon_30';
   paymentProof?: string;
   items: OrderItem[];
   subtotal: number;
@@ -169,7 +169,6 @@ export default function EpicureanApp() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
-  // STATE SLIDE DRAWER KERANJANG
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
 
   const scheduleInfo = calculateOrderSchedule();
@@ -278,7 +277,7 @@ export default function EpicureanApp() {
   const [cart, setCart] = useState<OrderItem[]>([]);
   const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
   const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
-  const [paymentMethod, setPaymentMethod] = useState<'qris' | 'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('qris');
+  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('transfer');
   const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
 
   const totalCartWeightKg = cart.reduce((acc, item) => acc + ((item.quantityGram * item.quantity) / 1000), 0);
@@ -357,7 +356,7 @@ export default function EpicureanApp() {
     setCart([]);
   };
 
-  const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g') => {
+  const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g', deltaQty: number = 1) => {
     let weightGram = 1000;
     let unitPrice = prod.pricePerKg || 200000;
     let packLabel = '1 Kg';
@@ -377,19 +376,23 @@ export default function EpicureanApp() {
 
     if (existingIndex > -1) {
       const updatedCart = [...cart];
-      const newQty = updatedCart[existingIndex].quantity + 1;
-      updatedCart[existingIndex].quantity = newQty;
-      updatedCart[existingIndex].totalPrice = newQty * unitPrice;
-      setCart(updatedCart);
-    } else {
+      const newQty = updatedCart[existingIndex].quantity + deltaQty;
+      if (newQty <= 0) {
+        setCart(cart.filter(i => i.id !== itemUniqueKey));
+      } else {
+        updatedCart[existingIndex].quantity = newQty;
+        updatedCart[existingIndex].totalPrice = newQty * unitPrice;
+        setCart(updatedCart);
+      }
+    } else if (deltaQty > 0) {
       const newItem: OrderItem = {
         id: itemUniqueKey,
         productId: prod.id,
         name: `${prod.name} (${packLabel})`,
         quantityGram: weightGram,
         unitPrice: unitPrice,
-        quantity: 1,
-        totalPrice: unitPrice,
+        quantity: deltaQty,
+        totalPrice: unitPrice * deltaQty,
         packType: packType
       };
       setCart([...cart, newItem]);
@@ -439,7 +442,7 @@ export default function EpicureanApp() {
       shippingAddress: customerInfo.address,
       shippingMethod: destination === 'bandung' ? 'DIRECT BANDUNG' : 'JNE REG',
       shippingCost: shippingCost,
-      paymentMethod: customerType === 'perorangan' ? (paymentMethod === 'qris' ? 'qris' : 'transfer') : paymentMethod,
+      paymentMethod: customerType === 'perorangan' ? 'transfer' : paymentMethod,
       items: cart,
       subtotal: cartSubtotal,
       totalAmount: grandTotal,
@@ -886,6 +889,9 @@ export default function EpicureanApp() {
                     const has1kg = (p.pricePerKg || 0) > 0;
                     const has200g = (p.pricePer200g || 0) > 0;
 
+                    const cartItem1kg = cart.find(i => i.id === `${p.id}-1kg`);
+                    const cartItem200g = cart.find(i => i.id === `${p.id}-200g`);
+
                     return (
                       <div key={p.id} className={`bg-[#0A0A0A] border rounded-2xl p-5 flex flex-col justify-between shadow-xl relative ${
                         p.isExclusive ? 'border-purple-900/80 bg-purple-950/10' : 'border-[#2B261F]'
@@ -927,21 +933,60 @@ export default function EpicureanApp() {
                           </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-2 mt-5">
-                          {has200g ? (
-                            <button onClick={() => addProductToCart(p, '200g')} className="bg-[#14120F] hover:bg-[#2B261F] text-[#E5D7B8] text-[10px] italic py-2 rounded-lg border border-[#2B261F]">
-                              + 200g
-                            </button>
-                          ) : (
-                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A 200g</button>
+                        {/* TOMBOL PENGATUR KUANTITAS DI KARTU PRODUK */}
+                        <div className="space-y-2 mt-5">
+                          {has200g && (
+                            <div className="flex items-center justify-between bg-[#14120F] border border-[#2B261F] p-2 rounded-xl text-xs italic">
+                              <span className="text-[#A69C83]">Kemasan 200g:</span>
+                              {cartItem200g ? (
+                                <div className="flex items-center space-x-1 bg-[#0A0A0A] border border-[#2B261F] px-2 py-1 rounded-lg">
+                                  <button onClick={() => addProductToCart(p, '200g', -1)} className="p-1 text-[#A69C83] hover:text-rose-400">
+                                    <Minus className="h-3 w-3" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={cartItem200g.quantity}
+                                    onChange={(e) => updateCartQuantity(cartItem200g.id, parseInt(e.target.value) || 0)}
+                                    className="w-10 text-center bg-transparent text-[#E5D7B8] font-bold text-xs focus:outline-none"
+                                  />
+                                  <button onClick={() => addProductToCart(p, '200g', 1)} className="p-1 text-[#A69C83] hover:text-emerald-400">
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button onClick={() => addProductToCart(p, '200g', 1)} className="bg-[#14120F] hover:bg-[#2B261F] text-[#E5D7B8] text-[11px] px-3 py-1.5 rounded-lg border border-[#2B261F]">
+                                  + 200g
+                                </button>
+                              )}
+                            </div>
                           )}
 
-                          {has1kg ? (
-                            <button onClick={() => addProductToCart(p, '1kg')} className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] text-[10px] font-serif italic font-bold py-2 rounded-lg">
-                              + 1 Kg
-                            </button>
-                          ) : (
-                            <button disabled className="bg-[#0A0A0A] text-[#443E33] text-[10px] italic py-2 rounded-lg border border-[#2B261F] cursor-not-allowed">N/A 1 Kg</button>
+                          {has1kg && (
+                            <div className="flex items-center justify-between bg-[#14120F] border border-[#2B261F] p-2 rounded-xl text-xs italic">
+                              <span className="text-[#A69C83]">Kemasan 1 Kg:</span>
+                              {cartItem1kg ? (
+                                <div className="flex items-center space-x-1 bg-[#0A0A0A] border border-[#2B261F] px-2 py-1 rounded-lg">
+                                  <button onClick={() => addProductToCart(p, '1kg', -1)} className="p-1 text-[#A69C83] hover:text-rose-400">
+                                    <Minus className="h-3 w-3" />
+                                  </button>
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={cartItem1kg.quantity}
+                                    onChange={(e) => updateCartQuantity(cartItem1kg.id, parseInt(e.target.value) || 0)}
+                                    className="w-10 text-center bg-transparent text-[#E5D7B8] font-bold text-xs focus:outline-none"
+                                  />
+                                  <button onClick={() => addProductToCart(p, '1kg', 1)} className="p-1 text-[#A69C83] hover:text-emerald-400">
+                                    <Plus className="h-3 w-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button onClick={() => addProductToCart(p, '1kg', 1)} className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-bold text-[11px] px-3 py-1.5 rounded-lg">
+                                  + 1 Kg
+                                </button>
+                              )}
+                            </div>
                           )}
                         </div>
                       </div>
@@ -1135,7 +1180,7 @@ export default function EpicureanApp() {
         )}
       </main>
 
-      {/* FLOATING CART BAR (MELAYANG DI BAWAH TAMPILAN HP / DESKTOP) */}
+      {/* FLOATING CART BAR */}
       {currentUser?.role !== 'seller' && cart.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 max-w-4xl mx-auto z-40">
           <div className="bg-[#14120F] border border-[#D4AF37] rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4">
@@ -1155,7 +1200,7 @@ export default function EpicureanApp() {
         </div>
       )}
 
-      {/* SLIDE-OVER DRAWER MODAL KERANJANG (MELUNCUR DARI KANAN) */}
+      {/* SLIDE-OVER DRAWER MODAL KERANJANG */}
       {isCartDrawerOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end">
           <div className="bg-[#0A0A0A] border-l border-[#2B261F] w-full max-w-lg h-full overflow-y-auto p-6 space-y-6 flex flex-col justify-between">
@@ -1251,36 +1296,25 @@ export default function EpicureanApp() {
                     />
                   </div>
 
-                  {/* METODE PEMBAYARAN (QRIS / TRANSFER BCA / KONTRA BON) */}
-                  <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-2 text-xs italic">
+                  {/* METODE PEMBAYARAN (TRANSFER BCA / KONTRA BON) */}
+                  <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
                     <p className="font-serif text-[#D4AF37]">Metode Pembayaran</p>
                     
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="radio" name="paymentDrawer" checked={paymentMethod === 'qris'} onChange={() => setPaymentMethod('qris')} className="accent-[#D4AF37]" />
-                      <span className="text-[#E5D7B8] flex items-center space-x-1.5">
-                        <QrCode className="h-3.5 w-3.5 text-emerald-400" />
-                        <span>QRIS (All Payment - E-Wallet & Bank)</span>
-                      </span>
-                    </label>
-
-                    {paymentMethod === 'qris' && (
-                      <div className="bg-[#0A0A0A] p-3 rounded-lg border border-emerald-900/60 text-center space-y-2 my-2">
-                        <p className="text-[11px] text-[#A69C83]">Scan QRIS Epicurean Coffee via Gopay/OVO/ShopeePay/M-Banking:</p>
-                        <div className="bg-white p-2 rounded-xl inline-block">
-                          {/* Gambar Placeholder QRIS */}
-                          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=EPICUREAN_COFFEE_COMPANY" alt="QRIS Epicurean" className="w-32 h-32 mx-auto" />
-                        </div>
-                        <p className="text-[10px] text-[#D4AF37]">NMID: ID1020039281728</p>
-                      </div>
-                    )}
-
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input type="radio" name="paymentDrawer" checked={paymentMethod === 'transfer'} onChange={() => setPaymentMethod('transfer')} className="accent-[#D4AF37]" />
                       <span className="text-[#E5D7B8] flex items-center space-x-1.5">
                         <CreditCard className="h-3.5 w-3.5 text-sky-400" />
-                        <span>Transfer Bank BCA (7772400244)</span>
+                        <span>Transfer Bank BCA</span>
                       </span>
                     </label>
+
+                    {paymentMethod === 'transfer' && (
+                      <div className="bg-[#0A0A0A] p-3.5 rounded-xl border border-sky-900/60 space-y-1 text-xs italic my-1">
+                        <p className="text-[#A69C83] text-[11px]">Rekening Resmi Pembayaran:</p>
+                        <p className="text-[#E5D7B8] font-bold text-sm">BCA: 7772400244</p>
+                        <p className="text-[#D4AF37] font-semibold text-[11px]">a.n. CV Multi Agri Sentosa</p>
+                      </div>
+                    )}
 
                     <label className="flex items-center space-x-2 cursor-pointer">
                       <input type="radio" name="paymentDrawer" checked={paymentMethod === 'kontra_bon_15'} onChange={() => setPaymentMethod('kontra_bon_15')} className="accent-[#D4AF37]" />
