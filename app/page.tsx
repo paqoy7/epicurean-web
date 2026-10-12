@@ -398,7 +398,6 @@ export default function EpicureanApp() {
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
 
-  // STATE PRODUK MANAGEMENT (SELLER)
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [productForm, setProductForm] = useState<Partial<Product>>({
@@ -416,6 +415,12 @@ export default function EpicureanApp() {
   });
 
   const [paymentProofFile, setPaymentProofFile] = useState<string>('');
+
+  const [cart, setCart] = useState<OrderItem[]>([]);
+  const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
+  const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
+  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('transfer');
+  const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
 
   const scheduleInfo = calculateOrderSchedule();
 
@@ -556,12 +561,6 @@ export default function EpicureanApp() {
     return !p.isExclusive;
   });
 
-  const [cart, setCart] = useState<OrderItem[]>([]);
-  const [customerType, setCustomerType] = useState<'perorangan' | 'cafe'>('cafe');
-  const [destination, setDestination] = useState<'bandung' | 'luar_bandung'>('bandung');
-  const [paymentMethod, setPaymentMethod] = useState<'transfer' | 'kontra_bon_15' | 'kontra_bon_30'>('transfer');
-  const [customerInfo, setCustomerInfo] = useState({ name: '', company: '', address: '', phone: '' });
-
   const totalCartWeightKg = cart.reduce((acc, item) => acc + ((item.quantityGram * item.quantity) / 1000), 0);
   const totalCartUnits = cart.reduce((acc, item) => acc + item.quantity, 0);
   const jneRatePerKg = 18000;
@@ -691,7 +690,7 @@ export default function EpicureanApp() {
       shippingAddress: customerInfo.address,
       shippingMethod: destination === 'bandung' ? 'DIRECT BANDUNG' : 'JNE REG',
       shippingCost: shippingCost,
-      paymentMethod: customerType === 'perorangan' ? 'transfer' : paymentMethod,
+      paymentMethod: currentUser?.role === 'pembeli' ? 'transfer' : paymentMethod,
       paymentProof: paymentProofFile || undefined,
       items: cart,
       subtotal: cartSubtotal,
@@ -781,7 +780,6 @@ export default function EpicureanApp() {
     return o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q) || o.companyName.toLowerCase().includes(q);
   });
 
-  // STEP 1: WELCOME SCREEN
   if (currentStep === 'welcome') {
     return (
       <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex flex-col justify-between p-6 sm:p-12">
@@ -840,7 +838,6 @@ export default function EpicureanApp() {
     );
   }
 
-  // STEP 2: AUTH SCREEN
   if (currentStep === 'auth') {
     return (
       <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex items-center justify-center p-6">
@@ -917,10 +914,8 @@ export default function EpicureanApp() {
     );
   }
 
-  // STEP 3: MAIN APP
   return (
     <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans antialiased pb-24">
-      {/* HEADER */}
       <header className="border-b border-[#2E2B27] sticky top-0 bg-[#181614]/90 backdrop-blur-md z-30">
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-3">
@@ -952,7 +947,6 @@ export default function EpicureanApp() {
       <main className="max-w-7xl mx-auto px-6 py-8">
         {currentUser?.role !== 'seller' ? (
           <div className="space-y-8">
-            {/* SCHEDULE BANNER */}
             <div className="border border-[#2E2B27] bg-[#1F1C19] p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1 border-b md:border-b-0 md:border-r border-[#2E2B27] pb-4 md:pb-0 md:pr-4">
                 <div className="flex items-center space-x-2 text-xs text-[#C8A97E] font-mono uppercase">
@@ -982,7 +976,6 @@ export default function EpicureanApp() {
               </div>
             </div>
 
-            {/* KATALOG PRODUK */}
             <div className="space-y-6">
               <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
                 <h2 className="text-xl font-serif text-[#EFECE6]">Pilihan Biji Kopi</h2>
@@ -1017,9 +1010,7 @@ export default function EpicureanApp() {
                         <p className="text-xs text-[#A39B8E] leading-relaxed font-light">{p.description}</p>
                       </div>
 
-                      {/* AREA PILIHAN KEMASAN 1 KG DAN 200G */}
                       <div className="space-y-3 pt-4 border-t border-[#2E2B27]">
-                        {/* Kemasan 1 Kg */}
                         <div className="flex justify-between items-center text-xs font-mono">
                           <div>
                             <span className="text-[#EFECE6] font-medium block">Kemasan 1 Kg</span>
@@ -1033,7 +1024,6 @@ export default function EpicureanApp() {
                           </button>
                         </div>
 
-                        {/* Kemasan 200g */}
                         {p.category !== 'Green Beans' && (
                           <div className="flex justify-between items-center text-xs font-mono border-t border-[#2A2723] pt-2">
                             <div>
@@ -1056,7 +1046,6 @@ export default function EpicureanApp() {
             </div>
           </div>
         ) : (
-          /* DASHBOARD SELLER */
           <div className="space-y-8">
             <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
               <h1 className="text-xl font-serif text-[#EFECE6]">Fulfillment & Order Control</h1>
@@ -1092,7 +1081,6 @@ export default function EpicureanApp() {
               </div>
             </div>
 
-            {/* TAB 1: ORDERS */}
             {sellerSubTab === 'orders' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -1162,7 +1150,6 @@ export default function EpicureanApp() {
               </div>
             )}
 
-            {/* TAB 2: PRODUCTS CONTROL */}
             {sellerSubTab === 'products' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -1225,7 +1212,6 @@ export default function EpicureanApp() {
               </div>
             )}
 
-            {/* TAB 3: FEEDBACKS */}
             {sellerSubTab === 'feedbacks' && (
               <div className="space-y-6">
                 <h2 className="text-lg font-serif text-[#EFECE6]">Komplain & Masukan Pelanggan</h2>
@@ -1255,7 +1241,6 @@ export default function EpicureanApp() {
               </div>
             )}
 
-            {/* TAB 4: REKAP PRODUKSI */}
             {sellerSubTab === 'recap' && (
               <div className="space-y-6">
                 <h2 className="text-lg font-serif text-[#EFECE6]">Rekapitulasi Kebutuhan Sangrai (Batch Mingguan)</h2>
@@ -1279,7 +1264,6 @@ export default function EpicureanApp() {
         )}
       </main>
 
-      {/* MODAL EDIT/TAMBAH PRODUK */}
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
           <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-lg p-6 space-y-4 font-mono text-xs">
@@ -1357,7 +1341,6 @@ export default function EpicureanApp() {
         </div>
       )}
 
-      {/* MODAL CETAK INVOICE RESMI B2B */}
       {selectedInvoiceOrder && (
         <InvoiceModal
           order={selectedInvoiceOrder}
@@ -1365,7 +1348,6 @@ export default function EpicureanApp() {
         />
       )}
 
-      {/* DRAWER CHECKOUT & SELEKSI TANGGAL KIRIM SENIN & SELASA */}
       {isCartDrawerOpen && (
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-end">
           <div className="bg-[#1F1C19] border-l border-[#2E2B27] w-full max-w-md h-full overflow-y-auto p-6 flex flex-col justify-between">
@@ -1398,7 +1380,31 @@ export default function EpicureanApp() {
                   />
                 </div>
 
-                <div className="space-y-3 pt-2">
+                <div className="space-y-2 pt-2 border-t border-[#2E2B27]">
+                  <label className="block text-xs font-mono text-[#C8A97E] uppercase">
+                    Metode Pembayaran
+                  </label>
+                  
+                  {currentUser?.role === 'pembeli' ? (
+                    <div className="bg-[#181614] border border-[#38332E] p-3 text-xs font-mono space-y-1">
+                      <span className="text-[#EFECE6] font-bold block">Transfer Bank BCA</span>
+                      <p className="text-[#8C8479]">No. Rek: <strong className="text-[#C8A97E]">7772400244</strong></p>
+                      <p className="text-[#8C8479]">a/n CV. MULTI AGRI SENTOSA</p>
+                    </div>
+                  ) : (
+                    <select
+                      value={paymentMethod}
+                      onChange={(e) => setPaymentMethod(e.target.value as any)}
+                      className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                    >
+                      <option value="transfer">Transfer Bank BCA (7772400244 a/n CV Multi Agri Sentosa)</option>
+                      <option value="kontra_bon_15">Kontra Bon (15 Hari)</option>
+                      <option value="kontra_bon_30">Kontra Bon (30 Hari)</option>
+                    </select>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2 border-t border-[#2E2B27]">
                   <input
                     type="text"
                     required
