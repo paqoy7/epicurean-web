@@ -177,6 +177,13 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
     return d.toLocaleDateString('id-ID', opt);
   };
 
+  const todayFormatted = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  });
+
   return (
     <div className="relative w-full">
       <button
@@ -189,67 +196,133 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
       </button>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-[#181614] border border-[#38332E] p-4 z-50 shadow-2xl space-y-3 font-mono">
-          <div className="flex justify-between items-center text-xs font-bold text-[#EFECE6] border-b border-[#2E2B27] pb-2">
-            <button type="button" onClick={prevMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
-              &lt;
-            </button>
-            <span>
-              {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
-            </span>
-            <button type="button" onClick={nextMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
-              &gt;
-            </button>
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#141210] border border-[#2E2B27] p-4 z-50 shadow-2xl space-y-4 font-serif text-[#EFECE6]">
+          {/* HEADER EPICUREAN DARI GAMBAR */}
+          <div className="text-center space-y-1 pb-2 border-b border-[#2E2B27]">
+            <h3 className="text-lg tracking-widest uppercase font-serif text-[#EFECE6]">EPICUREAN</h3>
+            <p className="text-xs italic text-[#C8A97E]">Coffee Company Catalog</p>
           </div>
 
-          <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-[#8C8479]">
-            {daysOfWeek.map((d, idx) => (
-              <span key={d} className={idx === 1 || idx === 2 ? 'text-[#C8A97E] font-bold' : ''}>
-                {d}
+          {/* BOX INFO TANGGAL ORDER HARI INI */}
+          <div className="bg-[#1F1C19] border border-[#38332E] p-3 text-xs font-mono flex items-center justify-between text-[#EFECE6]">
+            <span className="text-[#8C8479]">Tanggal Order:</span>
+            <span className="font-bold text-[#C8A97E]">{todayFormatted}</span>
+          </div>
+
+          {/* JADWAL RUTIN PRODUKSI & PENGIRIMAN ROASTERY (DESAIN RESMI SESUAI GAMBAR) */}
+          <div className="border border-[#2E2B27] bg-[#181614] rounded-xl p-4 space-y-3 font-sans">
+            <div className="flex items-center space-x-2 text-sm font-serif text-[#EFECE6] pb-2 border-b border-[#2E2B27]">
+              <Calendar className="h-4 w-4 text-[#C8A97E]" />
+              <span className="font-bold">Jadwal Rutin Produksi & Pengiriman Roastery</span>
+            </div>
+
+            {/* CUT-OFF */}
+            <div className="border border-rose-900/40 bg-rose-950/20 p-3 rounded-lg space-y-1">
+              <div className="flex items-center space-x-2 text-xs font-mono text-rose-400">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="font-bold">Last Order (Cut-Off): SELASA</span>
+              </div>
+              <p className="text-[11px] text-[#A39B8E] italic font-serif">
+                Batas pemesanan minggu ini ditutup setiap hari Selasa.
+              </p>
+            </div>
+
+            {/* JADWAL ROASTING */}
+            <div className="border border-emerald-900/40 bg-emerald-950/20 p-3 rounded-lg space-y-1">
+              <div className="flex items-center space-x-2 text-xs font-mono text-emerald-400">
+                <Coffee className="h-3.5 w-3.5" />
+                <span className="font-bold">Jadwal Roasting: RABU - KAMIS</span>
+              </div>
+              <p className="text-[11px] text-[#A39B8E] italic font-serif">
+                Proses Sangrai Biji Kopi Fresh Roasting setiap hari Rabu & Kamis.
+              </p>
+            </div>
+
+            {/* PENGIRIMAN */}
+            <div className="border border-sky-900/40 bg-sky-950/20 p-3 rounded-lg space-y-1">
+              <div className="flex items-center space-x-2 text-xs font-mono text-sky-400">
+                <Truck className="h-3.5 w-3.5" />
+                <span className="font-bold">Pengiriman: SENIN - SELASA</span>
+              </div>
+              <p className="text-[11px] text-[#A39B8E] italic font-serif">
+                Pengiriman pesanan dilakukan pada hari Senin & Selasa minggu depannya.
+              </p>
+            </div>
+
+            {/* CATATAN */}
+            <div className="border border-amber-900/40 bg-amber-950/20 p-3 rounded-lg space-y-1">
+              <div className="flex items-start space-x-2 text-[11px] text-[#EFECE6] font-serif leading-relaxed">
+                <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
+                <span>
+                  <strong className="text-amber-400">Catatan:</strong> Pesanan yang masuk antara hari <strong className="text-amber-400">Rabu - Minggu</strong> akan diproses & di-roasting pada siklus batch minggu berikutnya.
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* KALENDER SELEKSI TANGGAL KIRIM SENIN & SELASA */}
+          <div className="font-mono pt-2 border-t border-[#2E2B27]">
+            <div className="flex justify-between items-center text-xs font-bold text-[#EFECE6] border-b border-[#2E2B27] pb-2 mb-2">
+              <button type="button" onClick={prevMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
+                &lt;
+              </button>
+              <span>
+                {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
               </span>
-            ))}
+              <button type="button" onClick={nextMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
+                &gt;
+              </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-[#8C8479] mb-1">
+              {daysOfWeek.map((d, idx) => (
+                <span key={d} className={idx === 1 || idx === 2 ? 'text-[#C8A97E] font-bold' : ''}>
+                  {d}
+                </span>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 text-center text-xs">
+              {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+                <div key={`empty-${i}`} />
+              ))}
+
+              {Array.from({ length: daysInMonth }).map((_, i) => {
+                const dayNum = i + 1;
+                const dateObj = new Date(year, month, dayNum);
+                const dayOfWeek = dateObj.getDay();
+                const isAllowed = dayOfWeek === 1 || dayOfWeek === 2;
+
+                const yyyy = dateObj.getFullYear();
+                const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+                const dd = String(dateObj.getDate()).padStart(2, '0');
+                const dateString = `${yyyy}-${mm}-${dd}`;
+                const isSelected = value === dateString;
+
+                return (
+                  <button
+                    key={dayNum}
+                    type="button"
+                    disabled={!isAllowed}
+                    onClick={() => handleSelectDate(dayNum)}
+                    className={`py-1.5 rounded transition-all text-[11px] ${
+                      isSelected
+                        ? 'bg-[#C8A97E] text-[#181614] font-bold'
+                        : isAllowed
+                        ? 'bg-[#1F1C19] text-[#EFECE6] hover:bg-[#C8A97E] hover:text-[#181614] cursor-pointer font-bold border border-[#38332E]'
+                        : 'text-[#3A3631] bg-[#141210] cursor-not-allowed opacity-30'
+                    }`}
+                  >
+                    {dayNum}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="text-[10px] text-[#8C8479] italic border-t border-[#2E2B27] pt-2 text-center mt-3">
+              * Klik tanggal di atas untuk menentukan jadwal kirim (<strong className="text-[#C8A97E]">Senin</strong> / <strong className="text-[#C8A97E]">Selasa</strong>).
+            </p>
           </div>
-
-          <div className="grid grid-cols-7 gap-1 text-center text-xs">
-            {Array.from({ length: firstDayOfMonth }).map((_, i) => (
-              <div key={`empty-${i}`} />
-            ))}
-
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const dayNum = i + 1;
-              const dateObj = new Date(year, month, dayNum);
-              const dayOfWeek = dateObj.getDay();
-              const isAllowed = dayOfWeek === 1 || dayOfWeek === 2;
-
-              const yyyy = dateObj.getFullYear();
-              const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-              const dd = String(dateObj.getDate()).padStart(2, '0');
-              const dateString = `${yyyy}-${mm}-${dd}`;
-              const isSelected = value === dateString;
-
-              return (
-                <button
-                  key={dayNum}
-                  type="button"
-                  disabled={!isAllowed}
-                  onClick={() => handleSelectDate(dayNum)}
-                  className={`py-1.5 rounded transition-all text-[11px] ${
-                    isSelected
-                      ? 'bg-[#C8A97E] text-[#181614] font-bold'
-                      : isAllowed
-                      ? 'bg-[#1F1C19] text-[#EFECE6] hover:bg-[#C8A97E] hover:text-[#181614] cursor-pointer font-bold border border-[#38332E]'
-                      : 'text-[#3A3631] bg-[#141210] cursor-not-allowed opacity-30'
-                  }`}
-                >
-                  {dayNum}
-                </button>
-              );
-            })}
-          </div>
-
-          <p className="text-[10px] text-[#8C8479] italic border-t border-[#2E2B27] pt-2 text-center">
-            * Hanya tanggal di hari <strong className="text-[#C8A97E]">Senin</strong> & <strong className="text-[#C8A97E]">Selasa</strong> yang bisa dipilih.
-          </p>
         </div>
       )}
     </div>
@@ -1386,7 +1459,6 @@ export default function EpicureanApp() {
                       </div>
 
                       <div className="flex items-center space-x-3">
-                        {/* TOMBOL PENGUBAH QUANTITY (- dan +) */}
                         <div className="flex items-center border border-[#38332E] bg-[#181614]">
                           <button
                             type="button"
