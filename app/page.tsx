@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock, KeyRound, 
   Trash2, User, Check, X,
-  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, UploadCloud, AlertCircle
+  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, UploadCloud, AlertCircle, Search, MapPin
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -60,6 +60,19 @@ interface Order {
   dueDate?: string;
   estimatedRoastingDate?: string;
   estimatedShippingDate?: string;
+  shippingDate?: string;
+  createdAt: string;
+}
+
+interface CustomerFeedback {
+  id: string;
+  customerName: string;
+  companyName: string;
+  customerPhone: string;
+  category: 'Barang Kurang / Salah' | 'Roasting Profile Tidak Sesuai' | 'Kemasan Rusak' | 'Kendala Pengiriman' | 'Lainnya';
+  orderId?: string;
+  message: string;
+  status: 'Open' | 'Resolved';
   createdAt: string;
 }
 
@@ -155,7 +168,7 @@ export default function EpicureanApp() {
   const [selectedRole, setSelectedRole] = useState<'pembeli' | 'reseller' | 'seller'>('pembeli');
   
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
-  const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'recap'>('orders');
+  const [sellerSubTab, setSellerSubTab] = useState<'orders' | 'products' | 'feedbacks' | 'recap'>('orders');
 
   const [authForm, setAuthForm] = useState({ username: '', password: '', companyName: '' });
   const [authError, setAuthError] = useState('');
@@ -164,15 +177,42 @@ export default function EpicureanApp() {
 
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
+  const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [searchOrderQuery, setSearchOrderQuery] = useState('');
+  const [selectedCustomShippingDate, setSelectedCustomShippingDate] = useState('');
+  const [dateValidationError, setDateValidationError] = useState('');
 
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
+
+  const [feedbackForm, setFeedbackForm] = useState({
+    category: 'Roasting Profile Tidak Sesuai' as CustomerFeedback['category'],
+    orderId: '',
+    phone: '',
+    message: ''
+  });
+
   const [paymentProofFile, setPaymentProofFile] = useState<string>('');
 
   const scheduleInfo = calculateOrderSchedule();
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem('epicurean_user');
+    if (savedUser) {
+      try {
+        const parsed = JSON.parse(savedUser);
+        setCurrentUser(parsed);
+        setCurrentStep('main');
+      } catch (e) {
+        localStorage.removeItem('epicurean_user');
+      }
+    }
+  }, []);
 
   const formatSupabaseProducts = (rawData: any[]): Product[] => {
     return rawData.map(item => ({
@@ -248,16 +288,35 @@ export default function EpicureanApp() {
         dueDate: item.due_date,
         estimatedRoastingDate: item.estimated_roasting_date,
         estimatedShippingDate: item.estimated_shipping_date,
+        shippingDate: item.shipping_date || item.estimated_shipping_date,
         createdAt: item.created_at
       }));
       setOrders(formatted);
     }
   };
 
+  const fetchFeedbacks = async () => {
+    const { data, error } = await supabase.from('customer_feedbacks').select('*').order('created_at', { ascending: false });
+    if (data) {
+      const formatted: CustomerFeedback[] = data.map(item => ({
+        id: item.id,
+        customerName: item.customer_name,
+        companyName: item.company_name,
+        customerPhone: item.customer_phone,
+        category: item.category,
+        orderId: item.order_id,
+        message: item.message,
+        status: item.status || 'Open',
+        createdAt: item.created_at
+      }));
+      setFeedbacks(formatted);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      await Promise.all([fetchProducts(), fetchOrders()]);
+      await Promise.all([fetchProducts(), fetchOrders(), fetchFeedbacks()]);
       setLoading(false);
     };
     loadData();
@@ -313,13 +372,18 @@ export default function EpicureanApp() {
     setCurrentStep('auth');
   };
 
+  const saveUserSession = (user: UserAccount) => {
+    setCurrentUser(user);
+    localStorage.setItem('epicurean_user', JSON.stringify(user));
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError('');
 
     if (selectedRole === 'seller') {
       if (authForm.username === sellerAccount.username && authForm.password === sellerAccount.password) {
-        setCurrentUser(sellerAccount);
+        saveUserSession(sellerAccount);
         setCurrentStep('main');
       } else {
         setAuthError('Username atau Password Seller salah!');
@@ -329,7 +393,7 @@ export default function EpicureanApp() {
         r => r.username.toLowerCase() === authForm.username.trim().toLowerCase() && r.password === authForm.password
       );
       if (foundReseller) {
-        setCurrentUser(foundReseller);
+        saveUserSession(foundReseller);
         setCustomerInfo(prev => ({ ...prev, company: foundReseller.companyName || '', name: foundReseller.username }));
         setCurrentStep('main');
       } else {
@@ -345,16 +409,39 @@ export default function EpicureanApp() {
         role: 'pembeli',
         companyName: authForm.companyName || 'Pembeli Perorangan'
       };
-      setCurrentUser(buyerUser);
+      saveUserSession(buyerUser);
       setCustomerInfo(prev => ({ ...prev, name: buyerUser.username, company: buyerUser.companyName || '' }));
       setCurrentStep('main');
     }
   };
 
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) alert('Gagal login via Google: ' + error.message);
+  };
+
   const handleLogout = () => {
+    localStorage.removeItem('epicurean_user');
     setCurrentUser(null);
     setCurrentStep('welcome');
     setCart([]);
+  };
+
+  const handleCustomShippingDateChange = (dateVal: string) => {
+    setSelectedCustomShippingDate(dateVal);
+    setDateValidationError('');
+
+    if (!dateVal) return;
+
+    const chosenDate = new Date(dateVal);
+    const dayOfWeek = chosenDate.getDay(); // 0 = Minggu, 1 = Senin, 2 = Selasa, dst.
+
+    if (dayOfWeek !== 1 && dayOfWeek !== 2) {
+      setDateValidationError('⚠️ Pengiriman Roastery HANYA tersedia pada hari SENIN dan SELASA. Silakan pilih tanggal hari Senin atau Selasa!');
+    }
   };
 
   const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g', deltaQty: number = 1) => {
@@ -421,6 +508,11 @@ export default function EpicureanApp() {
     e.preventDefault();
     if (cart.length === 0) return;
 
+    if (dateValidationError) {
+      alert('Mohon perbaiki tanggal pengiriman. Pengiriman hanya melayani hari Senin & Selasa.');
+      return;
+    }
+
     const today = new Date();
     let dueDateStr = '';
     if (customerType === 'cafe') {
@@ -432,6 +524,8 @@ export default function EpicureanApp() {
         dueDateStr = due.toISOString().split('T')[0];
       }
     }
+
+    const finalShippingDate = selectedCustomShippingDate || scheduleInfo.shipping;
 
     const newOrder: Order = {
       id: `ORD-${Date.now().toString().slice(-6)}`,
@@ -452,6 +546,7 @@ export default function EpicureanApp() {
       dueDate: dueDateStr || undefined,
       estimatedRoastingDate: scheduleInfo.roasting,
       estimatedShippingDate: scheduleInfo.shipping,
+      shippingDate: finalShippingDate,
       createdAt: today.toISOString().split('T')[0]
     };
 
@@ -472,6 +567,7 @@ export default function EpicureanApp() {
       total_amount: newOrder.totalAmount,
       status: newOrder.status,
       due_date: newOrder.dueDate,
+      shipping_date: newOrder.shippingDate,
       created_at: newOrder.createdAt
     });
 
@@ -481,6 +577,44 @@ export default function EpicureanApp() {
       setCurrentActiveOrder(newOrder);
       setCart([]);
       fetchOrders();
+    }
+  };
+
+  const handleSubmitFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackForm.message.trim()) return;
+
+    const newFb: CustomerFeedback = {
+      id: `FB-${Date.now().toString().slice(-5)}`,
+      customerName: currentUser?.username || customerInfo.name || 'Pelanggan',
+      companyName: currentUser?.companyName || customerInfo.company || 'Cafe/Perorangan',
+      customerPhone: feedbackForm.phone || customerInfo.phone || '-',
+      category: feedbackForm.category,
+      orderId: feedbackForm.orderId || undefined,
+      message: feedbackForm.message,
+      status: 'Open',
+      createdAt: new Date().toISOString().split('T')[0]
+    };
+
+    const { error } = await supabase.from('customer_feedbacks').insert({
+      id: newFb.id,
+      customer_name: newFb.customerName,
+      company_name: newFb.companyName,
+      customer_phone: newFb.customerPhone,
+      category: newFb.category,
+      order_id: newFb.orderId,
+      message: newFb.message,
+      status: newFb.status,
+      created_at: newFb.createdAt
+    });
+
+    if (error) {
+      alert('Gagal mengirim pesan: ' + error.message);
+    } else {
+      alert('Terima kasih! Pesan/komplain Anda telah terkirim ke Tim Epicurean.');
+      setIsFeedbackModalOpen(false);
+      setFeedbackForm({ category: 'Roasting Profile Tidak Sesuai', orderId: '', phone: '', message: '' });
+      fetchFeedbacks();
     }
   };
 
@@ -494,7 +628,7 @@ export default function EpicureanApp() {
     text += `------------------------------------\n`;
     text += `*JADWAL PRODUKSI & PENGIRIMAN:*\n`;
     text += `🔥 *Estimasi Roasting:* ${order.estimatedRoastingDate || scheduleInfo.roasting}\n`;
-    text += `🚚 *Estimasi Shipping:* ${order.estimatedShippingDate || scheduleInfo.shipping}\n`;
+    text += `🚚 *Pilihan Tgl Kirim:* ${order.shippingDate || scheduleInfo.shipping}\n`;
     text += `------------------------------------\n`;
     text += `*Rincian Pesanan:*\n`;
     order.items.forEach(item => {
@@ -508,7 +642,6 @@ export default function EpicureanApp() {
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
   };
 
-  // FUNGSI EKSPOR DATA REKAP KE CSV/EXCEL
   const exportOrdersToCSV = () => {
     if (orders.length === 0) {
       alert('Belum ada data pesanan untuk diunduh.');
@@ -516,11 +649,11 @@ export default function EpicureanApp() {
     }
 
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "ID Order,Tanggal,Nama Pemesan,Nama Cafe/Perusahaan,No HP,Metode Bayar,Status,Items,Total Rp\n";
+    csvContent += "ID Order,Tanggal,Nama Pemesan,Nama Cafe/Perusahaan,No HP,Tgl Kirim,Metode Bayar,Status,Items,Total Rp\n";
 
     orders.forEach(o => {
       const itemList = o.items.map(i => `${i.name} x${i.quantity}`).join(' | ');
-      csvContent += `"${o.id}","${o.createdAt}","${o.customerName}","${o.companyName}","${o.customerPhone}","${o.paymentMethod}","${o.status}","${itemList}","${o.totalAmount}"\n`;
+      csvContent += `"${o.id}","${o.createdAt}","${o.customerName}","${o.companyName}","${o.customerPhone}","${o.shippingDate || '-'}","${o.paymentMethod}","${o.status}","${itemList}","${o.totalAmount}"\n`;
     });
 
     const encodedUri = encodeURI(csvContent);
@@ -532,7 +665,6 @@ export default function EpicureanApp() {
     document.body.removeChild(link);
   };
 
-  // FUNGSI AGREGASI TOTAL KEBUTUHAN PRODUKSI (KG SANGRAI)
   const getAggregatedRoastingDemand = () => {
     const demandMap: { [productName: string]: number } = {};
 
@@ -634,7 +766,19 @@ export default function EpicureanApp() {
     else fetchOrders();
   };
 
+  const updateFeedbackStatus = async (fbId: string, status: CustomerFeedback['status']) => {
+    const { error } = await supabase.from('customer_feedbacks').update({ status }).eq('id', fbId);
+    if (error) alert('Gagal update status komplain: ' + error.message);
+    else fetchFeedbacks();
+  };
+
   const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
+
+  const searchedOrders = orders.filter(o => {
+    if (!searchOrderQuery.trim()) return true;
+    const q = searchOrderQuery.toLowerCase();
+    return o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q) || o.companyName.toLowerCase().includes(q);
+  });
 
   // STEP 1: WELCOME SCREEN
   if (currentStep === 'welcome') {
@@ -767,10 +911,29 @@ export default function EpicureanApp() {
               type="submit"
               className="w-full bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold py-3 rounded-xl transition-all shadow-md mt-2 flex items-center justify-center space-x-2"
             >
-              <span>Masuk Beranda</span>
+              <span>Masuk Beranda (Stay Logged In)</span>
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
+
+          {selectedRole === 'pembeli' && (
+            <div className="pt-4 border-t border-[#2B261F] space-y-3 text-center">
+              <p className="text-[11px] text-[#A69C83] italic">Atau masuk cepat tanpa ribet:</p>
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full bg-[#14120F] hover:bg-[#2B261F] border border-[#2B261F] text-[#E5D7B8] py-2.5 rounded-xl text-xs italic flex items-center justify-center space-x-2 transition-all"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Lanjutkan dengan Google</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -796,20 +959,31 @@ export default function EpicureanApp() {
             </div>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
             {currentUser?.role !== 'seller' && (
-              <button
-                onClick={() => setIsCartDrawerOpen(true)}
-                className="relative bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full flex items-center space-x-2 hover:border-[#D4AF37] transition-all"
-              >
-                <ShoppingCart className="h-4 w-4 text-[#D4AF37]" />
-                <span className="text-xs italic text-[#E5D7B8]">Keranjang</span>
-                {totalCartUnits > 0 && (
-                  <span className="bg-[#D4AF37] text-black font-bold text-[10px] rounded-full px-1.5 py-0.2">
-                    {totalCartUnits}
-                  </span>
-                )}
-              </button>
+              <>
+                <button
+                  onClick={() => setIsFeedbackModalOpen(true)}
+                  className="bg-[#14120F] border border-[#2B261F] px-3.5 py-2 rounded-full flex items-center space-x-1.5 hover:border-amber-400 transition-all text-xs italic text-[#E5D7B8]"
+                  title="Ada kendala barang / roasting?"
+                >
+                  <MessageSquare className="h-4 w-4 text-amber-400" />
+                  <span className="hidden sm:inline">Pengaduan / Komplain</span>
+                </button>
+
+                <button
+                  onClick={() => setIsCartDrawerOpen(true)}
+                  className="relative bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full flex items-center space-x-2 hover:border-[#D4AF37] transition-all"
+                >
+                  <ShoppingCart className="h-4 w-4 text-[#D4AF37]" />
+                  <span className="text-xs italic text-[#E5D7B8]">Keranjang</span>
+                  {totalCartUnits > 0 && (
+                    <span className="bg-[#D4AF37] text-black font-bold text-[10px] rounded-full px-1.5 py-0.2">
+                      {totalCartUnits}
+                    </span>
+                  )}
+                </button>
+              </>
             )}
 
             <div className="flex items-center space-x-3 bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full">
@@ -819,7 +993,7 @@ export default function EpicureanApp() {
               </div>
               <button
                 onClick={handleLogout}
-                title="Logout"
+                title="Logout dari Akun Ini"
                 className="p-1.5 bg-[#0A0A0A] border border-[#2B261F] rounded-full text-[#A69C83] hover:text-rose-400 transition-all"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -869,18 +1043,25 @@ export default function EpicureanApp() {
                 <div className="bg-[#14120F] border border-sky-900/60 p-4 rounded-2xl space-y-1">
                   <div className="flex items-center space-x-2 text-sky-400 font-bold">
                     <Truck className="h-4 w-4" />
-                    <span>Pengiriman: SENIN - SELASA</span>
+                    <span>Pengiriman Khusus: SENIN & SELASA</span>
                   </div>
-                  <p className="text-[#A69C83] text-[11px]">Pengiriman pesanan dilakukan pada hari Senin & Selasa minggu depannya.</p>
+                  <p className="text-[#A69C83] text-[11px]">Pengiriman pesanan hanya melayani hari Senin & Selasa.</p>
                 </div>
               </div>
 
-              <div className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-2xl text-xs italic text-center text-[#E5D7B8]">
-                ⚠️ <em>Catatan: Pesanan yang masuk antara hari <strong>Rabu - Minggu</strong> akan diproses & di-roasting pada siklus batch minggu berikutnya.</em>
+              <div className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-2xl text-xs italic text-center text-[#E5D7B8] flex items-center justify-between flex-wrap gap-2">
+                <span>⚠️ <em>Catatan: Anda dapat memilih tanggal pengiriman khusus (Senin/Selasa) pada menu Checkout.</em></span>
+                <button
+                  onClick={() => setIsFeedbackModalOpen(true)}
+                  className="text-[#D4AF37] underline hover:text-white flex items-center space-x-1 ml-auto"
+                >
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span>Sampaikan Komplain / Kendala</span>
+                </button>
               </div>
             </div>
 
-            {/* TAB SHORTLIST KATEGORI COFFEE BEANS */}
+            {/* KATALOG PRODUK COFFEE BEANS */}
             <section className="space-y-6">
               <div className="flex flex-col sm:flex-row justify-between items-center border-b border-[#2B261F] pb-4 gap-4">
                 <h2 className="text-lg font-serif italic text-[#E5D7B8]">Katalog Produk Coffee Beans</h2>
@@ -975,7 +1156,6 @@ export default function EpicureanApp() {
                           </div>
                         </div>
 
-                        {/* TOMBOL PENGATUR KUANTITAS DI KARTU PRODUK */}
                         <div className="space-y-2 mt-5">
                           {has200g && (
                             <div className="flex items-center justify-between bg-[#14120F] border border-[#2B261F] p-2 rounded-xl text-xs italic">
@@ -1052,7 +1232,16 @@ export default function EpicureanApp() {
                   }`}
                 >
                   <Package className="h-3.5 w-3.5" />
-                  <span>Orders ({orders.length})</span>
+                  <span>Tracking Orders ({orders.length})</span>
+                </button>
+                <button
+                  onClick={() => setSellerSubTab('feedbacks')}
+                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
+                    sellerSubTab === 'feedbacks' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
+                  }`}
+                >
+                  <MessageSquare className="h-3.5 w-3.5 text-amber-500" />
+                  <span>Komplain ({feedbacks.length})</span>
                 </button>
                 <button
                   onClick={() => setSellerSubTab('products')}
@@ -1075,18 +1264,31 @@ export default function EpicureanApp() {
               </div>
             </div>
 
-            {/* TAB 1: LIST ORDERS */}
+            {/* TAB 1: LIST & TRACKING ORDERS UNTUK SELLER */}
             {sellerSubTab === 'orders' && (
               <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6 text-xs italic">
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#2B261F] pb-4 gap-3">
-                  <h3 className="font-serif text-[#E5D7B8] text-base">Daftar Pre-Order Masuk</h3>
-                  <button
-                    onClick={exportOrdersToCSV}
-                    className="bg-[#14120F] hover:bg-[#2B261F] border border-[#D4AF37] text-[#D4AF37] px-4 py-2 rounded-xl flex items-center space-x-2 text-xs font-serif"
-                  >
-                    <Download className="h-3.5 w-3.5" />
-                    <span>Download Rekap CSV</span>
-                  </button>
+                  <h3 className="font-serif text-[#E5D7B8] text-base">Order Tracking & Fulfillment Control</h3>
+                  
+                  <div className="flex items-center space-x-3 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <Search className="h-3.5 w-3.5 text-[#A69C83] absolute left-3 top-2.5" />
+                      <input
+                        type="text"
+                        placeholder="Cari ID Order / Cafe..."
+                        value={searchOrderQuery}
+                        onChange={(e) => setSearchOrderQuery(e.target.value)}
+                        className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl pl-9 pr-3 py-1.5 text-xs text-[#E5D7B8] focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={exportOrdersToCSV}
+                      className="bg-[#14120F] hover:bg-[#2B261F] border border-[#D4AF37] text-[#D4AF37] px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-serif whitespace-nowrap"
+                    >
+                      <Download className="h-3.5 w-3.5" />
+                      <span>CSV</span>
+                    </button>
+                  </div>
                 </div>
 
                 {/* MODUL AGREGASI TOTAL KEBUTUHAN PRODUKSI ROASTING */}
@@ -1109,35 +1311,110 @@ export default function EpicureanApp() {
                   </div>
                 </div>
 
-                {orders.length === 0 ? (
-                  <p className="text-[#A69C83] py-8 text-center">Belum ada orderan yang masuk.</p>
+                {searchedOrders.length === 0 ? (
+                  <p className="text-[#A69C83] py-8 text-center">Tidak ada pesanan yang sesuai pencarian.</p>
+                ) : (
+                  <div className="space-y-4">
+                    {searchedOrders.map((o) => {
+                      const statusSteps = ['Pending Approval', 'Roasting Process', 'Ready for Shipping', 'Delivered'];
+                      const currentStepIndex = statusSteps.indexOf(o.status);
+
+                      return (
+                        <div key={o.id} className="bg-[#14120F] p-5 rounded-2xl border border-[#2B261F] space-y-4">
+                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-[#2B261F] pb-3">
+                            <div>
+                              <span className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-wider">{o.id}</span>
+                              <h4 className="text-sm font-serif text-[#E5D7B8] font-bold">{o.customerName} ({o.companyName})</h4>
+                              <p className="text-[11px] text-[#A69C83]">Tgl Order: {o.createdAt} | HP: {o.customerPhone}</p>
+                            </div>
+
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] text-[#A69C83]">Update Status:</span>
+                              <select
+                                value={o.status}
+                                onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
+                                className="bg-[#0A0A0A] border border-[#2B261F] px-3 py-1.5 rounded-xl text-xs italic text-[#E5D7B8] focus:outline-none"
+                              >
+                                <option value="Pending Approval">Pending Approval</option>
+                                <option value="Roasting Process">Roasting Process</option>
+                                <option value="Ready for Shipping">Ready for Shipping</option>
+                                <option value="Delivered">Delivered</option>
+                                <option value="Rejected">Rejected</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          {/* PIPELINE TRACKING PROGRESS FOR SELLER */}
+                          <div className="bg-[#0A0A0A] p-4 rounded-xl border border-[#2B261F]">
+                            <p className="text-[10px] text-[#A69C83] italic mb-3">Live Progress Fulfillment Tracking:</p>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px] italic">
+                              <div className={`p-2 rounded-lg border ${o.status === 'Pending Approval' ? 'bg-amber-950/60 border-amber-500 text-amber-300 font-bold' : currentStepIndex > 0 ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
+                                1. Order Received
+                              </div>
+                              <div className={`p-2 rounded-lg border ${o.status === 'Roasting Process' ? 'bg-amber-950/60 border-amber-500 text-amber-300 font-bold' : currentStepIndex > 1 ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
+                                2. In Roasting Batch
+                              </div>
+                              <div className={`p-2 rounded-lg border ${o.status === 'Ready for Shipping' ? 'bg-amber-950/60 border-amber-500 text-amber-300 font-bold' : currentStepIndex > 2 ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
+                                3. Ready to Courier
+                              </div>
+                              <div className={`p-2 rounded-lg border ${o.status === 'Delivered' ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-bold' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
+                                4. Delivered
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] italic bg-[#0A0A0A] p-3 rounded-xl border border-[#2B261F]">
+                            <div>
+                              <p className="text-[#A69C83]">Jadwal & Pengiriman:</p>
+                              <p className="text-emerald-400">🔥 Estimasi Roasting: {o.estimatedRoastingDate || '-'}</p>
+                              <p className="text-sky-400 font-bold">🚚 Tgl Kirim Pilihan: {o.shippingDate || o.estimatedShippingDate || '-'}</p>
+                              <p className="text-[#E5D7B8] mt-1"><MapPin className="h-3 w-3 inline mr-1 text-[#D4AF37]" />{o.shippingAddress}</p>
+                            </div>
+                            <div className="text-right sm:text-right">
+                              <p className="text-[#A69C83]">Rincian Transaksi:</p>
+                              <p className="text-[#E5D7B8]">Metode Bayar: <strong>{o.paymentMethod.replace('_', ' ').toUpperCase()}</strong></p>
+                              <p className="text-[#D4AF37] font-bold text-sm mt-1">Total: Rp {o.totalAmount.toLocaleString('id-ID')}</p>
+                            </div>
+                          </div>
+
+                          <div className="text-[10px] text-[#A69C83] italic">
+                            <strong>Item Order:</strong> {o.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB FEEDBACKS & KOMPLAIN SELLER */}
+            {sellerSubTab === 'feedbacks' && (
+              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
+                <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Daftar Pengaduan & Komplain Pelanggan</h3>
+                {feedbacks.length === 0 ? (
+                  <p className="text-[#A69C83] py-8 text-center">Belum ada pengaduan atau komplain dari pelanggan.</p>
                 ) : (
                   <div className="space-y-3">
-                    {orders.map((o) => (
-                      <div key={o.id} className="bg-[#14120F] p-4 rounded-xl border border-[#2B261F] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                        <div>
-                          <p className="font-serif text-[#D4AF37] text-sm">{o.id} - {o.customerName} ({o.companyName})</p>
-                          <p className="text-[11px] text-[#A69C83] mt-0.5">{o.paymentMethod.replace('_', ' ').toUpperCase()} | Total: <strong className="text-[#E5D7B8]">Rp {o.totalAmount.toLocaleString('id-ID')}</strong></p>
-                          <p className="text-[10px] text-emerald-400 mt-0.5">🔥 Roasting: {o.estimatedRoastingDate || '-'} | 🚚 Shipping: {o.estimatedShippingDate || '-'}</p>
-                          <p className="text-[10px] text-[#776E5E] mt-1">Item: {o.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
-                          {o.paymentProof && (
-                            <p className="text-[10px] text-sky-400 mt-1 italic">Bukti Bayar: Terlampir ({o.paymentProof})</p>
-                          )}
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <span className="text-[10px] text-[#A69C83]">Status:</span>
+                    {feedbacks.map((fb) => (
+                      <div key={fb.id} className="bg-[#14120F] p-4 rounded-xl border border-amber-900/40 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">{fb.category}</span>
+                            <h4 className="text-sm font-serif text-[#E5D7B8] mt-1">{fb.customerName} ({fb.companyName}) - HP: {fb.customerPhone}</h4>
+                            {fb.orderId && <p className="text-[11px] text-[#D4AF37]">Order ID Terkait: {fb.orderId}</p>}
+                          </div>
                           <select
-                            value={o.status}
-                            onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
-                            className="bg-[#0A0A0A] border border-[#2B261F] px-3 py-1.5 rounded-lg text-xs italic text-[#E5D7B8] focus:outline-none"
+                            value={fb.status}
+                            onChange={(e) => updateFeedbackStatus(fb.id, e.target.value as CustomerFeedback['status'])}
+                            className="bg-[#0A0A0A] border border-[#2B261F] px-2.5 py-1 rounded-lg text-[11px] text-[#E5D7B8]"
                           >
-                            <option value="Pending Approval">Pending Approval</option>
-                            <option value="Roasting Process">Roasting Process</option>
-                            <option value="Ready for Shipping">Ready for Shipping</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Rejected">Rejected</option>
+                            <option value="Open">Status: Belum Selesai (Open)</option>
+                            <option value="Resolved">Status: Sudah Ditangani (Resolved)</option>
                           </select>
                         </div>
+                        <p className="text-xs text-[#E8E2D5] bg-[#0A0A0A] p-3 rounded-lg border border-[#2B261F] italic font-sans">{fb.message}</p>
+                        <p className="text-[10px] text-[#776E5E] text-right">Tgl Kirim: {fb.createdAt}</p>
                       </div>
                     ))}
                   </div>
@@ -1255,6 +1532,92 @@ export default function EpicureanApp() {
         )}
       </main>
 
+      {/* MODAL / LAMAN KOMPLAIN PELANGGAN */}
+      {isFeedbackModalOpen && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-[#2B261F] pb-3">
+              <div className="flex items-center space-x-2">
+                <MessageSquare className="h-5 w-5 text-amber-400" />
+                <h3 className="text-base font-serif italic text-[#E5D7B8]">Pengaduan & Komplain Kopi</h3>
+              </div>
+              <button onClick={() => setIsFeedbackModalOpen(false)} className="text-[#A69C83] hover:text-white">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmitFeedback} className="space-y-4 text-xs italic">
+              <div>
+                <label className="block text-[#A69C83] mb-1">Kategori Masalah *</label>
+                <select
+                  value={feedbackForm.category}
+                  onChange={(e) => setFeedbackForm({ ...feedbackForm, category: e.target.value as CustomerFeedback['category'] })}
+                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2.5 text-[#E5D7B8] focus:outline-none"
+                >
+                  <option value="Roasting Profile Tidak Sesuai">Roasting Profile Kurang Sesuai (Under/Over Roasted)</option>
+                  <option value="Barang Kurang / Salah">Jumlah Barang Kurang / Variant Salah</option>
+                  <option value="Kemasan Rusak">Kemasan / Bag Bocor atau Rusak</option>
+                  <option value="Kendala Pengiriman">Kendala Pengiriman / Kurir Lambat</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[#A69C83] mb-1">Order ID (Opsional)</label>
+                  <input
+                    type="text"
+                    placeholder="Contoh: ORD-123456"
+                    value={feedbackForm.orderId}
+                    onChange={(e) => setFeedbackForm({ ...feedbackForm, orderId: e.target.value })}
+                    className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[#A69C83] mb-1">Nomor WhatsApp *</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="0812xxxx"
+                    value={feedbackForm.phone}
+                    onChange={(e) => setFeedbackForm({ ...feedbackForm, phone: e.target.value })}
+                    className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[#A69C83] mb-1">Detail Keluhan / Masalah *</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Jelaskan kendala Anda secara detail..."
+                  value={feedbackForm.message}
+                  onChange={(e) => setFeedbackForm({ ...feedbackForm, message: e.target.value })}
+                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                />
+              </div>
+
+              <div className="flex justify-end space-x-3 pt-3 border-t border-[#2B261F]">
+                <button
+                  type="button"
+                  onClick={() => setIsFeedbackModalOpen(false)}
+                  className="px-4 py-2 bg-[#14120F] border border-[#2B261F] rounded-xl text-[#A69C83]"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-[#111111] font-bold font-serif rounded-xl"
+                >
+                  Kirim Pengaduan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* FLOATING CART BAR */}
       {currentUser?.role !== 'seller' && cart.length > 0 && (
         <div className="fixed bottom-4 left-4 right-4 max-w-4xl mx-auto z-40">
@@ -1275,7 +1638,7 @@ export default function EpicureanApp() {
         </div>
       )}
 
-      {/* SLIDE-OVER DRAWER MODAL KERANJANG */}
+      {/* SLIDE-OVER DRAWER MODAL KERANJANG & CHECKOUT */}
       {isCartDrawerOpen && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end">
           <div className="bg-[#0A0A0A] border-l border-[#2B261F] w-full max-w-lg h-full overflow-y-auto p-6 space-y-6 flex flex-col justify-between">
@@ -1323,16 +1686,30 @@ export default function EpicureanApp() {
                     ))}
                   </div>
 
-                  <div className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-xl space-y-1.5 text-xs italic">
-                    <p className="font-serif text-[#D4AF37]">Estimasi Jadwal Pesanan Anda</p>
-                    <div className="flex justify-between text-[#E5D7B8]">
-                      <span>Roasting:</span>
-                      <span className="font-bold text-emerald-400">{scheduleInfo.roasting}</span>
+                  {/* MODUL PILIHAN TANGGAL PENGIRIMAN DENGAN VALIDASI SENIN/SELASA */}
+                  <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
+                    <div className="flex items-center space-x-2 text-[#D4AF37] font-serif">
+                      <Truck className="h-4 w-4" />
+                      <span className="font-bold">Pilih Tanggal Pengiriman (Khusus Senin & Selasa)</span>
                     </div>
-                    <div className="flex justify-between text-[#E5D7B8]">
-                      <span>Shipping:</span>
-                      <span className="font-bold text-sky-400">{scheduleInfo.shipping}</span>
+
+                    <div>
+                      <input
+                        type="date"
+                        value={selectedCustomShippingDate}
+                        onChange={(e) => handleCustomShippingDateChange(e.target.value)}
+                        className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
+                      />
+                      <p className="text-[10px] text-[#A69C83] mt-1">
+                        Jadwal bawaan roastery: <strong className="text-sky-400">{scheduleInfo.shipping}</strong>
+                      </p>
                     </div>
+
+                    {dateValidationError && (
+                      <div className="bg-rose-950/80 border border-rose-800 p-2.5 rounded-lg text-rose-300 text-[11px] font-bold">
+                        {dateValidationError}
+                      </div>
+                    )}
                   </div>
 
                   <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
@@ -1371,7 +1748,6 @@ export default function EpicureanApp() {
                     />
                   </div>
 
-                  {/* METODE PEMBAYARAN (TRANSFER BCA / KONTRA BON) */}
                   <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
                     <p className="font-serif text-[#D4AF37]">Metode Pembayaran</p>
                     
@@ -1426,7 +1802,10 @@ export default function EpicureanApp() {
                 <button
                   type="submit"
                   form="drawer-checkout-form"
-                  className="w-full bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif italic font-bold py-3.5 rounded-xl transition-all shadow-md"
+                  disabled={Boolean(dateValidationError)}
+                  className={`w-full font-serif italic font-bold py-3.5 rounded-xl transition-all shadow-md ${
+                    dateValidationError ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111]'
+                  }`}
                 >
                   Submit Pre-Order Now
                 </button>
