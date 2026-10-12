@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock, KeyRound, 
   Trash2, User, Check, X,
-  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard
+  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, UploadCloud, AlertCircle
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -170,6 +170,7 @@ export default function EpicureanApp() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [paymentProofFile, setPaymentProofFile] = useState<string>('');
 
   const scheduleInfo = calculateOrderSchedule();
 
@@ -443,6 +444,7 @@ export default function EpicureanApp() {
       shippingMethod: destination === 'bandung' ? 'DIRECT BANDUNG' : 'JNE REG',
       shippingCost: shippingCost,
       paymentMethod: customerType === 'perorangan' ? 'transfer' : paymentMethod,
+      paymentProof: paymentProofFile || undefined,
       items: cart,
       subtotal: cartSubtotal,
       totalAmount: grandTotal,
@@ -464,13 +466,12 @@ export default function EpicureanApp() {
       shipping_method: newOrder.shippingMethod,
       shipping_cost: newOrder.shippingCost,
       payment_method: newOrder.paymentMethod,
+      payment_proof: newOrder.paymentProof,
       items: newOrder.items,
       subtotal: newOrder.subtotal,
       total_amount: newOrder.totalAmount,
       status: newOrder.status,
       due_date: newOrder.dueDate,
-      estimated_roasting_date: newOrder.estimatedRoastingDate,
-      estimated_shipping_date: newOrder.estimatedShippingDate,
       created_at: newOrder.createdAt
     });
 
@@ -505,6 +506,47 @@ export default function EpicureanApp() {
     text += `Mohon diproses untuk pengiriman ke alamat:\n${order.shippingAddress}`;
 
     return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
+  };
+
+  // FUNGSI EKSPOR DATA REKAP KE CSV/EXCEL
+  const exportOrdersToCSV = () => {
+    if (orders.length === 0) {
+      alert('Belum ada data pesanan untuk diunduh.');
+      return;
+    }
+
+    let csvContent = "data:text/csv;charset=utf-8,";
+    csvContent += "ID Order,Tanggal,Nama Pemesan,Nama Cafe/Perusahaan,No HP,Metode Bayar,Status,Items,Total Rp\n";
+
+    orders.forEach(o => {
+      const itemList = o.items.map(i => `${i.name} x${i.quantity}`).join(' | ');
+      csvContent += `"${o.id}","${o.createdAt}","${o.customerName}","${o.companyName}","${o.customerPhone}","${o.paymentMethod}","${o.status}","${itemList}","${o.totalAmount}"\n`;
+    });
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `Rekap_Orders_Epicurean_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // FUNGSI AGREGASI TOTAL KEBUTUHAN PRODUKSI (KG SANGRAI)
+  const getAggregatedRoastingDemand = () => {
+    const demandMap: { [productName: string]: number } = {};
+
+    orders.filter(o => o.status !== 'Rejected').forEach(o => {
+      o.items.forEach(item => {
+        const weightInKg = (item.quantityGram * item.quantity) / 1000;
+        demandMap[item.name] = (demandMap[item.name] || 0) + weightInKg;
+      });
+    });
+
+    return Object.entries(demandMap).map(([name, weightKg]) => ({
+      name,
+      weightKg
+    }));
   };
 
   const handleOpenEditModal = (prod: Product) => {
@@ -1002,7 +1044,7 @@ export default function EpicureanApp() {
             <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
               <h1 className="text-xl font-serif italic text-[#E5D7B8]">Epicurean Roastery Manager</h1>
               
-              <div className="flex space-x-2 bg-[#14120F] border border-[#2B261F] p-1 rounded-2xl">
+              <div className="flex flex-wrap space-x-2 bg-[#14120F] border border-[#2B261F] p-1 rounded-2xl">
                 <button
                   onClick={() => setSellerSubTab('orders')}
                   className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
@@ -1035,8 +1077,38 @@ export default function EpicureanApp() {
 
             {/* TAB 1: LIST ORDERS */}
             {sellerSubTab === 'orders' && (
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
-                <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Daftar Pre-Order Masuk</h3>
+              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6 text-xs italic">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#2B261F] pb-4 gap-3">
+                  <h3 className="font-serif text-[#E5D7B8] text-base">Daftar Pre-Order Masuk</h3>
+                  <button
+                    onClick={exportOrdersToCSV}
+                    className="bg-[#14120F] hover:bg-[#2B261F] border border-[#D4AF37] text-[#D4AF37] px-4 py-2 rounded-xl flex items-center space-x-2 text-xs font-serif"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download Rekap CSV</span>
+                  </button>
+                </div>
+
+                {/* MODUL AGREGASI TOTAL KEBUTUHAN PRODUKSI ROASTING */}
+                <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-2xl space-y-3">
+                  <div className="flex items-center space-x-2 border-b border-[#2B261F] pb-2 text-[#D4AF37] font-serif">
+                    <Coffee className="h-4 w-4" />
+                    <span className="font-bold">Total Kebutuhan Sangrai (Batch Minggu Ini)</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs italic">
+                    {getAggregatedRoastingDemand().length === 0 ? (
+                      <p className="text-[#776E5E] col-span-full">Belum ada kebutuhan roasting.</p>
+                    ) : (
+                      getAggregatedRoastingDemand().map(demand => (
+                        <div key={demand.name} className="bg-[#0A0A0A] p-2.5 rounded-xl border border-[#2B261F] flex justify-between">
+                          <span className="text-[#E5D7B8] truncate pr-2">{demand.name}</span>
+                          <strong className="text-emerald-400 font-serif">{demand.weightKg} Kg</strong>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+
                 {orders.length === 0 ? (
                   <p className="text-[#A69C83] py-8 text-center">Belum ada orderan yang masuk.</p>
                 ) : (
@@ -1048,6 +1120,9 @@ export default function EpicureanApp() {
                           <p className="text-[11px] text-[#A69C83] mt-0.5">{o.paymentMethod.replace('_', ' ').toUpperCase()} | Total: <strong className="text-[#E5D7B8]">Rp {o.totalAmount.toLocaleString('id-ID')}</strong></p>
                           <p className="text-[10px] text-emerald-400 mt-0.5">🔥 Roasting: {o.estimatedRoastingDate || '-'} | 🚚 Shipping: {o.estimatedShippingDate || '-'}</p>
                           <p className="text-[10px] text-[#776E5E] mt-1">Item: {o.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}</p>
+                          {o.paymentProof && (
+                            <p className="text-[10px] text-sky-400 mt-1 italic">Bukti Bayar: Terlampir ({o.paymentProof})</p>
+                          )}
                         </div>
                         <div className="flex items-center space-x-2">
                           <span className="text-[10px] text-[#A69C83]">Status:</span>
@@ -1309,10 +1384,21 @@ export default function EpicureanApp() {
                     </label>
 
                     {paymentMethod === 'transfer' && (
-                      <div className="bg-[#0A0A0A] p-3.5 rounded-xl border border-sky-900/60 space-y-1 text-xs italic my-1">
+                      <div className="bg-[#0A0A0A] p-3.5 rounded-xl border border-sky-900/60 space-y-2 text-xs italic my-1">
                         <p className="text-[#A69C83] text-[11px]">Rekening Resmi Pembayaran:</p>
                         <p className="text-[#E5D7B8] font-bold text-sm">BCA: 7772400244</p>
                         <p className="text-[#D4AF37] font-semibold text-[11px]">a.n. CV Multi Agri Sentosa</p>
+
+                        <div className="pt-2 border-t border-[#2B261F]">
+                          <label className="block text-[11px] text-[#A69C83] mb-1">Catatan/Nomor Bukti Transfer (Opsional)</label>
+                          <input
+                            type="text"
+                            placeholder="Contoh: Transfer via BCA Mobile a.n. Budi"
+                            value={paymentProofFile}
+                            onChange={(e) => setPaymentProofFile(e.target.value)}
+                            className="w-full bg-[#14120F] border border-[#2B261F] rounded-lg px-2.5 py-1.5 text-[11px] text-[#E5D7B8]"
+                          />
+                        </div>
                       </div>
                     )}
 
