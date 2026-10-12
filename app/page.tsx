@@ -673,6 +673,21 @@ export default function EpicureanApp() {
     }
   };
 
+  const updateCartItemQuantity = (itemId: string, delta: number) => {
+    const existingIndex = cart.findIndex(i => i.id === itemId);
+    if (existingIndex > -1) {
+      const updatedCart = [...cart];
+      const newQty = updatedCart[existingIndex].quantity + delta;
+      if (newQty <= 0) {
+        setCart(cart.filter(i => i.id !== itemId));
+      } else {
+        updatedCart[existingIndex].quantity = newQty;
+        updatedCart[existingIndex].totalPrice = newQty * updatedCart[existingIndex].unitPrice;
+        setCart(updatedCart);
+      }
+    }
+  };
+
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
@@ -1359,102 +1374,136 @@ export default function EpicureanApp() {
                 </button>
               </div>
 
-              {cart.map((item) => (
-                <div key={item.id} className="flex justify-between items-center text-xs font-mono py-2 border-b border-[#2E2B27]">
-                  <div>
-                    <p className="text-[#EFECE6] font-serif text-sm">{item.name}</p>
-                    <p className="text-[#8C8479]">{item.quantity} x Rp {item.unitPrice.toLocaleString('id-ID')}</p>
-                  </div>
-                  <p className="text-[#C8A97E]">Rp {item.totalPrice.toLocaleString('id-ID')}</p>
-                </div>
-              ))}
+              {cart.length === 0 ? (
+                <p className="text-xs text-[#8C8479] font-mono py-8 text-center">Keranjang Anda masih kosong.</p>
+              ) : (
+                <div className="space-y-3 divide-y divide-[#2E2B27]">
+                  {cart.map((item) => (
+                    <div key={item.id} className="pt-3 flex justify-between items-center text-xs font-mono">
+                      <div className="space-y-1">
+                        <p className="text-[#EFECE6] font-serif text-sm">{item.name}</p>
+                        <p className="text-[#8C8479]">@ Rp {item.unitPrice.toLocaleString('id-ID')}</p>
+                      </div>
 
-              <form onSubmit={handleCheckout} id="checkout-form" className="space-y-4 pt-4">
-                <div className="space-y-2">
-                  <label className="block text-xs font-mono text-[#C8A97E] uppercase">
-                    Pilih Tanggal Pengiriman (Hanya Senin / Selasa)
-                  </label>
-                  <CustomDeliveryDatePicker
-                    value={selectedCustomShippingDate}
-                    onChange={(dateStr) => setSelectedCustomShippingDate(dateStr)}
-                  />
-                </div>
+                      <div className="flex items-center space-x-3">
+                        {/* TOMBOL PENGUBAH QUANTITY (- dan +) */}
+                        <div className="flex items-center border border-[#38332E] bg-[#181614]">
+                          <button
+                            type="button"
+                            onClick={() => updateCartItemQuantity(item.id, -1)}
+                            className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E] hover:bg-[#2A2723] transition-all"
+                          >
+                            <Minus className="h-3 w-3" />
+                          </button>
+                          <span className="px-2.5 text-[#EFECE6] font-bold">{item.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={() => updateCartItemQuantity(item.id, 1)}
+                            className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E] hover:bg-[#2A2723] transition-all"
+                          >
+                            <Plus className="h-3 w-3" />
+                          </button>
+                        </div>
 
-                <div className="space-y-2 pt-2 border-t border-[#2E2B27]">
-                  <label className="block text-xs font-mono text-[#C8A97E] uppercase">
-                    Metode Pembayaran
-                  </label>
-                  
-                  {currentUser?.role === 'pembeli' ? (
-                    <div className="bg-[#181614] border border-[#38332E] p-3 text-xs font-mono space-y-1">
-                      <span className="text-[#EFECE6] font-bold block">Transfer Bank BCA</span>
-                      <p className="text-[#8C8479]">No. Rek: <strong className="text-[#C8A97E]">7772400244</strong></p>
-                      <p className="text-[#8C8479]">a/n CV. MULTI AGRI SENTOSA</p>
+                        <p className="text-[#C8A97E] font-bold w-20 text-right">
+                          Rp {item.totalPrice.toLocaleString('id-ID')}
+                        </p>
+                      </div>
                     </div>
-                  ) : (
-                    <select
-                      value={paymentMethod}
-                      onChange={(e) => setPaymentMethod(e.target.value as any)}
-                      className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
-                    >
-                      <option value="transfer">Transfer Bank BCA (7772400244 a/n CV Multi Agri Sentosa)</option>
-                      <option value="kontra_bon_15">Kontra Bon (15 Hari)</option>
-                      <option value="kontra_bon_30">Kontra Bon (30 Hari)</option>
-                    </select>
-                  )}
+                  ))}
                 </div>
+              )}
 
-                <div className="space-y-3 pt-2 border-t border-[#2E2B27]">
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama Pemesan *"
-                    value={customerInfo.name}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="Nama Cafe / Perusahaan *"
-                    value={customerInfo.company}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
-                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
-                  />
-                  <input
-                    type="text"
-                    required
-                    placeholder="No WhatsApp *"
-                    value={customerInfo.phone}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
-                  />
-                  <textarea
-                    required
-                    rows={2}
-                    placeholder="Alamat Pengiriman Lengkap *"
-                    value={customerInfo.address}
-                    onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
-                  />
-                </div>
-              </form>
+              {cart.length > 0 && (
+                <form onSubmit={handleCheckout} id="checkout-form" className="space-y-4 pt-4 border-t border-[#2E2B27]">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-mono text-[#C8A97E] uppercase">
+                      Pilih Tanggal Pengiriman (Hanya Senin / Selasa)
+                    </label>
+                    <CustomDeliveryDatePicker
+                      value={selectedCustomShippingDate}
+                      onChange={(dateStr) => setSelectedCustomShippingDate(dateStr)}
+                    />
+                  </div>
+
+                  <div className="space-y-2 pt-2 border-t border-[#2E2B27]">
+                    <label className="block text-xs font-mono text-[#C8A97E] uppercase">
+                      Metode Pembayaran
+                    </label>
+                    
+                    {currentUser?.role === 'pembeli' ? (
+                      <div className="bg-[#181614] border border-[#38332E] p-3 text-xs font-mono space-y-1">
+                        <span className="text-[#EFECE6] font-bold block">Transfer Bank BCA</span>
+                        <p className="text-[#8C8479]">No. Rek: <strong className="text-[#C8A97E]">7772400244</strong></p>
+                        <p className="text-[#8C8479]">a/n CV. MULTI AGRI SENTOSA</p>
+                      </div>
+                    ) : (
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value as any)}
+                        className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                      >
+                        <option value="transfer">Transfer Bank BCA (7772400244 a/n CV Multi Agri Sentosa)</option>
+                        <option value="kontra_bon_15">Kontra Bon (15 Hari)</option>
+                        <option value="kontra_bon_30">Kontra Bon (30 Hari)</option>
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t border-[#2E2B27]">
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nama Pemesan *"
+                      value={customerInfo.name}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                      className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="Nama Cafe / Perusahaan *"
+                      value={customerInfo.company}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
+                      className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                    />
+                    <input
+                      type="text"
+                      required
+                      placeholder="No WhatsApp *"
+                      value={customerInfo.phone}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                      className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                    />
+                    <textarea
+                      required
+                      rows={2}
+                      placeholder="Alamat Pengiriman Lengkap *"
+                      value={customerInfo.address}
+                      onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
+                      className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                    />
+                  </div>
+                </form>
+              )}
             </div>
 
-            <div className="pt-6 border-t border-[#2E2B27] space-y-4">
-              <div className="flex justify-between font-serif text-base">
-                <span>Total Tagihan</span>
-                <span className="text-[#C8A97E]">Rp {grandTotal.toLocaleString('id-ID')}</span>
+            {cart.length > 0 && (
+              <div className="pt-6 border-t border-[#2E2B27] space-y-4">
+                <div className="flex justify-between font-serif text-base">
+                  <span>Total Tagihan</span>
+                  <span className="text-[#C8A97E]">Rp {grandTotal.toLocaleString('id-ID')}</span>
+                </div>
+
+                <button
+                  type="submit"
+                  form="checkout-form"
+                  className="w-full py-3 text-xs font-mono uppercase tracking-wider bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium transition-all"
+                >
+                  Submit Pre-Order
+                </button>
               </div>
-
-              <button
-                type="submit"
-                form="checkout-form"
-                className="w-full py-3 text-xs font-mono uppercase tracking-wider bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium transition-all"
-              >
-                Submit Pre-Order
-              </button>
-            </div>
+            )}
           </div>
         </div>
       )}
