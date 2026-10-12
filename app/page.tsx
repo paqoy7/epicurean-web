@@ -3,9 +3,9 @@
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import { 
-  Coffee, ShoppingCart, Lock, KeyRound, 
-  Trash2, User, Check, X,
-  MessageSquare, RefreshCw, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, UploadCloud, AlertCircle, Search, MapPin
+  Coffee, ShoppingCart, Lock,
+  Trash2, User, X,
+  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -103,36 +103,15 @@ const sellerAccount: UserAccount = {
 };
 
 const defaultProductsFromSpreadsheet: Product[] = [
-  { id: 'GB-1', name: 'Greenbeans Wanoja Avisani S', category: 'Green Beans', pricePerKg: 284000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 282500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Avisani S (Crop 2026)', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-2', name: 'Greenbeans Wanoja Fullwash', category: 'Green Beans', pricePerKg: 198000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 190500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Fullwash', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-3', name: 'Greenbeans Wanoja Natural', category: 'Green Beans', pricePerKg: 248000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 245500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Natural', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-4', name: 'Greenbeans Wanoja MTW', category: 'Green Beans', pricePerKg: 280000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 2500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja MTW', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-5', name: 'Greenbeans Kerinci Fullwash', category: 'Green Beans', pricePerKg: 172000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 162722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Fullwash', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-6', name: 'Greenbeans Kerinci Natural', category: 'Green Beans', pricePerKg: 190000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 177722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Natural', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-7', name: 'Greenbeans Kerinci Wethull (Semiwash)', category: 'Green Beans', pricePerKg: 168000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 157722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Semiwash', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-8', name: 'Greenbeans Kerinci Robusta', category: 'Green Beans', pricePerKg: 92000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 87722, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Kerinci Robusta', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-9', name: 'Greenbeans Flores Fullwash', category: 'Green Beans', pricePerKg: 195000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 182220, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Flores Fullwash', isExclusive: false, exclusiveCode: '' },
-  { id: 'GB-10', name: 'Greenbeans Bajawa Natural 72 Hours', category: 'Green Beans', pricePerKg: 200000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 187500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Bajawa Natural 72 Hours', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-1', name: 'Wanoja Avisani', category: 'Roasted Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 284000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Avisani Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-2', name: 'Wanoja Fullwash', category: 'Roasted Beans', pricePerKg: 350000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 193000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-3', name: 'Wanoja Natural', category: 'Roasted Beans', pricePerKg: 450000, pricePer500g: 0, pricePer200g: 150000, greenBeanCostPerKg: 243000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Natural Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-4', name: 'Wanoja MTW', category: 'Roasted Beans', pricePerKg: 496250, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 280000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Wanoja MTW Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-5', name: 'Kerinci Fullwash', category: 'Roasted Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 160222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-6', name: 'Kerinci Natural', category: 'Roasted Beans', pricePerKg: 390000, pricePer500g: 0, pricePer200g: 140000, greenBeanCostPerKg: 175222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Natural Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-7', name: 'Kerinci WH (Semiwash)', category: 'Roasted Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 110000, greenBeanCostPerKg: 155222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci WH Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-8', name: 'Kerinci Robusta', category: 'Roasted Beans', pricePerKg: 170000, pricePer500g: 0, pricePer200g: 100000, greenBeanCostPerKg: 85222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Robusta Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-9', name: 'Melaka', category: 'Roasted Beans', pricePerKg: 170000, pricePer500g: 0, pricePer200g: 170000, greenBeanCostPerKg: 85222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Melaka Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'RB-10', name: 'Bajawa Natural 72 Hours', category: 'Roasted Beans', pricePerKg: 375000, pricePer500g: 0, pricePer200g: 375000, greenBeanCostPerKg: 185000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Bajawa Natural 72 Hours Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-1', name: 'Wanoja Avisani S (Green)', category: 'Green Beans', pricePerKg: 284000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 282500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Avisani S (Crop 2026)', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-2', name: 'Wanoja Fullwash (Green)', category: 'Green Beans', pricePerKg: 198000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 190500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Fullwash', isExclusive: false, exclusiveCode: '' },
+  { id: 'GB-3', name: 'Wanoja Natural (Green)', category: 'Green Beans', pricePerKg: 248000, pricePer500g: 0, pricePer200g: 0, greenBeanCostPerKg: 245500, roastingCostPerKg: 0, packagingCostPerKg: 2500, packagingCostPer500g: 0, packagingCostPer200g: 0, description: 'Greenbeans Wanoja Natural', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-1', name: 'Wanoja Avisani Single Origin', category: 'Roasted Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 284000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Avisani Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-2', name: 'Wanoja Fullwash Single Origin', category: 'Roasted Beans', pricePerKg: 350000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 193000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
+  { id: 'RB-5', name: 'Kerinci Fullwash Single Origin', category: 'Roasted Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 160222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
   { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: '', allowedResellers: ['RailwayCafe'] },
   { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['AstriaSolo'] },
   { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: '', allowedResellers: ['BrunswickCafe'] },
-  { id: 'BL-4', name: 'FarmHouse Blend (70 KWH : 30 KNE)', category: 'Blend Beans', pricePerKg: 290000, pricePer500g: 0, pricePer200g: 70000, greenBeanCostPerKg: 229028, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'FarmHouse Blend: 70% Kerinci WH + 30% Kerinci Natural', isExclusive: true, exclusiveCode: '', allowedResellers: [] },
-  { id: 'BL-5', name: 'Dago Terrace Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 199653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Dago Terrace Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['DagoTerrace'] },
-  { id: 'BL-6', name: 'Foresta Blend (70 KDH : 30 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 201783, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Foresta Blend: 70% Kerinci DH PTP + 30% Kerinci Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['GreensCafe'] },
-  { id: 'BL-7', name: 'Blend Tigris (70 Robusta : 30 KDH)', category: 'Blend Beans', pricePerKg: 210000, pricePer500g: 0, pricePer200g: 50000, greenBeanCostPerKg: 162153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend Tigris: 70% Kerinci Robusta + 30% Roasted KDH PTP', isExclusive: true, exclusiveCode: '', allowedResellers: ['GreensCafe'] },
-  { id: 'BL-8', name: 'Blend K50 (50 KDH : 50 Robusta)', category: 'Blend Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 55000, greenBeanCostPerKg: 158264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend K50: 50% Kerinci Robusta + 50% Roasted KDH PTP', isExclusive: true, exclusiveCode: '', allowedResellers: ['NaraPark'] },
-  { id: 'BL-9', name: 'Blend 60:40 (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 240000, pricePer500g: 0, pricePer200g: 58000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Blend 60:40: 60% Roasted KDH PTP + 40% Kerinci Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: [] },
-  { id: 'BL-10', name: 'Luna Tirsa Blend (50 KDH : 50 KNE)', category: 'Blend Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 78000, greenBeanCostPerKg: 237153, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Luna Tirsa Blend: 50% Roasted KDH + 50% Kerinci Natural', isExclusive: true, exclusiveCode: '', allowedResellers: ['Sasson', 'LunaTirsa'] }
 ];
 
 const calculateOrderSchedule = () => {
@@ -178,7 +157,6 @@ export default function EpicureanApp() {
   const [products, setProducts] = useState<Product[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
-  const [loading, setLoading] = useState(true);
 
   const [searchOrderQuery, setSearchOrderQuery] = useState('');
   const [selectedCustomShippingDate, setSelectedCustomShippingDate] = useState('');
@@ -237,28 +215,7 @@ export default function EpicureanApp() {
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*');
     if (error || !data || data.length < defaultProductsFromSpreadsheet.length) {
-      for (const prod of defaultProductsFromSpreadsheet) {
-        await supabase.from('products').upsert({
-          id: prod.id,
-          name: prod.name,
-          category: prod.category,
-          price_per_kg: prod.pricePerKg,
-          price_per_500g: prod.pricePer500g,
-          price_per_200g: prod.pricePer200g,
-          green_bean_cost_per_kg: prod.greenBeanCostPerKg,
-          roasting_cost_per_kg: prod.roastingCostPerKg,
-          packaging_cost_per_kg: prod.packagingCostPerKg,
-          packaging_cost_per_500g: prod.packagingCostPer500g,
-          packaging_cost_per_200g: prod.packagingCostPer200g,
-          description: prod.description,
-          is_exclusive: prod.isExclusive,
-          exclusive_code: prod.exclusiveCode,
-          allowed_resellers: prod.allowedResellers || []
-        });
-      }
-      const { data: updatedData } = await supabase.from('products').select('*');
-      if (updatedData) setProducts(formatSupabaseProducts(updatedData));
-      else setProducts(defaultProductsFromSpreadsheet);
+      setProducts(defaultProductsFromSpreadsheet);
     } else {
       setProducts(formatSupabaseProducts(data));
     }
@@ -266,9 +223,7 @@ export default function EpicureanApp() {
 
   const fetchOrders = async () => {
     const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error fetching orders:', error);
-    } else if (data) {
+    if (data) {
       const formatted: Order[] = data.map(item => ({
         id: item.id,
         customerType: item.customer_type,
@@ -296,7 +251,7 @@ export default function EpicureanApp() {
   };
 
   const fetchFeedbacks = async () => {
-    const { data, error } = await supabase.from('customer_feedbacks').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('customer_feedbacks').select('*').order('created_at', { ascending: false });
     if (data) {
       const formatted: CustomerFeedback[] = data.map(item => ({
         id: item.id,
@@ -314,12 +269,9 @@ export default function EpicureanApp() {
   };
 
   useEffect(() => {
-    const loadData = async () => {
-      setLoading(true);
-      await Promise.all([fetchProducts(), fetchOrders(), fetchFeedbacks()]);
-      setLoading(false);
-    };
-    loadData();
+    fetchProducts();
+    fetchOrders();
+    fetchFeedbacks();
   }, []);
 
   const filteredProducts = products.filter(p => {
@@ -349,22 +301,6 @@ export default function EpicureanApp() {
 
   const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
 
-  const [productForm, setProductForm] = useState({
-    name: '',
-    category: 'Roasted Beans' as Product['category'],
-    pricePerKg: 200000,
-    pricePer500g: 0,
-    pricePer200g: 100000,
-    greenBeanCostPerKg: 100000,
-    roastingCostPerKg: 20000,
-    packagingCostPerKg: 7500,
-    packagingCostPer500g: 5000,
-    packagingCostPer200g: 3000,
-    description: '',
-    isExclusive: false,
-    exclusiveCode: ''
-  });
-
   const handleRoleSelection = (role: 'pembeli' | 'reseller' | 'seller') => {
     setSelectedRole(role);
     setAuthError('');
@@ -386,7 +322,7 @@ export default function EpicureanApp() {
         saveUserSession(sellerAccount);
         setCurrentStep('main');
       } else {
-        setAuthError('Username atau Password Seller salah!');
+        setAuthError('Username/Password Seller tidak sesuai.');
       }
     } else if (selectedRole === 'reseller') {
       const foundReseller = presetResellerAccounts.find(
@@ -397,11 +333,11 @@ export default function EpicureanApp() {
         setCustomerInfo(prev => ({ ...prev, company: foundReseller.companyName || '', name: foundReseller.username }));
         setCurrentStep('main');
       } else {
-        setAuthError('Username atau Password Reseller tidak ditemukan!');
+        setAuthError('Kredensial reseller tidak terdaftar.');
       }
     } else {
       if (!authForm.username.trim()) {
-        setAuthError('Ketik nama atau username Anda.');
+        setAuthError('Silakan isi nama Anda.');
         return;
       }
       const buyerUser: UserAccount = {
@@ -413,14 +349,6 @@ export default function EpicureanApp() {
       setCustomerInfo(prev => ({ ...prev, name: buyerUser.username, company: buyerUser.companyName || '' }));
       setCurrentStep('main');
     }
-  };
-
-  const handleGoogleLogin = async () => {
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin }
-    });
-    if (error) alert('Gagal login via Google: ' + error.message);
   };
 
   const handleLogout = () => {
@@ -437,10 +365,10 @@ export default function EpicureanApp() {
     if (!dateVal) return;
 
     const chosenDate = new Date(dateVal);
-    const dayOfWeek = chosenDate.getDay(); // 0 = Minggu, 1 = Senin, 2 = Selasa, dst.
+    const dayOfWeek = chosenDate.getDay();
 
     if (dayOfWeek !== 1 && dayOfWeek !== 2) {
-      setDateValidationError('⚠️ Pengiriman Roastery HANYA tersedia pada hari SENIN dan SELASA. Silakan pilih tanggal hari Senin atau Selasa!');
+      setDateValidationError('Jadwal pengiriman roastery HANYA melayani hari SENIN & SELASA.');
     }
   };
 
@@ -449,14 +377,10 @@ export default function EpicureanApp() {
     let unitPrice = prod.pricePerKg || 200000;
     let packLabel = '1 Kg';
 
-    if (packType === '500g') {
-      weightGram = 500;
-      unitPrice = prod.pricePer500g || 100000;
-      packLabel = '500 Gram';
-    } else if (packType === '200g') {
+    if (packType === '200g') {
       weightGram = 200;
       unitPrice = prod.pricePer200g || 50000;
-      packLabel = '200 Gram';
+      packLabel = '200g';
     }
 
     const itemUniqueKey = `${prod.id}-${packType}`;
@@ -492,16 +416,7 @@ export default function EpicureanApp() {
       setCart(cart.filter(i => i.id !== itemId));
       return;
     }
-    setCart(cart.map(item => {
-      if (item.id === itemId) {
-        return {
-          ...item,
-          quantity: newQty,
-          totalPrice: item.unitPrice * newQty
-        };
-      }
-      return item;
-    }));
+    setCart(cart.map(item => item.id === itemId ? { ...item, quantity: newQty, totalPrice: item.unitPrice * newQty } : item));
   };
 
   const handleCheckout = async (e: React.FormEvent) => {
@@ -509,22 +424,11 @@ export default function EpicureanApp() {
     if (cart.length === 0) return;
 
     if (dateValidationError) {
-      alert('Mohon perbaiki tanggal pengiriman. Pengiriman hanya melayani hari Senin & Selasa.');
+      alert('Mohon pilih hari Senin atau Selasa untuk tanggal pengiriman.');
       return;
     }
 
     const today = new Date();
-    let dueDateStr = '';
-    if (customerType === 'cafe') {
-      if (paymentMethod === 'kontra_bon_15') {
-        const due = new Date(today); due.setDate(due.getDate() + 15);
-        dueDateStr = due.toISOString().split('T')[0];
-      } else if (paymentMethod === 'kontra_bon_30') {
-        const due = new Date(today); due.setDate(due.getDate() + 30);
-        dueDateStr = due.toISOString().split('T')[0];
-      }
-    }
-
     const finalShippingDate = selectedCustomShippingDate || scheduleInfo.shipping;
 
     const newOrder: Order = {
@@ -543,7 +447,6 @@ export default function EpicureanApp() {
       subtotal: cartSubtotal,
       totalAmount: grandTotal,
       status: 'Pending Approval',
-      dueDate: dueDateStr || undefined,
       estimatedRoastingDate: scheduleInfo.roasting,
       estimatedShippingDate: scheduleInfo.shipping,
       shippingDate: finalShippingDate,
@@ -566,14 +469,11 @@ export default function EpicureanApp() {
       subtotal: newOrder.subtotal,
       total_amount: newOrder.totalAmount,
       status: newOrder.status,
-      due_date: newOrder.dueDate,
       shipping_date: newOrder.shippingDate,
       created_at: newOrder.createdAt
     });
 
-    if (error) {
-      alert('Gagal mengirim order ke server: ' + error.message);
-    } else {
+    if (!error) {
       setCurrentActiveOrder(newOrder);
       setCart([]);
       fetchOrders();
@@ -587,7 +487,7 @@ export default function EpicureanApp() {
     const newFb: CustomerFeedback = {
       id: `FB-${Date.now().toString().slice(-5)}`,
       customerName: currentUser?.username || customerInfo.name || 'Pelanggan',
-      companyName: currentUser?.companyName || customerInfo.company || 'Cafe/Perorangan',
+      companyName: currentUser?.companyName || customerInfo.company || 'Cafe',
       customerPhone: feedbackForm.phone || customerInfo.phone || '-',
       category: feedbackForm.category,
       orderId: feedbackForm.orderId || undefined,
@@ -596,7 +496,7 @@ export default function EpicureanApp() {
       createdAt: new Date().toISOString().split('T')[0]
     };
 
-    const { error } = await supabase.from('customer_feedbacks').insert({
+    await supabase.from('customer_feedbacks').insert({
       id: newFb.id,
       customer_name: newFb.customerName,
       company_name: newFb.companyName,
@@ -608,171 +508,16 @@ export default function EpicureanApp() {
       created_at: newFb.createdAt
     });
 
-    if (error) {
-      alert('Gagal mengirim pesan: ' + error.message);
-    } else {
-      alert('Terima kasih! Pesan/komplain Anda telah terkirim ke Tim Epicurean.');
-      setIsFeedbackModalOpen(false);
-      setFeedbackForm({ category: 'Roasting Profile Tidak Sesuai', orderId: '', phone: '', message: '' });
-      fetchFeedbacks();
-    }
-  };
-
-  const generateWhatsAppLink = (order: Order, targetPhone: string) => {
-    let text = `*PRE-ORDER B2B EPICUREAN.id*\n`;
-    text += `------------------------------------\n`;
-    text += `*ID Order:* ${order.id}\n`;
-    text += `*Pemesan:* ${order.customerName} (${order.companyName})\n`;
-    text += `*Role Account:* ${currentUser?.role.toUpperCase()}\n`;
-    text += `*Metode Bayar:* ${order.paymentMethod.replace('_', ' ').toUpperCase()}\n`;
-    text += `------------------------------------\n`;
-    text += `*JADWAL PRODUKSI & PENGIRIMAN:*\n`;
-    text += `🔥 *Estimasi Roasting:* ${order.estimatedRoastingDate || scheduleInfo.roasting}\n`;
-    text += `🚚 *Pilihan Tgl Kirim:* ${order.shippingDate || scheduleInfo.shipping}\n`;
-    text += `------------------------------------\n`;
-    text += `*Rincian Pesanan:*\n`;
-    order.items.forEach(item => {
-      text += `- ${item.name} x ${item.quantity} : Rp ${item.totalPrice.toLocaleString('id-ID')}\n`;
-    });
-    text += `------------------------------------\n`;
-    text += `*Ongkir (${order.shippingMethod}):* Rp ${order.shippingCost.toLocaleString('id-ID')}\n`;
-    text += `*TOTAL TAGIHAN:* Rp ${order.totalAmount.toLocaleString('id-ID')}\n\n`;
-    text += `Mohon diproses untuk pengiriman ke alamat:\n${order.shippingAddress}`;
-
-    return `https://wa.me/${targetPhone}?text=${encodeURIComponent(text)}`;
-  };
-
-  const exportOrdersToCSV = () => {
-    if (orders.length === 0) {
-      alert('Belum ada data pesanan untuk diunduh.');
-      return;
-    }
-
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "ID Order,Tanggal,Nama Pemesan,Nama Cafe/Perusahaan,No HP,Tgl Kirim,Metode Bayar,Status,Items,Total Rp\n";
-
-    orders.forEach(o => {
-      const itemList = o.items.map(i => `${i.name} x${i.quantity}`).join(' | ');
-      csvContent += `"${o.id}","${o.createdAt}","${o.customerName}","${o.companyName}","${o.customerPhone}","${o.shippingDate || '-'}","${o.paymentMethod}","${o.status}","${itemList}","${o.totalAmount}"\n`;
-    });
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Rekap_Orders_Epicurean_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
-
-  const getAggregatedRoastingDemand = () => {
-    const demandMap: { [productName: string]: number } = {};
-
-    orders.filter(o => o.status !== 'Rejected').forEach(o => {
-      o.items.forEach(item => {
-        const weightInKg = (item.quantityGram * item.quantity) / 1000;
-        demandMap[item.name] = (demandMap[item.name] || 0) + weightInKg;
-      });
-    });
-
-    return Object.entries(demandMap).map(([name, weightKg]) => ({
-      name,
-      weightKg
-    }));
-  };
-
-  const handleOpenEditModal = (prod: Product) => {
-    setEditingProduct({ ...prod });
-    setIsEditModalOpen(true);
-  };
-
-  const handleSaveEditedProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!editingProduct) return;
-
-    const { error } = await supabase.from('products').update({
-      name: editingProduct.name,
-      category: editingProduct.category,
-      price_per_kg: editingProduct.pricePerKg,
-      price_per_200g: editingProduct.pricePer200g,
-      green_bean_cost_per_kg: editingProduct.greenBeanCostPerKg,
-      description: editingProduct.description,
-      is_exclusive: editingProduct.isExclusive
-    }).eq('id', editingProduct.id);
-
-    if (error) {
-      alert('Gagal mengedit produk: ' + error.message);
-    } else {
-      setIsEditModalOpen(false);
-      setEditingProduct(null);
-      fetchProducts();
-      alert('Produk berhasil diperbarui!');
-    }
-  };
-
-  const handleSaveProduct = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newId = `P-${Date.now()}`;
-
-    const { error } = await supabase.from('products').insert({
-      id: newId,
-      name: productForm.name,
-      category: productForm.category,
-      price_per_kg: productForm.pricePerKg,
-      price_per_500g: productForm.pricePer500g,
-      price_per_200g: productForm.pricePer200g,
-      green_bean_cost_per_kg: productForm.greenBeanCostPerKg,
-      roasting_cost_per_kg: productForm.roastingCostPerKg,
-      packaging_cost_per_kg: productForm.packagingCostPerKg,
-      packaging_cost_per_500g: productForm.packagingCostPer500g,
-      packaging_cost_per_200g: productForm.packagingCostPer200g,
-      description: productForm.description,
-      is_exclusive: productForm.isExclusive
-    });
-
-    if (error) {
-      alert('Gagal menyimpan produk: ' + error.message);
-    } else {
-      fetchProducts();
-      setProductForm({
-        name: '',
-        category: 'Roasted Beans',
-        pricePerKg: 200000,
-        pricePer500g: 0,
-        pricePer200g: 100000,
-        greenBeanCostPerKg: 100000,
-        roastingCostPerKg: 20000,
-        packagingCostPerKg: 7500,
-        packagingCostPer500g: 5000,
-        packagingCostPer200g: 3000,
-        description: '',
-        isExclusive: false,
-        exclusiveCode: ''
-      });
-      alert('Produk baru berhasil disimpan ke database!');
-    }
-  };
-
-  const handleDeleteProduct = async (id: string) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus produk ini?')) return;
-    const { error } = await supabase.from('products').delete().eq('id', id);
-    if (error) alert('Gagal menghapus produk: ' + error.message);
-    else fetchProducts();
+    alert('Pesan pengaduan terkirim ke roastery.');
+    setIsFeedbackModalOpen(false);
+    setFeedbackForm({ category: 'Roasting Profile Tidak Sesuai', orderId: '', phone: '', message: '' });
+    fetchFeedbacks();
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
-    const { error } = await supabase.from('orders').update({ status }).eq('id', orderId);
-    if (error) alert('Gagal mengubah status order: ' + error.message);
-    else fetchOrders();
+    await supabase.from('orders').update({ status }).eq('id', orderId);
+    fetchOrders();
   };
-
-  const updateFeedbackStatus = async (fbId: string, status: CustomerFeedback['status']) => {
-    const { error } = await supabase.from('customer_feedbacks').update({ status }).eq('id', fbId);
-    if (error) alert('Gagal update status komplain: ' + error.message);
-    else fetchFeedbacks();
-  };
-
-  const totalOmzet = orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0);
 
   const searchedOrders = orders.filter(o => {
     if (!searchOrderQuery.trim()) return true;
@@ -780,222 +525,158 @@ export default function EpicureanApp() {
     return o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q) || o.companyName.toLowerCase().includes(q);
   });
 
-  // STEP 1: WELCOME SCREEN
+  // STEP 1: WELCOME SCREEN (EDITORIAL MINIMALIST)
   if (currentStep === 'welcome') {
     return (
-      <div className="min-h-screen bg-black text-[#E8E2D5] font-serif flex flex-col items-center justify-center p-4">
-        <div className="max-w-2xl w-full text-center space-y-8 py-12 px-6 border border-[#2B261F] rounded-3xl bg-[#080808] shadow-2xl">
-          <div className="text-[#D4AF37] flex justify-center">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
-              <path d="M12 22C12 22 20 18 20 12C20 6 12 2 12 2C12 2 4 6 4 12C4 18 12 22 12 22Z" />
-              <path d="M12 22V10" />
-              <path d="M12 10C12 10 16 8 18 10" />
-              <path d="M12 14C12 14 8 12 6 14" />
-            </svg>
+      <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex flex-col justify-between p-6 sm:p-12">
+        <header className="border-b border-[#2E2B27] pb-6 flex justify-between items-center">
+          <div className="flex items-center space-x-2">
+            <Coffee className="h-5 w-5 text-[#C8A97E]" />
+            <span className="font-serif tracking-widest text-sm text-[#EFECE6] uppercase">Epicurean Coffee Co.</span>
           </div>
+          <span className="text-xs text-[#8C8479] tracking-wider uppercase">B2B & Specialty Roastery</span>
+        </header>
 
-          <div>
-            <h1 className="text-3xl sm:text-5xl tracking-widest text-[#D4AF37] uppercase font-normal">
-              EPICUREAN
-            </h1>
-            <p className="text-sm italic text-[#A69C83] tracking-widest mt-1">Coffee Company</p>
-            <p className="text-xs italic text-[#776E5E] mt-4 tracking-wider">
-              Website Orders Coffee Beans Official From Epicurean
-            </p>
-          </div>
+        <main className="max-w-3xl my-auto py-12 space-y-8">
+          <p className="text-xs tracking-widest text-[#C8A97E] uppercase font-mono">Order Management Portal</p>
+          <h1 className="text-4xl sm:text-6xl font-serif font-normal tracking-tight leading-tight text-[#EFECE6]">
+            Precision Roasting for Coffee Professionals.
+          </h1>
+          <p className="text-sm text-[#A39B8E] max-w-xl font-light leading-relaxed">
+            Sistem pemesanan biji kopi terintegrasi untuk Mitra Cafe, Reseller Eksklusif, dan Pembeli Umum.
+          </p>
 
-          <h2 className="text-xl tracking-widest text-[#E5D7B8] font-bold uppercase pt-4 border-t border-[#1F1C18]">
-            SELAMAT DATANG!
-          </h2>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          <div className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={() => handleRoleSelection('pembeli')}
-              className="bg-[#14120F] hover:bg-[#D4AF37] hover:text-black border border-[#A69C83] rounded-2xl p-6 text-center transition-all duration-300 shadow-lg group"
+              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group"
             >
-              <User className="h-6 w-6 text-[#D4AF37] group-hover:text-black mx-auto mb-3" />
-              <span className="text-sm font-bold font-serif tracking-wide block">Saya Pembeli</span>
+              <span className="text-xs text-[#8C8479] block mb-2 font-mono">01</span>
+              <span className="text-sm font-serif text-[#EFECE6] group-hover:text-[#C8A97E] block">Portal Pembeli</span>
+              <span className="text-[11px] text-[#8C8479] mt-1 block">Pemesanan Retail & Umum</span>
             </button>
 
             <button
               onClick={() => handleRoleSelection('reseller')}
-              className="bg-[#14120F] hover:bg-[#D4AF37] hover:text-black border border-[#A69C83] rounded-2xl p-6 text-center transition-all duration-300 shadow-lg group"
+              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group"
             >
-              <Tag className="h-6 w-6 text-[#D4AF37] group-hover:text-black mx-auto mb-3" />
-              <span className="text-sm font-bold font-serif tracking-wide block">Saya Reseller</span>
+              <span className="text-xs text-[#8C8479] block mb-2 font-mono">02</span>
+              <span className="text-sm font-serif text-[#EFECE6] group-hover:text-[#C8A97E] block">Mitra Reseller</span>
+              <span className="text-[11px] text-[#8C8479] mt-1 block">Akses Custom House Blend</span>
             </button>
 
             <button
               onClick={() => handleRoleSelection('seller')}
-              className="bg-[#14120F] hover:bg-[#D4AF37] hover:text-black border border-[#A69C83] rounded-2xl p-6 text-center transition-all duration-300 shadow-lg group"
+              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group"
             >
-              <ShieldCheck className="h-6 w-6 text-[#D4AF37] group-hover:text-black mx-auto mb-3" />
-              <span className="text-sm font-bold font-serif tracking-wide block">Saya Seller</span>
+              <span className="text-xs text-[#8C8479] block mb-2 font-mono">03</span>
+              <span className="text-sm font-serif text-[#EFECE6] group-hover:text-[#C8A97E] block">Roastery Admin</span>
+              <span className="text-[11px] text-[#8C8479] mt-1 block">Manajemen & Order Tracking</span>
             </button>
           </div>
-        </div>
+        </main>
+
+        <footer className="border-t border-[#2E2B27] pt-6 flex justify-between text-xs text-[#8C8479] font-mono">
+          <span>Epicurean Roastery © 2026</span>
+          <span>Bandung, West Java</span>
+        </footer>
       </div>
     );
   }
 
-  // STEP 2: AUTH SCREEN
+  // STEP 2: AUTH SCREEN (CLEAN FORM)
   if (currentStep === 'auth') {
     return (
-      <div className="min-h-screen bg-black text-[#E8E2D5] font-serif flex flex-col items-center justify-center p-4">
-        <div className="max-w-md w-full bg-[#080808] border border-[#2B261F] rounded-3xl p-8 space-y-6 shadow-2xl">
+      <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex items-center justify-center p-6">
+        <div className="max-w-md w-full border border-[#2E2B27] bg-[#1F1C19] p-8 space-y-6">
           <button
             onClick={() => setCurrentStep('welcome')}
-            className="text-xs italic text-[#A69C83] hover:text-[#D4AF37] flex items-center space-x-1"
+            className="text-xs text-[#8C8479] hover:text-[#C8A97E] font-mono flex items-center space-x-1"
           >
-            ← Kembali ke Pilihan
+            ← Kembali
           </button>
 
-          <div className="text-center space-y-2">
-            <h2 className="text-xl font-serif text-[#D4AF37] uppercase tracking-wider">
-              Log In - {selectedRole.toUpperCase()}
-            </h2>
-            <p className="text-xs italic text-[#A69C83]">
-              {selectedRole === 'seller' && 'Masukkan kredensial akun seller roastery resmi.'}
-              {selectedRole === 'reseller' && 'Masukkan Username Cafe & Password Reseller khusus.'}
-              {selectedRole === 'pembeli' && 'Masukkan Nama / Username untuk melanjutkan belanja.'}
-            </p>
+          <div>
+            <span className="text-xs text-[#C8A97E] font-mono uppercase tracking-widest block mb-1">{selectedRole} Access</span>
+            <h2 className="text-2xl font-serif text-[#EFECE6]">Masuk ke Akun</h2>
           </div>
 
-          <form onSubmit={handleLoginSubmit} className="space-y-4 text-xs italic">
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
             <div>
-              <label className="block text-[#A69C83] mb-1">
-                {selectedRole === 'pembeli' ? 'Nama Pemesan / Username *' : 'Username *'}
-              </label>
+              <label className="block text-xs text-[#A39B8E] mb-1 font-mono">Username / Identifier</label>
               <input
                 type="text"
                 required
-                placeholder={selectedRole === 'reseller' ? 'Contoh: BrunswickCafe' : 'Ketik username...'}
+                placeholder="Username akun..."
                 value={authForm.username}
                 onChange={(e) => setAuthForm({ ...authForm, username: e.target.value })}
-                className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
+                className="w-full bg-[#181614] border border-[#38332E] px-4 py-3 text-sm text-[#EFECE6] focus:border-[#C8A97E] focus:outline-none"
               />
             </div>
 
             {selectedRole !== 'pembeli' && (
               <div>
-                <label className="block text-[#A69C83] mb-1">Password *</label>
+                <label className="block text-xs text-[#A39B8E] mb-1 font-mono">Password</label>
                 <input
                   type="password"
                   required
                   placeholder="Ketik password..."
                   value={authForm.password}
                   onChange={(e) => setAuthForm({ ...authForm, password: e.target.value })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
+                  className="w-full bg-[#181614] border border-[#38332E] px-4 py-3 text-sm text-[#EFECE6] focus:border-[#C8A97E] focus:outline-none"
                 />
               </div>
             )}
 
-            {selectedRole === 'pembeli' && (
-              <div>
-                <label className="block text-[#A69C83] mb-1">Nama Cafe / Perusahaan (Opsional)</label>
-                <input
-                  type="text"
-                  placeholder="Contoh: Kopi Kita Cafe"
-                  value={authForm.companyName}
-                  onChange={(e) => setAuthForm({ ...authForm, companyName: e.target.value })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-4 py-3 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
-                />
-              </div>
-            )}
-
-            {authError && (
-              <p className="text-xs text-rose-500 italic text-center font-bold">{authError}</p>
-            )}
+            {authError && <p className="text-xs text-rose-400 font-mono">{authError}</p>}
 
             <button
               type="submit"
-              className="w-full bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold py-3 rounded-xl transition-all shadow-md mt-2 flex items-center justify-center space-x-2"
+              className="w-full bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium py-3 text-sm transition-all font-mono uppercase tracking-wider"
             >
-              <span>Masuk Beranda (Stay Logged In)</span>
-              <ArrowRight className="h-4 w-4" />
+              Masuk Sistem
             </button>
           </form>
-
-          {selectedRole === 'pembeli' && (
-            <div className="pt-4 border-t border-[#2B261F] space-y-3 text-center">
-              <p className="text-[11px] text-[#A69C83] italic">Atau masuk cepat tanpa ribet:</p>
-              <button
-                type="button"
-                onClick={handleGoogleLogin}
-                className="w-full bg-[#14120F] hover:bg-[#2B261F] border border-[#2B261F] text-[#E5D7B8] py-2.5 rounded-xl text-xs italic flex items-center justify-center space-x-2 transition-all"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 24 24">
-                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-                </svg>
-                <span>Lanjutkan dengan Google</span>
-              </button>
-            </div>
-          )}
         </div>
       </div>
     );
   }
 
-  // STEP 3: MAIN APP
+  // STEP 3: MAIN APP (MINIMALIST EDITORIAL ROASTERY)
   return (
-    <div className="min-h-screen bg-[#111111] text-[#E8E2D5] font-serif antialiased selection:bg-[#D4AF37] selection:text-black pb-24">
-      {/* HEADER VINTAGE */}
-      <header className="p-4 sm:p-6 max-w-7xl mx-auto">
-        <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-2xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between shadow-2xl gap-4">
-          <div className="flex items-center space-x-4 border-b sm:border-b-0 sm:border-r border-[#2B261F] pb-3 sm:pb-0 sm:pr-6">
-            <div className="text-[#D4AF37]">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 2L15 8L21 9L16.5 14L18 20L12 17L6 20L7.5 14L3 9L9 8L12 2Z" />
-              </svg>
-            </div>
-            <div>
-              <h1 className="text-xl sm:text-2xl font-normal tracking-wider text-[#D4AF37] uppercase font-serif">
-                EPICUREAN
-              </h1>
-              <p className="text-[10px] text-[#A69C83] italic tracking-widest font-sans">Coffee Company</p>
-            </div>
+    <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans antialiased pb-24">
+      {/* HEADER */}
+      <header className="border-b border-[#2E2B27] sticky top-0 bg-[#181614]/90 backdrop-blur-md z-30">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-3">
+            <Coffee className="h-5 w-5 text-[#C8A97E]" />
+            <span className="font-serif text-base tracking-widest text-[#EFECE6] uppercase">Epicurean</span>
           </div>
 
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-4">
             {currentUser?.role !== 'seller' && (
               <>
                 <button
                   onClick={() => setIsFeedbackModalOpen(true)}
-                  className="bg-[#14120F] border border-[#2B261F] px-3.5 py-2 rounded-full flex items-center space-x-1.5 hover:border-amber-400 transition-all text-xs italic text-[#E5D7B8]"
-                  title="Ada kendala barang / roasting?"
+                  className="text-xs text-[#A39B8E] hover:text-[#C8A97E] flex items-center space-x-1 font-mono"
                 >
-                  <MessageSquare className="h-4 w-4 text-amber-400" />
-                  <span className="hidden sm:inline">Pengaduan / Komplain</span>
+                  <MessageSquare className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Komplain</span>
                 </button>
 
                 <button
                   onClick={() => setIsCartDrawerOpen(true)}
-                  className="relative bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full flex items-center space-x-2 hover:border-[#D4AF37] transition-all"
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono"
                 >
-                  <ShoppingCart className="h-4 w-4 text-[#D4AF37]" />
-                  <span className="text-xs italic text-[#E5D7B8]">Keranjang</span>
-                  {totalCartUnits > 0 && (
-                    <span className="bg-[#D4AF37] text-black font-bold text-[10px] rounded-full px-1.5 py-0.2">
-                      {totalCartUnits}
-                    </span>
-                  )}
+                  <ShoppingCart className="h-3.5 w-3.5 text-[#C8A97E]" />
+                  <span>Cart ({totalCartUnits})</span>
                 </button>
               </>
             )}
 
-            <div className="flex items-center space-x-3 bg-[#14120F] border border-[#2B261F] px-4 py-2 rounded-full">
-              <div className="text-right text-xs italic">
-                <p className="text-[#E5D7B8] font-bold">{currentUser?.username}</p>
-                <p className="text-[10px] text-[#D4AF37] uppercase tracking-wider">{currentUser?.role}</p>
-              </div>
-              <button
-                onClick={handleLogout}
-                title="Logout dari Akun Ini"
-                className="p-1.5 bg-[#0A0A0A] border border-[#2B261F] rounded-full text-[#A69C83] hover:text-rose-400 transition-all"
-              >
+            <div className="flex items-center space-x-3 text-xs border-l border-[#2E2B27] pl-4">
+              <span className="text-[#A39B8E] font-mono">{currentUser?.username}</span>
+              <button onClick={handleLogout} className="text-[#8C8479] hover:text-rose-400">
                 <LogOut className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1003,528 +684,173 @@ export default function EpicureanApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
+      <main className="max-w-7xl mx-auto px-6 py-8">
         {currentUser?.role !== 'seller' ? (
-          /* STOREFRONT (PEMBELI / RESELLER) */
-          <div className="space-y-10">
-            <div className="text-center py-4 px-4 space-y-2">
-              <h1 className="text-3xl sm:text-5xl font-normal tracking-wide text-[#E5D7B8] uppercase drop-shadow-[0_0_20px_rgba(212,175,55,0.3)]">
-                EPICUREAN
-              </h1>
-              <p className="text-base italic text-[#D4AF37] font-serif tracking-widest">
-                Coffee Company Catalog
-              </p>
-            </div>
-
-            {/* BANNER INFORMASI JADWAL ROASTING & SHIPPING UNTUK PEMBELI */}
-            <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 shadow-2xl space-y-4">
-              <div className="flex items-center space-x-2 border-b border-[#2B261F] pb-3">
-                <Calendar className="h-5 w-5 text-[#D4AF37]" />
-                <h3 className="text-base font-serif italic text-[#E5D7B8]">Jadwal Rutin Produksi & Pengiriman Roastery</h3>
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs italic">
-                <div className="bg-[#14120F] border border-rose-900/60 p-4 rounded-2xl space-y-1">
-                  <div className="flex items-center space-x-2 text-rose-400 font-bold">
-                    <Clock className="h-4 w-4" />
-                    <span>Last Order (Cut-Off): SELASA</span>
-                  </div>
-                  <p className="text-[#A69C83] text-[11px]">Batas pemesanan minggu ini ditutup setiap hari Selasa.</p>
+          /* KATALOG UTAMA (PEMBELI/RESELLER) */
+          <div className="space-y-8">
+            {/* ROASTING & SHIPPING SCHEDULE BANNER */}
+            <div className="border border-[#2E2B27] bg-[#1F1C19] p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-1 border-b md:border-b-0 md:border-r border-[#2E2B27] pb-4 md:pb-0 md:pr-4">
+                <div className="flex items-center space-x-2 text-xs text-[#C8A97E] font-mono uppercase">
+                  <Clock className="h-3.5 w-3.5" />
+                  <span>Cut-off Pemesanan</span>
                 </div>
-
-                <div className="bg-[#14120F] border border-emerald-900/60 p-4 rounded-2xl space-y-1">
-                  <div className="flex items-center space-x-2 text-emerald-400 font-bold">
-                    <Coffee className="h-4 w-4" />
-                    <span>Jadwal Roasting: RABU - KAMIS</span>
-                  </div>
-                  <p className="text-[#A69C83] text-[11px]">Proses Sangrai Biji Kopi Fresh Roasting setiap hari Rabu & Kamis.</p>
-                </div>
-
-                <div className="bg-[#14120F] border border-sky-900/60 p-4 rounded-2xl space-y-1">
-                  <div className="flex items-center space-x-2 text-sky-400 font-bold">
-                    <Truck className="h-4 w-4" />
-                    <span>Pengiriman Khusus: SENIN & SELASA</span>
-                  </div>
-                  <p className="text-[#A69C83] text-[11px]">Pengiriman pesanan hanya melayani hari Senin & Selasa.</p>
-                </div>
+                <p className="text-sm font-serif text-[#EFECE6]">Setiap Hari Selasa</p>
+                <p className="text-xs text-[#8C8479]">Batas akhir order masuk batch minggu ini.</p>
               </div>
 
-              <div className="bg-[#14120F] border border-[#2B261F] p-3.5 rounded-2xl text-xs italic text-center text-[#E5D7B8] flex items-center justify-between flex-wrap gap-2">
-                <span>⚠️ <em>Catatan: Anda dapat memilih tanggal pengiriman khusus (Senin/Selasa) pada menu Checkout.</em></span>
-                <button
-                  onClick={() => setIsFeedbackModalOpen(true)}
-                  className="text-[#D4AF37] underline hover:text-white flex items-center space-x-1 ml-auto"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  <span>Sampaikan Komplain / Kendala</span>
-                </button>
+              <div className="space-y-1 border-b md:border-b-0 md:border-r border-[#2E2B27] pb-4 md:pb-0 md:pr-4">
+                <div className="flex items-center space-x-2 text-xs text-emerald-400 font-mono uppercase">
+                  <Coffee className="h-3.5 w-3.5" />
+                  <span>Jadwal Sangrai</span>
+                </div>
+                <p className="text-sm font-serif text-[#EFECE6]">Rabu & Kamis</p>
+                <p className="text-xs text-[#8C8479]">Biji kopi disangrai fresh sesuai kuota pesanan.</p>
+              </div>
+
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2 text-xs text-sky-400 font-mono uppercase">
+                  <Truck className="h-3.5 w-3.5" />
+                  <span>Pengiriman Khusus</span>
+                </div>
+                <p className="text-sm font-serif text-[#EFECE6]">Senin & Selasa</p>
+                <p className="text-xs text-[#8C8479]">Pengiriman diselesaikan pada hari Senin / Selasa.</p>
               </div>
             </div>
 
-            {/* KATALOG PRODUK COFFEE BEANS */}
-            <section className="space-y-6">
-              <div className="flex flex-col sm:flex-row justify-between items-center border-b border-[#2B261F] pb-4 gap-4">
-                <h2 className="text-lg font-serif italic text-[#E5D7B8]">Katalog Produk Coffee Beans</h2>
-                
-                <div className="flex items-center space-x-2 bg-[#0A0A0A] border border-[#2B261F] p-1 rounded-full">
-                  <button
-                    onClick={() => setActiveCatalogTab('all')}
-                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
-                      activeCatalogTab === 'all' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
-                    }`}
-                  >
-                    Semua
-                  </button>
-                  <button
-                    onClick={() => setActiveCatalogTab('Green Beans')}
-                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
-                      activeCatalogTab === 'Green Beans' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
-                    }`}
-                  >
-                    Green Beans
-                  </button>
-                  <button
-                    onClick={() => setActiveCatalogTab('Roasted Beans')}
-                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
-                      activeCatalogTab === 'Roasted Beans' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
-                    }`}
-                  >
-                    Roasted Beans
-                  </button>
-                  <button
-                    onClick={() => setActiveCatalogTab('Blend Beans')}
-                    className={`px-4 py-1.5 rounded-full text-xs italic transition-all ${
-                      activeCatalogTab === 'Blend Beans' ? 'bg-[#E5D7B8] text-black font-bold' : 'text-[#A69C83] hover:text-white'
-                    }`}
-                  >
-                    House Blend
-                  </button>
+            {/* TAB KATALOG & GRID PRODUK */}
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
+                <h2 className="text-xl font-serif text-[#EFECE6]">Pilihan Biji Kopi</h2>
+
+                <div className="flex space-x-2 text-xs font-mono">
+                  {['all', 'Green Beans', 'Roasted Beans', 'Blend Beans'].map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCatalogTab(cat as any)}
+                      className={`px-3 py-1.5 transition-all ${
+                        activeCatalogTab === cat ? 'bg-[#C8A97E] text-[#181614] font-medium' : 'text-[#8C8479] hover:text-[#EFECE6]'
+                      }`}
+                    >
+                      {cat === 'all' ? 'Semua' : cat}
+                    </button>
+                  ))}
                 </div>
               </div>
 
-              {filteredProducts.length === 0 ? (
-                <p className="text-xs text-[#A69C83] italic text-center py-12">
-                  Tidak ada produk dalam kategori ini yang tersedia untuk akun Anda.
-                </p>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  {filteredProducts.map((p) => {
-                    const has1kg = (p.pricePerKg || 0) > 0;
-                    const has200g = (p.pricePer200g || 0) > 0;
-
-                    const cartItem1kg = cart.find(i => i.id === `${p.id}-1kg`);
-                    const cartItem200g = cart.find(i => i.id === `${p.id}-200g`);
-
-                    return (
-                      <div key={p.id} className={`bg-[#0A0A0A] border rounded-2xl p-5 flex flex-col justify-between shadow-xl relative ${
-                        p.isExclusive ? 'border-purple-900/80 bg-purple-950/10' : 'border-[#2B261F]'
-                      }`}>
-                        <div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-[10px] italic font-serif px-3 py-0.5 rounded-full border border-[#2B261F] text-[#D4AF37]">
-                              {p.category}
-                            </span>
-                            {p.isExclusive && (
-                              <span className="text-[10px] text-purple-300 font-serif italic flex items-center space-x-1">
-                                <Lock className="h-3 w-3" />
-                                <span>VIP Blend</span>
-                              </span>
-                            )}
-                          </div>
-
-                          <h3 className="text-base font-serif text-[#E5D7B8] mt-3">{p.name}</h3>
-                          <p className="text-xs text-[#A69C83] italic mt-1 line-clamp-2">{p.description}</p>
-                          
-                          <div className="mt-4 space-y-1.5 bg-[#14120F] p-3 rounded-xl border border-[#2B261F] text-xs italic">
-                            {has1kg && (
-                              <div className="flex justify-between text-[#A69C83]">
-                                <span>Harga 1 Kg:</span>
-                                <span className="text-[#D4AF37] font-bold">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
-                              </div>
-                            )}
-                            {has200g ? (
-                              <div className="flex justify-between text-[#A69C83]">
-                                <span>Harga 200 Gram:</span>
-                                <span className="text-[#D4AF37] font-bold">Rp {p.pricePer200g.toLocaleString('id-ID')}</span>
-                              </div>
-                            ) : (
-                              <div className="flex justify-between text-[11px] text-rose-400/80">
-                                <span>Harga 200 Gram:</span>
-                                <span>N/A</span>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="space-y-2 mt-5">
-                          {has200g && (
-                            <div className="flex items-center justify-between bg-[#14120F] border border-[#2B261F] p-2 rounded-xl text-xs italic">
-                              <span className="text-[#A69C83]">Kemasan 200g:</span>
-                              {cartItem200g ? (
-                                <div className="flex items-center space-x-1 bg-[#0A0A0A] border border-[#2B261F] px-2 py-1 rounded-lg">
-                                  <button onClick={() => addProductToCart(p, '200g', -1)} className="p-1 text-[#A69C83] hover:text-rose-400">
-                                    <Minus className="h-3 w-3" />
-                                  </button>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={cartItem200g.quantity}
-                                    onChange={(e) => updateCartQuantity(cartItem200g.id, parseInt(e.target.value) || 0)}
-                                    className="w-10 text-center bg-transparent text-[#E5D7B8] font-bold text-xs focus:outline-none"
-                                  />
-                                  <button onClick={() => addProductToCart(p, '200g', 1)} className="p-1 text-[#A69C83] hover:text-emerald-400">
-                                    <Plus className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <button onClick={() => addProductToCart(p, '200g', 1)} className="bg-[#14120F] hover:bg-[#2B261F] text-[#E5D7B8] text-[11px] px-3 py-1.5 rounded-lg border border-[#2B261F]">
-                                  + 200g
-                                </button>
-                              )}
-                            </div>
-                          )}
-
-                          {has1kg && (
-                            <div className="flex items-center justify-between bg-[#14120F] border border-[#2B261F] p-2 rounded-xl text-xs italic">
-                              <span className="text-[#A69C83]">Kemasan 1 Kg:</span>
-                              {cartItem1kg ? (
-                                <div className="flex items-center space-x-1 bg-[#0A0A0A] border border-[#2B261F] px-2 py-1 rounded-lg">
-                                  <button onClick={() => addProductToCart(p, '1kg', -1)} className="p-1 text-[#A69C83] hover:text-rose-400">
-                                    <Minus className="h-3 w-3" />
-                                  </button>
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={cartItem1kg.quantity}
-                                    onChange={(e) => updateCartQuantity(cartItem1kg.id, parseInt(e.target.value) || 0)}
-                                    className="w-10 text-center bg-transparent text-[#E5D7B8] font-bold text-xs focus:outline-none"
-                                  />
-                                  <button onClick={() => addProductToCart(p, '1kg', 1)} className="p-1 text-[#A69C83] hover:text-emerald-400">
-                                    <Plus className="h-3 w-3" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <button onClick={() => addProductToCart(p, '1kg', 1)} className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-bold text-[11px] px-3 py-1.5 rounded-lg">
-                                  + 1 Kg
-                                </button>
-                              )}
-                            </div>
-                          )}
-                        </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {filteredProducts.map((p) => (
+                  <div key={p.id} className="border border-[#2E2B27] bg-[#1F1C19] p-6 flex flex-col justify-between space-y-6">
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center text-xs font-mono text-[#8C8479]">
+                        <span>{p.category}</span>
+                        {p.isExclusive && <span className="text-purple-400">Exclusive Blend</span>}
                       </div>
-                    );
-                  })}
-                </div>
-              )}
-            </section>
+
+                      <h3 className="text-lg font-serif text-[#EFECE6]">{p.name}</h3>
+                      <p className="text-xs text-[#A39B8E] leading-relaxed font-light">{p.description}</p>
+                    </div>
+
+                    <div className="space-y-3 pt-4 border-t border-[#2E2B27]">
+                      <div className="flex justify-between text-xs font-mono">
+                        <span className="text-[#8C8479]">Kemasan 1 Kg</span>
+                        <span className="text-[#C8A97E]">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center pt-2">
+                        <span className="text-xs font-mono text-[#8C8479]">Order 1 Kg</span>
+                        <button
+                          onClick={() => addProductToCart(p, '1kg', 1)}
+                          className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-4 py-2 transition-all"
+                        >
+                          + Tambah
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
-          /* DASHBOARD SELLER ADMIN LENGKAP */
+          /* DASHBOARD SELLER / ROASTERY MANAGER */
           <div className="space-y-8">
-            <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl flex flex-col sm:flex-row justify-between items-center gap-4">
-              <h1 className="text-xl font-serif italic text-[#E5D7B8]">Epicurean Roastery Manager</h1>
-              
-              <div className="flex flex-wrap space-x-2 bg-[#14120F] border border-[#2B261F] p-1 rounded-2xl">
+            <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
+              <h1 className="text-xl font-serif text-[#EFECE6]">Fulfillment & Order Control</h1>
+
+              <div className="flex space-x-2 text-xs font-mono">
                 <button
                   onClick={() => setSellerSubTab('orders')}
-                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
-                    sellerSubTab === 'orders' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
-                  }`}
+                  className={`px-4 py-2 ${sellerSubTab === 'orders' ? 'bg-[#C8A97E] text-[#181614]' : 'text-[#8C8479]'}`}
                 >
-                  <Package className="h-3.5 w-3.5" />
-                  <span>Tracking Orders ({orders.length})</span>
+                  Orders ({orders.length})
                 </button>
                 <button
                   onClick={() => setSellerSubTab('feedbacks')}
-                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
-                    sellerSubTab === 'feedbacks' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
-                  }`}
+                  className={`px-4 py-2 ${sellerSubTab === 'feedbacks' ? 'bg-[#C8A97E] text-[#181614]' : 'text-[#8C8479]'}`}
                 >
-                  <MessageSquare className="h-3.5 w-3.5 text-amber-500" />
-                  <span>Komplain ({feedbacks.length})</span>
-                </button>
-                <button
-                  onClick={() => setSellerSubTab('products')}
-                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
-                    sellerSubTab === 'products' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
-                  }`}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  <span>Products & COGS</span>
-                </button>
-                <button
-                  onClick={() => setSellerSubTab('recap')}
-                  className={`px-4 py-2 rounded-xl text-xs italic font-serif flex items-center space-x-1.5 ${
-                    sellerSubTab === 'recap' ? 'bg-[#E5D7B8] text-[#111111] font-bold shadow-md' : 'text-[#A69C83] hover:text-[#E5D7B8]'
-                  }`}
-                >
-                  <BarChart2 className="h-3.5 w-3.5" />
-                  <span>Recap Sales</span>
+                  Pengaduan ({feedbacks.length})
                 </button>
               </div>
             </div>
 
-            {/* TAB 1: LIST & TRACKING ORDERS UNTUK SELLER */}
             {sellerSubTab === 'orders' && (
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6 text-xs italic">
-                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-[#2B261F] pb-4 gap-3">
-                  <h3 className="font-serif text-[#E5D7B8] text-base">Order Tracking & Fulfillment Control</h3>
-                  
-                  <div className="flex items-center space-x-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
-                      <Search className="h-3.5 w-3.5 text-[#A69C83] absolute left-3 top-2.5" />
-                      <input
-                        type="text"
-                        placeholder="Cari ID Order / Cafe..."
-                        value={searchOrderQuery}
-                        onChange={(e) => setSearchOrderQuery(e.target.value)}
-                        className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl pl-9 pr-3 py-1.5 text-xs text-[#E5D7B8] focus:outline-none"
-                      />
-                    </div>
-                    <button
-                      onClick={exportOrdersToCSV}
-                      className="bg-[#14120F] hover:bg-[#2B261F] border border-[#D4AF37] text-[#D4AF37] px-3 py-1.5 rounded-xl flex items-center space-x-1.5 text-xs font-serif whitespace-nowrap"
-                    >
-                      <Download className="h-3.5 w-3.5" />
-                      <span>CSV</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* MODUL AGREGASI TOTAL KEBUTUHAN PRODUKSI ROASTING */}
-                <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-2xl space-y-3">
-                  <div className="flex items-center space-x-2 border-b border-[#2B261F] pb-2 text-[#D4AF37] font-serif">
-                    <Coffee className="h-4 w-4" />
-                    <span className="font-bold">Total Kebutuhan Sangrai (Batch Minggu Ini)</span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-xs italic">
-                    {getAggregatedRoastingDemand().length === 0 ? (
-                      <p className="text-[#776E5E] col-span-full">Belum ada kebutuhan roasting.</p>
-                    ) : (
-                      getAggregatedRoastingDemand().map(demand => (
-                        <div key={demand.name} className="bg-[#0A0A0A] p-2.5 rounded-xl border border-[#2B261F] flex justify-between">
-                          <span className="text-[#E5D7B8] truncate pr-2">{demand.name}</span>
-                          <strong className="text-emerald-400 font-serif">{demand.weightKg} Kg</strong>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-
-                {searchedOrders.length === 0 ? (
-                  <p className="text-[#A69C83] py-8 text-center">Tidak ada pesanan yang sesuai pencarian.</p>
-                ) : (
-                  <div className="space-y-4">
-                    {searchedOrders.map((o) => {
-                      const statusSteps = ['Pending Approval', 'Roasting Process', 'Ready for Shipping', 'Delivered'];
-                      const currentStepIndex = statusSteps.indexOf(o.status);
-
-                      return (
-                        <div key={o.id} className="bg-[#14120F] p-5 rounded-2xl border border-[#2B261F] space-y-4">
-                          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2 border-b border-[#2B261F] pb-3">
-                            <div>
-                              <span className="text-[10px] text-[#D4AF37] font-bold uppercase tracking-wider">{o.id}</span>
-                              <h4 className="text-sm font-serif text-[#E5D7B8] font-bold">{o.customerName} ({o.companyName})</h4>
-                              <p className="text-[11px] text-[#A69C83]">Tgl Order: {o.createdAt} | HP: {o.customerPhone}</p>
-                            </div>
-
-                            <div className="flex items-center space-x-2">
-                              <span className="text-[10px] text-[#A69C83]">Update Status:</span>
-                              <select
-                                value={o.status}
-                                onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
-                                className="bg-[#0A0A0A] border border-[#2B261F] px-3 py-1.5 rounded-xl text-xs italic text-[#E5D7B8] focus:outline-none"
-                              >
-                                <option value="Pending Approval">Pending Approval</option>
-                                <option value="Roasting Process">Roasting Process</option>
-                                <option value="Ready for Shipping">Ready for Shipping</option>
-                                <option value="Delivered">Delivered</option>
-                                <option value="Rejected">Rejected</option>
-                              </select>
-                            </div>
-                          </div>
-
-                          {/* PIPELINE TRACKING PROGRESS FOR SELLER */}
-                          <div className="bg-[#0A0A0A] p-4 rounded-xl border border-[#2B261F]">
-                            <p className="text-[10px] text-[#A69C83] italic mb-3">Live Progress Fulfillment Tracking:</p>
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center text-[10px] italic">
-                              <div className={`p-2 rounded-lg border ${o.status === 'Pending Approval' ? 'bg-amber-950/60 border-amber-500 text-amber-300 font-bold' : currentStepIndex > 0 ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
-                                1. Order Received
-                              </div>
-                              <div className={`p-2 rounded-lg border ${o.status === 'Roasting Process' ? 'bg-amber-950/60 border-amber-500 text-amber-300 font-bold' : currentStepIndex > 1 ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
-                                2. In Roasting Batch
-                              </div>
-                              <div className={`p-2 rounded-lg border ${o.status === 'Ready for Shipping' ? 'bg-amber-950/60 border-amber-500 text-amber-300 font-bold' : currentStepIndex > 2 ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
-                                3. Ready to Courier
-                              </div>
-                              <div className={`p-2 rounded-lg border ${o.status === 'Delivered' ? 'bg-emerald-950/60 border-emerald-500 text-emerald-300 font-bold' : 'bg-[#14120F] border-[#2B261F] text-[#776E5E]'}`}>
-                                4. Delivered
-                              </div>
-                            </div>
-                          </div>
-
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-[11px] italic bg-[#0A0A0A] p-3 rounded-xl border border-[#2B261F]">
-                            <div>
-                              <p className="text-[#A69C83]">Jadwal & Pengiriman:</p>
-                              <p className="text-emerald-400">🔥 Estimasi Roasting: {o.estimatedRoastingDate || '-'}</p>
-                              <p className="text-sky-400 font-bold">🚚 Tgl Kirim Pilihan: {o.shippingDate || o.estimatedShippingDate || '-'}</p>
-                              <p className="text-[#E5D7B8] mt-1"><MapPin className="h-3 w-3 inline mr-1 text-[#D4AF37]" />{o.shippingAddress}</p>
-                            </div>
-                            <div className="text-right sm:text-right">
-                              <p className="text-[#A69C83]">Rincian Transaksi:</p>
-                              <p className="text-[#E5D7B8]">Metode Bayar: <strong>{o.paymentMethod.replace('_', ' ').toUpperCase()}</strong></p>
-                              <p className="text-[#D4AF37] font-bold text-sm mt-1">Total: Rp {o.totalAmount.toLocaleString('id-ID')}</p>
-                            </div>
-                          </div>
-
-                          <div className="text-[10px] text-[#A69C83] italic">
-                            <strong>Item Order:</strong> {o.items.map(i => `${i.name} x ${i.quantity}`).join(', ')}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB FEEDBACKS & KOMPLAIN SELLER */}
-            {sellerSubTab === 'feedbacks' && (
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
-                <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Daftar Pengaduan & Komplain Pelanggan</h3>
-                {feedbacks.length === 0 ? (
-                  <p className="text-[#A69C83] py-8 text-center">Belum ada pengaduan atau komplain dari pelanggan.</p>
-                ) : (
-                  <div className="space-y-3">
-                    {feedbacks.map((fb) => (
-                      <div key={fb.id} className="bg-[#14120F] p-4 rounded-xl border border-amber-900/40 space-y-2">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">{fb.category}</span>
-                            <h4 className="text-sm font-serif text-[#E5D7B8] mt-1">{fb.customerName} ({fb.companyName}) - HP: {fb.customerPhone}</h4>
-                            {fb.orderId && <p className="text-[11px] text-[#D4AF37]">Order ID Terkait: {fb.orderId}</p>}
-                          </div>
-                          <select
-                            value={fb.status}
-                            onChange={(e) => updateFeedbackStatus(fb.id, e.target.value as CustomerFeedback['status'])}
-                            className="bg-[#0A0A0A] border border-[#2B261F] px-2.5 py-1 rounded-lg text-[11px] text-[#E5D7B8]"
-                          >
-                            <option value="Open">Status: Belum Selesai (Open)</option>
-                            <option value="Resolved">Status: Sudah Ditangani (Resolved)</option>
-                          </select>
-                        </div>
-                        <p className="text-xs text-[#E8E2D5] bg-[#0A0A0A] p-3 rounded-lg border border-[#2B261F] italic font-sans">{fb.message}</p>
-                        <p className="text-[10px] text-[#776E5E] text-right">Tgl Kirim: {fb.createdAt}</p>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* TAB 2: PRODUCTS & COGS */}
-            {sellerSubTab === 'products' && (
-              <div className="space-y-8">
-                <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4">
-                  <h3 className="text-sm font-serif text-[#D4AF37]">Daftar Akun Reseller & Akses Menu Blend</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs italic">
-                    {presetResellerAccounts.map(r => (
-                      <div key={r.username} className="bg-[#14120F] p-3 rounded-xl border border-[#2B261F] flex justify-between">
-                        <div>
-                          <p className="text-[#E5D7B8] font-bold">{r.companyName} ({r.username})</p>
-                          <p className="text-[11px] text-[#A69C83]">Akses: {r.allowedBlends?.join(', ')}</p>
-                        </div>
-                        <span className="text-[10px] text-emerald-400 font-mono">PWD: {r.password}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <form onSubmit={handleSaveProduct} className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-4 text-xs italic">
-                  <h3 className="text-sm font-serif text-[#E5D7B8] border-b border-[#2B261F] pb-2">Tambah Produk Baru & COGS</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <div className="relative w-72">
+                    <Search className="h-3.5 w-3.5 text-[#8C8479] absolute left-3 top-3" />
                     <input
                       type="text"
-                      placeholder="Nama Produk *"
-                      required
-                      value={productForm.name}
-                      onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
-                      className="bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                      placeholder="Cari ID / Nama Pemesan..."
+                      value={searchOrderQuery}
+                      onChange={(e) => setSearchOrderQuery(e.target.value)}
+                      className="w-full bg-[#1F1C19] border border-[#2E2B27] pl-9 pr-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
                     />
-                    <select
-                      value={productForm.category}
-                      onChange={(e) => setProductForm({ ...productForm, category: e.target.value as Product['category'] })}
-                      className="bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                    >
-                      <option value="Green Beans">Green Beans</option>
-                      <option value="Roasted Beans">Roasted Beans</option>
-                      <option value="Blend Beans">Blend Beans</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-[#2B261F] pt-3">
-                    <div>
-                      <label className="block mb-1 text-[#D4AF37]">Harga 1 Kg (IDR)</label>
-                      <input type="number" value={productForm.pricePerKg} onChange={(e) => setProductForm({ ...productForm, pricePerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-[#D4AF37]">Harga 200g (IDR)</label>
-                      <input type="number" value={productForm.pricePer200g} onChange={(e) => setProductForm({ ...productForm, pricePer200g: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
-                    </div>
-                    <div>
-                      <label className="block mb-1 text-[#D4AF37]">HPP Greenbeans / Kg</label>
-                      <input type="number" value={productForm.greenBeanCostPerKg} onChange={(e) => setProductForm({ ...productForm, greenBeanCostPerKg: parseInt(e.target.value) || 0 })} className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]" />
-                    </div>
-                  </div>
-
-                  <button type="submit" className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold px-6 py-2.5 rounded-xl text-xs flex items-center space-x-1.5">
-                    <Plus className="h-4 w-4" />
-                    <span>Simpan & Publikasikan Produk</span>
-                  </button>
-                </form>
-
-                <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
-                  <h3 className="text-sm font-serif text-[#E5D7B8]">Katalog Produk & Master COGS</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {products.map((p) => (
-                      <div key={p.id} className="bg-[#14120F] border border-[#2B261F] p-5 rounded-2xl space-y-3 relative">
-                        <div className="flex justify-between items-start">
-                          <span className="text-[10px] italic text-[#D4AF37]">{p.category}</span>
-                          <div className="flex space-x-2">
-                            <button onClick={() => handleOpenEditModal(p)} className="text-[#D4AF37] hover:text-amber-300 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
-                              <Edit3 className="h-3.5 w-3.5" />
-                            </button>
-                            <button onClick={() => handleDeleteProduct(p.id)} className="text-[#A69C83] hover:text-rose-400 p-1 bg-[#0A0A0A] rounded-md border border-[#2B261F]">
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <h3 className="text-sm font-serif text-[#E5D7B8]">{p.name}</h3>
-                        <div className="text-xs italic text-[#A69C83]">
-                          <p>1 Kg: Rp {(p.pricePerKg || 0).toLocaleString('id-ID')}</p>
-                          <p>200g: Rp {(p.pricePer200g || 0).toLocaleString('id-ID')}</p>
-                          <p className="text-rose-400">HPP Greenbeans: Rp {(p.greenBeanCostPerKg || 0).toLocaleString('id-ID')}/Kg</p>
-                        </div>
-                      </div>
-                    ))}
                   </div>
                 </div>
-              </div>
-            )}
 
-            {/* TAB 3: RECAP SALES */}
-            {sellerSubTab === 'recap' && (
-              <div className="bg-[#0A0A0A] border border-[#2B261F] p-6 rounded-3xl space-y-6">
-                <h3 className="font-serif text-[#E5D7B8] text-base border-b border-[#2B261F] pb-3">Ringkasan Penjualan & Keuntungan</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div className="bg-[#14120F] border border-[#2B261F] p-6 rounded-2xl">
-                    <p className="text-xs text-[#A69C83] italic">Total Omzet Penjualan</p>
-                    <p className="text-3xl font-serif text-[#D4AF37] mt-2 font-bold">Rp {totalOmzet.toLocaleString('id-ID')}</p>
-                  </div>
-                  <div className="bg-[#14120F] border border-[#2B261F] p-6 rounded-2xl">
-                    <p className="text-xs text-[#A69C83] italic">Total Transaksi Pesanan</p>
-                    <p className="text-3xl font-serif text-[#E5D7B8] mt-2 font-bold">{orders.filter(o => o.status !== 'Rejected').length} Pesanan</p>
-                  </div>
+                <div className="border border-[#2E2B27] bg-[#1F1C19] divide-y divide-[#2E2B27]">
+                  {searchedOrders.map((o) => (
+                    <div key={o.id} className="p-6 space-y-4">
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <span className="text-xs font-mono text-[#C8A97E]">{o.id}</span>
+                          <h3 className="text-base font-serif text-[#EFECE6]">{o.customerName} ({o.companyName})</h3>
+                          <p className="text-xs text-[#8C8479] font-mono mt-0.5">Tgl Order: {o.createdAt} | Phone: {o.customerPhone}</p>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                          <span className="text-xs font-mono text-[#8C8479]">Status:</span>
+                          <select
+                            value={o.status}
+                            onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
+                            className="bg-[#181614] border border-[#38332E] px-3 py-1.5 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                          >
+                            <option value="Pending Approval">Pending Approval</option>
+                            <option value="Roasting Process">Roasting Process</option>
+                            <option value="Ready for Shipping">Ready for Shipping</option>
+                            <option value="Delivered">Delivered</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono bg-[#181614] p-4 border border-[#2E2B27]">
+                        <div>
+                          <span className="text-[#8C8479] block">Tgl Kirim Pilihan Cust:</span>
+                          <span className="text-[#EFECE6] font-medium">{o.shippingDate || '-'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#8C8479] block">Metode Pembayaran:</span>
+                          <span className="text-[#EFECE6] uppercase">{o.paymentMethod}</span>
+                        </div>
+                        <div>
+                          <span className="text-[#8C8479] block">Total Tagihan:</span>
+                          <span className="text-[#C8A97E] font-medium">Rp {o.totalAmount.toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
@@ -1532,393 +858,98 @@ export default function EpicureanApp() {
         )}
       </main>
 
-      {/* MODAL / LAMAN KOMPLAIN PELANGGAN */}
-      {isFeedbackModalOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-[#2B261F] pb-3">
-              <div className="flex items-center space-x-2">
-                <MessageSquare className="h-5 w-5 text-amber-400" />
-                <h3 className="text-base font-serif italic text-[#E5D7B8]">Pengaduan & Komplain Kopi</h3>
-              </div>
-              <button onClick={() => setIsFeedbackModalOpen(false)} className="text-[#A69C83] hover:text-white">
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitFeedback} className="space-y-4 text-xs italic">
-              <div>
-                <label className="block text-[#A69C83] mb-1">Kategori Masalah *</label>
-                <select
-                  value={feedbackForm.category}
-                  onChange={(e) => setFeedbackForm({ ...feedbackForm, category: e.target.value as CustomerFeedback['category'] })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2.5 text-[#E5D7B8] focus:outline-none"
-                >
-                  <option value="Roasting Profile Tidak Sesuai">Roasting Profile Kurang Sesuai (Under/Over Roasted)</option>
-                  <option value="Barang Kurang / Salah">Jumlah Barang Kurang / Variant Salah</option>
-                  <option value="Kemasan Rusak">Kemasan / Bag Bocor atau Rusak</option>
-                  <option value="Kendala Pengiriman">Kendala Pengiriman / Kurir Lambat</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
+      {/* DRAWER CHECKOUT & SELEKSI TANGGAL KIRIM (SENIN/SELASA ONLY) */}
+      {isCartDrawerOpen && (
+        <div className="fixed inset-0 bg-black/70 z-50 flex justify-end">
+          <div className="bg-[#1F1C19] border-l border-[#2E2B27] w-full max-w-md h-full overflow-y-auto p-6 flex flex-col justify-between">
+            <div className="space-y-6">
+              <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
+                <h2 className="text-lg font-serif text-[#EFECE6]">Order Checkout</h2>
+                <button onClick={() => setIsCartDrawerOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+                  <X className="h-5 w-5" />
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#A69C83] mb-1">Order ID (Opsional)</label>
-                  <input
-                    type="text"
-                    placeholder="Contoh: ORD-123456"
-                    value={feedbackForm.orderId}
-                    onChange={(e) => setFeedbackForm({ ...feedbackForm, orderId: e.target.value })}
-                    className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                  />
+              {cart.map((item) => (
+                <div key={item.id} className="flex justify-between items-center text-xs font-mono py-2 border-b border-[#2E2B27]">
+                  <div>
+                    <p className="text-[#EFECE6] font-serif text-sm">{item.name}</p>
+                    <p className="text-[#8C8479]">{item.quantity} x Rp {item.unitPrice.toLocaleString('id-ID')}</p>
+                  </div>
+                  <p className="text-[#C8A97E]">Rp {item.totalPrice.toLocaleString('id-ID')}</p>
                 </div>
-                <div>
-                  <label className="block text-[#A69C83] mb-1">Nomor WhatsApp *</label>
+              ))}
+
+              <form onSubmit={handleCheckout} id="checkout-form" className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <label className="block text-xs font-mono text-[#C8A97E] uppercase">
+                    Pilih Tanggal Pengiriman (Hanya Senin / Selasa)
+                  </label>
+                  <input
+                    type="date"
+                    value={selectedCustomShippingDate}
+                    onChange={(e) => handleCustomShippingDateChange(e.target.value)}
+                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:border-[#C8A97E] focus:outline-none"
+                  />
+                  {dateValidationError && (
+                    <p className="text-xs text-rose-400 font-mono italic">{dateValidationError}</p>
+                  )}
+                </div>
+
+                <div className="space-y-3 pt-2">
                   <input
                     type="text"
                     required
-                    placeholder="0812xxxx"
-                    value={feedbackForm.phone}
-                    onChange={(e) => setFeedbackForm({ ...feedbackForm, phone: e.target.value })}
-                    className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
+                    placeholder="Nama Pemesan *"
+                    value={customerInfo.name}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
+                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="Nama Cafe / Perusahaan *"
+                    value={customerInfo.company}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
+                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                  />
+                  <input
+                    type="text"
+                    required
+                    placeholder="No WhatsApp *"
+                    value={customerInfo.phone}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
+                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
+                  />
+                  <textarea
+                    required
+                    rows={2}
+                    placeholder="Alamat Pengiriman Lengkap *"
+                    value={customerInfo.address}
+                    onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
+                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6]"
                   />
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-[#A69C83] mb-1">Detail Keluhan / Masalah *</label>
-                <textarea
-                  required
-                  rows={4}
-                  placeholder="Jelaskan kendala Anda secara detail..."
-                  value={feedbackForm.message}
-                  onChange={(e) => setFeedbackForm({ ...feedbackForm, message: e.target.value })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-3 border-t border-[#2B261F]">
-                <button
-                  type="button"
-                  onClick={() => setIsFeedbackModalOpen(false)}
-                  className="px-4 py-2 bg-[#14120F] border border-[#2B261F] rounded-xl text-[#A69C83]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-amber-500 hover:bg-amber-400 text-[#111111] font-bold font-serif rounded-xl"
-                >
-                  Kirim Pengaduan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* FLOATING CART BAR */}
-      {currentUser?.role !== 'seller' && cart.length > 0 && (
-        <div className="fixed bottom-4 left-4 right-4 max-w-4xl mx-auto z-40">
-          <div className="bg-[#14120F] border border-[#D4AF37] rounded-2xl p-4 shadow-2xl flex items-center justify-between gap-4">
-            <div>
-              <p className="text-[11px] text-[#A69C83] italic font-serif">Total Keranjang ({totalCartUnits} Unit / {totalCartWeightKg} Kg)</p>
-              <p className="text-lg font-bold font-serif text-[#D4AF37]">Rp {grandTotal.toLocaleString('id-ID')}</p>
+              </form>
             </div>
 
-            <button
-              onClick={() => setIsCartDrawerOpen(true)}
-              className="bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-serif font-bold italic px-5 py-2.5 rounded-xl text-xs flex items-center space-x-2 shadow-lg"
-            >
-              <ShoppingCart className="h-4 w-4" />
-              <span>Checkout / Detail Pesanan</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* SLIDE-OVER DRAWER MODAL KERANJANG & CHECKOUT */}
-      {isCartDrawerOpen && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex justify-end">
-          <div className="bg-[#0A0A0A] border-l border-[#2B261F] w-full max-w-lg h-full overflow-y-auto p-6 space-y-6 flex flex-col justify-between">
-            <div className="space-y-6">
-              <div className="flex justify-between items-center border-b border-[#2B261F] pb-4">
-                <div className="flex items-center space-x-2">
-                  <ShoppingCart className="h-5 w-5 text-[#D4AF37]" />
-                  <h2 className="text-lg font-serif italic text-[#E5D7B8]">Keranjang Pre-Order</h2>
-                </div>
-                <button onClick={() => setIsCartDrawerOpen(false)} className="text-[#A69C83] hover:text-white p-1">
-                  <X className="h-6 w-6" />
-                </button>
+            <div className="pt-6 border-t border-[#2E2B27] space-y-4">
+              <div className="flex justify-between font-serif text-base">
+                <span>Total Tagihan</span>
+                <span className="text-[#C8A97E]">Rp {grandTotal.toLocaleString('id-ID')}</span>
               </div>
 
-              {cart.length === 0 ? (
-                <p className="text-xs text-[#A69C83] italic text-center py-12">Keranjang belanja masih kosong.</p>
-              ) : (
-                <form onSubmit={handleCheckout} id="drawer-checkout-form" className="space-y-5">
-                  <div className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                    {cart.map((item) => (
-                      <div key={item.id} className="bg-[#14120F] border border-[#2B261F] p-3 rounded-xl flex justify-between items-center text-xs italic gap-2">
-                        <div className="flex-1">
-                          <p className="text-[#E5D7B8] font-serif font-bold">{item.name}</p>
-                          <p className="text-[#A69C83] text-[11px]">@ Rp {item.unitPrice.toLocaleString('id-ID')}</p>
-                        </div>
-
-                        <div className="flex items-center space-x-1 bg-[#0A0A0A] border border-[#2B261F] px-2 py-0.5 rounded-lg">
-                          <button type="button" onClick={() => updateCartQuantity(item.id, item.quantity - 1)} className="text-[#A69C83]">
-                            <Minus className="h-3 w-3" />
-                          </button>
-                          <input
-                            type="number"
-                            min={1}
-                            value={item.quantity}
-                            onChange={(e) => updateCartQuantity(item.id, parseInt(e.target.value) || 1)}
-                            className="w-8 text-center bg-transparent text-[#E5D7B8] font-bold text-xs focus:outline-none"
-                          />
-                          <button type="button" onClick={() => updateCartQuantity(item.id, item.quantity + 1)} className="text-[#A69C83]">
-                            <Plus className="h-3 w-3" />
-                          </button>
-                        </div>
-
-                        <p className="text-[#D4AF37] font-bold min-w-[70px] text-right">Rp {item.totalPrice.toLocaleString('id-ID')}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* MODUL PILIHAN TANGGAL PENGIRIMAN DENGAN VALIDASI SENIN/SELASA */}
-                  <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
-                    <div className="flex items-center space-x-2 text-[#D4AF37] font-serif">
-                      <Truck className="h-4 w-4" />
-                      <span className="font-bold">Pilih Tanggal Pengiriman (Khusus Senin & Selasa)</span>
-                    </div>
-
-                    <div>
-                      <input
-                        type="date"
-                        value={selectedCustomShippingDate}
-                        onChange={(e) => handleCustomShippingDateChange(e.target.value)}
-                        className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-[#E5D7B8] focus:outline-none focus:border-[#D4AF37]"
-                      />
-                      <p className="text-[10px] text-[#A69C83] mt-1">
-                        Jadwal bawaan roastery: <strong className="text-sky-400">{scheduleInfo.shipping}</strong>
-                      </p>
-                    </div>
-
-                    {dateValidationError && (
-                      <div className="bg-rose-950/80 border border-rose-800 p-2.5 rounded-lg text-rose-300 text-[11px] font-bold">
-                        {dateValidationError}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
-                    <p className="font-serif text-[#D4AF37]">Profil & Alamat Pemesan</p>
-                    <input
-                      type="text"
-                      placeholder="Nama Lengkap Pemesan *"
-                      required
-                      value={customerInfo.name}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
-                      className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-[#E5D7B8]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Nama Cafe / Perusahaan *"
-                      required
-                      value={customerInfo.company}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, company: e.target.value })}
-                      className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-[#E5D7B8]"
-                    />
-                    <input
-                      type="text"
-                      placeholder="Nomor WhatsApp *"
-                      required
-                      value={customerInfo.phone}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
-                      className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-[#E5D7B8]"
-                    />
-                    <textarea
-                      placeholder="Alamat Lengkap Pengiriman *"
-                      required
-                      rows={2}
-                      value={customerInfo.address}
-                      onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
-                      className="w-full bg-[#0A0A0A] border border-[#2B261F] rounded-lg px-3 py-2 text-[#E5D7B8]"
-                    />
-                  </div>
-
-                  <div className="bg-[#14120F] border border-[#2B261F] p-4 rounded-xl space-y-3 text-xs italic">
-                    <p className="font-serif text-[#D4AF37]">Metode Pembayaran</p>
-                    
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="radio" name="paymentDrawer" checked={paymentMethod === 'transfer'} onChange={() => setPaymentMethod('transfer')} className="accent-[#D4AF37]" />
-                      <span className="text-[#E5D7B8] flex items-center space-x-1.5">
-                        <CreditCard className="h-3.5 w-3.5 text-sky-400" />
-                        <span>Transfer Bank BCA</span>
-                      </span>
-                    </label>
-
-                    {paymentMethod === 'transfer' && (
-                      <div className="bg-[#0A0A0A] p-3.5 rounded-xl border border-sky-900/60 space-y-2 text-xs italic my-1">
-                        <p className="text-[#A69C83] text-[11px]">Rekening Resmi Pembayaran:</p>
-                        <p className="text-[#E5D7B8] font-bold text-sm">BCA: 7772400244</p>
-                        <p className="text-[#D4AF37] font-semibold text-[11px]">a.n. CV Multi Agri Sentosa</p>
-
-                        <div className="pt-2 border-t border-[#2B261F]">
-                          <label className="block text-[11px] text-[#A69C83] mb-1">Catatan/Nomor Bukti Transfer (Opsional)</label>
-                          <input
-                            type="text"
-                            placeholder="Contoh: Transfer via BCA Mobile a.n. Budi"
-                            value={paymentProofFile}
-                            onChange={(e) => setPaymentProofFile(e.target.value)}
-                            className="w-full bg-[#14120F] border border-[#2B261F] rounded-lg px-2.5 py-1.5 text-[11px] text-[#E5D7B8]"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="radio" name="paymentDrawer" checked={paymentMethod === 'kontra_bon_15'} onChange={() => setPaymentMethod('kontra_bon_15')} className="accent-[#D4AF37]" />
-                      <span className="text-[#E5D7B8]">Kontra Bon (Net 15 Days)</span>
-                    </label>
-
-                    <label className="flex items-center space-x-2 cursor-pointer">
-                      <input type="radio" name="paymentDrawer" checked={paymentMethod === 'kontra_bon_30'} onChange={() => setPaymentMethod('kontra_bon_30')} className="accent-[#D4AF37]" />
-                      <span className="text-[#E5D7B8]">Kontra Bon (Net 30 Days)</span>
-                    </label>
-                  </div>
-                </form>
-              )}
-            </div>
-
-            {cart.length > 0 && (
-              <div className="pt-4 border-t border-[#2B261F] space-y-3">
-                <div className="flex justify-between text-base font-serif font-bold text-[#E5D7B8]">
-                  <span>Total Tagihan:</span>
-                  <span className="text-[#D4AF37]">Rp {grandTotal.toLocaleString('id-ID')}</span>
-                </div>
-
-                <button
-                  type="submit"
-                  form="drawer-checkout-form"
-                  disabled={Boolean(dateValidationError)}
-                  className={`w-full font-serif italic font-bold py-3.5 rounded-xl transition-all shadow-md ${
-                    dateValidationError ? 'bg-gray-600 text-gray-400 cursor-not-allowed' : 'bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111]'
-                  }`}
-                >
-                  Submit Pre-Order Now
-                </button>
-              </div>
-            )}
-
-            {currentActiveOrder && (
-              <div className="p-4 bg-[#14120F] border border-[#2B261F] rounded-2xl space-y-2 text-xs italic">
-                <p className="text-[#D4AF37] font-serif">Order Registered! (ID: {currentActiveOrder.id})</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <a
-                    href={generateWhatsAppLink(currentActiveOrder, '6281931364302')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-emerald-700 text-white rounded-lg text-center"
-                  >
-                    Send Admin 1
-                  </a>
-                  <a
-                    href={generateWhatsAppLink(currentActiveOrder, '6289654225095')}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-2 bg-emerald-700 text-white rounded-lg text-center"
-                  >
-                    Send Admin 2
-                  </a>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MODAL EDIT PRODUK */}
-      {isEditModalOpen && editingProduct && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[#0A0A0A] border border-[#2B261F] rounded-3xl p-6 max-w-lg w-full space-y-4">
-            <div className="flex justify-between items-center border-b border-[#2B261F] pb-3">
-              <h3 className="text-base font-serif italic text-[#E5D7B8]">Edit Produk: {editingProduct.name}</h3>
-              <button onClick={() => setIsEditModalOpen(false)} className="text-[#A69C83] hover:text-white">
-                <X className="h-5 w-5" />
+              <button
+                type="submit"
+                form="checkout-form"
+                disabled={Boolean(dateValidationError)}
+                className={`w-full py-3 text-xs font-mono uppercase tracking-wider transition-all ${
+                  dateValidationError ? 'bg-[#2E2B27] text-[#8C8479] cursor-not-allowed' : 'bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium'
+                }`}
+              >
+                Submit Pre-Order
               </button>
             </div>
-
-            <form onSubmit={handleSaveEditedProduct} className="space-y-4 text-xs italic">
-              <div>
-                <label className="block text-[#A69C83] mb-1">Nama Produk</label>
-                <input
-                  type="text"
-                  required
-                  value={editingProduct.name}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[#A69C83] mb-1">Harga 1 Kg (Rp)</label>
-                  <input
-                    type="number"
-                    value={editingProduct.pricePerKg}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, pricePerKg: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[#A69C83] mb-1">Harga 200g (Rp)</label>
-                  <input
-                    type="number"
-                    value={editingProduct.pricePer200g}
-                    onChange={(e) => setEditingProduct({ ...editingProduct, pricePer200g: parseInt(e.target.value) || 0 })}
-                    className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[#A69C83] mb-1">Modal HPP Greenbeans / Kg (Rp)</label>
-                <input
-                  type="number"
-                  value={editingProduct.greenBeanCostPerKg}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, greenBeanCostPerKg: parseInt(e.target.value) || 0 })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[#A69C83] mb-1">Deskripsi Produk</label>
-                <textarea
-                  rows={2}
-                  value={editingProduct.description}
-                  onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
-                  className="w-full bg-[#14120F] border border-[#2B261F] rounded-xl px-3 py-2 text-[#E5D7B8]"
-                />
-              </div>
-
-              <div className="flex justify-end space-x-3 pt-3 border-t border-[#2B261F]">
-                <button
-                  type="button"
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-[#14120F] border border-[#2B261F] rounded-xl text-[#A69C83]"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-2 bg-[#E5D7B8] hover:bg-[#D4AF37] text-[#111111] font-bold font-serif rounded-xl"
-                >
-                  Simpan Perubahan
-                </button>
-              </div>
-            </form>
           </div>
         </div>
       )}
