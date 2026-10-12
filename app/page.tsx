@@ -296,7 +296,9 @@ export default function EpicureanApp() {
 
   const scheduleInfo = calculateOrderSchedule();
 
+  // LISTENER SESSION UTAMA (CEK LOCALSTORAGE & GOOGLE OAUTH REDIRECT)
   useEffect(() => {
+    // 1. Cek User tersimpan dari localStorage biasa
     const savedUser = localStorage.getItem('epicurean_user');
     if (savedUser) {
       try {
@@ -307,6 +309,38 @@ export default function EpicureanApp() {
         localStorage.removeItem('epicurean_user');
       }
     }
+
+    // 2. Cek Session aktif dari Supabase (Khusus yang baru selesai Login Google)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const googleUser: UserAccount = {
+          username: session.user.user_metadata?.full_name || session.user.email || 'User Google',
+          role: 'pembeli',
+          companyName: 'Pembeli Google Auth'
+        };
+        setCurrentUser(googleUser);
+        localStorage.setItem('epicurean_user', JSON.stringify(googleUser));
+        setCurrentStep('main');
+        setCustomerInfo(prev => ({ ...prev, name: googleUser.username }));
+      }
+    });
+
+    // 3. Listener jika status Auth Supabase berubah real-time
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const googleUser: UserAccount = {
+          username: session.user.user_metadata?.full_name || session.user.email || 'User Google',
+          role: 'pembeli',
+          companyName: 'Pembeli Google Auth'
+        };
+        setCurrentUser(googleUser);
+        localStorage.setItem('epicurean_user', JSON.stringify(googleUser));
+        setCurrentStep('main');
+        setCustomerInfo(prev => ({ ...prev, name: googleUser.username }));
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   const formatSupabaseProducts = (rawData: any[]): Product[] => {
@@ -474,7 +508,8 @@ export default function EpicureanApp() {
     if (error) alert('Gagal login via Google: ' + error.message);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     localStorage.removeItem('epicurean_user');
     setCurrentUser(null);
     setCurrentStep('welcome');
@@ -647,7 +682,7 @@ export default function EpicureanApp() {
     );
   }
 
-  // STEP 2: AUTH SCREEN (LENGKAP DENGAN GOOGLE OAUTH)
+  // STEP 2: AUTH SCREEN
   if (currentStep === 'auth') {
     return (
       <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex items-center justify-center p-6">
@@ -701,7 +736,6 @@ export default function EpicureanApp() {
             </button>
           </form>
 
-          {/* OPSI GOOGLE OAUTH DITAMPILKAN KEMBALI */}
           {selectedRole === 'pembeli' && (
             <div className="pt-4 border-t border-[#2E2B27] space-y-3 text-center">
               <p className="text-xs text-[#8C8479] font-mono">Atau masuk cepat dengan Google:</p>
@@ -947,7 +981,6 @@ export default function EpicureanApp() {
               ))}
 
               <form onSubmit={handleCheckout} id="checkout-form" className="space-y-4 pt-4">
-                {/* PILIHAN TANGGAL SENIN & SELASA VIA POPUP KALENDER */}
                 <div className="space-y-2">
                   <label className="block text-xs font-mono text-[#C8A97E] uppercase">
                     Pilih Tanggal Pengiriman (Hanya Senin / Selasa)
