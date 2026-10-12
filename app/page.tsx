@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock,
   Trash2, User, X,
-  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin
+  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -263,6 +263,138 @@ function CustomDeliveryDatePicker({
   );
 }
 
+// KOMPONEN MODAL INVOICE RESMI (CV. MULTI AGRI SENTOSA)
+function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void }) {
+  const handlePrint = () => {
+    window.print();
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4 overflow-y-auto">
+      <div className="bg-white text-black w-full max-w-2xl p-8 shadow-2xl font-sans relative my-auto">
+        {/* Tombol Aksi (Otomatis Sembunyi Saat Cetak/PDF) */}
+        <div className="flex justify-between items-center mb-6 border-b pb-4 print:hidden">
+          <div className="flex items-center space-x-2">
+            <FileText className="h-5 w-5 text-gray-700" />
+            <h3 className="font-bold text-sm text-gray-800">Preview Invoice Resmi B2B</h3>
+          </div>
+          <div className="flex space-x-2">
+            <button
+              onClick={handlePrint}
+              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow"
+            >
+              <Printer className="h-4 w-4" />
+              <span>Print / Download PDF</span>
+            </button>
+            <button
+              onClick={onClose}
+              className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all"
+            >
+              Tutup
+            </button>
+          </div>
+        </div>
+
+        {/* AREA KONTEN INVOICE */}
+        <div id="invoice-content" className="space-y-6 text-xs text-gray-800">
+          {/* Header Perusahaan */}
+          <div className="flex justify-between items-start border-b pb-4 border-gray-300">
+            <div>
+              <h1 className="text-lg font-bold tracking-wider text-black font-serif uppercase">
+                EPICUREAN COFFEE COMPANY
+              </h1>
+              <p className="text-[11px] text-gray-600 font-mono">Phone: +628112039695</p>
+              <p className="text-[11px] text-gray-600 font-mono">Email: epccoffee@gmail.com</p>
+            </div>
+            <div className="text-right">
+              <h2 className="text-xl font-bold text-gray-900 uppercase tracking-widest font-serif">INVOICE</h2>
+              <p className="font-mono text-xs text-gray-700 font-bold mt-1">
+                INVOICE #: <span className="text-black">{order.id.replace('ORD-', '')}</span>
+              </p>
+              <p className="font-mono text-xs text-gray-600">DATE: {order.createdAt}</p>
+              {order.dueDate && (
+                <p className="font-mono text-xs text-rose-600 font-bold mt-0.5">
+                  DUE DATE: {order.dueDate}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Rincian Pelanggan */}
+          <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 border border-gray-200">
+            <div>
+              <span className="text-[10px] uppercase font-bold text-gray-500 block font-mono">CUSTOMER</span>
+              <p className="font-bold text-sm text-gray-900">{order.customerName}</p>
+              <p className="text-xs text-gray-700">{order.companyName}</p>
+            </div>
+            <div className="text-right">
+              <span className="text-[10px] uppercase font-bold text-gray-500 block font-mono">ADDRESS / PHONE</span>
+              <p className="text-xs text-gray-700">{order.shippingAddress || 'Bandung, Jawa Barat'}</p>
+              <p className="text-xs font-mono text-gray-700">{order.customerPhone}</p>
+            </div>
+          </div>
+
+          {/* Tabel Barang */}
+          <table className="w-full text-left border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-gray-100 text-[10px] uppercase font-bold text-gray-700 border-b border-gray-200 font-mono">
+                <th className="p-2 border-r border-gray-200 w-10 text-center">NO.</th>
+                <th className="p-2 border-r border-gray-200">DESCRIPTION</th>
+                <th className="p-2 text-center border-r border-gray-200 w-20">QTY</th>
+                <th className="p-2 text-right border-r border-gray-200 w-28">UNIT PRICE (Rp.)</th>
+                <th className="p-2 text-right w-28">AMOUNT (Rp.)</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200 text-xs font-mono">
+              {order.items.map((item, index) => (
+                <tr key={item.id}>
+                  <td className="p-2 text-center border-r border-gray-200">{index + 1}</td>
+                  <td className="p-2 border-r border-gray-200 font-sans font-medium">{item.name}</td>
+                  <td className="p-2 text-center border-r border-gray-200">{item.quantity} Pack</td>
+                  <td className="p-2 text-right border-r border-gray-200">{item.unitPrice.toLocaleString('id-ID')}</td>
+                  <td className="p-2 text-right font-bold">{item.totalPrice.toLocaleString('id-ID')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {/* Ringkasan & Detail Rekening Bank */}
+          <div className="grid grid-cols-2 gap-6 pt-2">
+            <div className="space-y-3">
+              <div className="border p-3 bg-gray-50 border-gray-200 space-y-1 font-mono">
+                <p className="font-bold text-[11px] text-gray-900 border-b pb-1 mb-1 font-sans">PAYMENT DETAIL</p>
+                <p className="text-[11px]">BANK NAME: <span className="font-bold">BCA</span></p>
+                <p className="text-[11px]">BANK ACCOUNT NUMBER: <span className="font-bold font-mono">7772400244</span></p>
+                <p className="text-[11px]">BANK ACCOUNT NAME: <span className="font-bold">CV. MULTI AGRI SENTOSA</span></p>
+              </div>
+            </div>
+
+            <div className="space-y-1 text-right font-mono">
+              <div className="flex justify-between border-b pb-1 text-xs">
+                <span className="text-gray-600">Subtotal:</span>
+                <span>Rp {order.subtotal.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between border-b pb-1 text-xs">
+                <span className="text-gray-600">Ongkos Kirim:</span>
+                <span>Rp {order.shippingCost.toLocaleString('id-ID')}</span>
+              </div>
+              <div className="flex justify-between font-bold text-sm text-black pt-1">
+                <span>TOTAL:</span>
+                <span className="text-black">Rp {order.totalAmount.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-gray-300 pt-4 text-[10px] text-gray-500 flex justify-between font-mono">
+            <span>Sales Invoice #{order.id.replace('ORD-', '')}</span>
+            <span>Thank you for choosing Epicurean Coffee!</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function EpicureanApp() {
   const [currentStep, setCurrentStep] = useState<'welcome' | 'auth' | 'main'>('welcome');
   const [selectedRole, setSelectedRole] = useState<'pembeli' | 'reseller' | 'seller'>('pembeli');
@@ -283,14 +415,7 @@ export default function EpicureanApp() {
   const [selectedCustomShippingDate, setSelectedCustomShippingDate] = useState('');
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
-  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
-
-  const [feedbackForm, setFeedbackForm] = useState({
-    category: 'Roasting Profile Tidak Sesuai' as CustomerFeedback['category'],
-    orderId: '',
-    phone: '',
-    message: ''
-  });
+  const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
 
   const [paymentProofFile, setPaymentProofFile] = useState<string>('');
 
@@ -298,7 +423,6 @@ export default function EpicureanApp() {
 
   // LISTENER SESSION UTAMA (CEK LOCALSTORAGE & GOOGLE OAUTH REDIRECT)
   useEffect(() => {
-    // 1. Cek User tersimpan dari localStorage biasa
     const savedUser = localStorage.getItem('epicurean_user');
     if (savedUser) {
       try {
@@ -310,7 +434,6 @@ export default function EpicureanApp() {
       }
     }
 
-    // 2. Cek Session aktif dari Supabase (Khusus yang baru selesai Login Google)
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         const googleUser: UserAccount = {
@@ -325,7 +448,6 @@ export default function EpicureanApp() {
       }
     });
 
-    // 3. Listener jika status Auth Supabase berubah real-time
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         const googleUser: UserAccount = {
@@ -920,6 +1042,15 @@ export default function EpicureanApp() {
                         </div>
 
                         <div className="flex items-center space-x-3">
+                          {/* TOMBOL CETAK INVOICE */}
+                          <button
+                            onClick={() => setSelectedInvoiceOrder(o)}
+                            className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] bg-[#181614] flex items-center space-x-1 transition-all"
+                          >
+                            <FileText className="h-3.5 w-3.5 text-[#C8A97E]" />
+                            <span>Cetak Invoice</span>
+                          </button>
+
                           <span className="text-xs font-mono text-[#8C8479]">Status:</span>
                           <select
                             value={o.status}
@@ -957,6 +1088,14 @@ export default function EpicureanApp() {
           </div>
         )}
       </main>
+
+      {/* MODAL CETAK INVOICE RESMI B2B */}
+      {selectedInvoiceOrder && (
+        <InvoiceModal
+          order={selectedInvoiceOrder}
+          onClose={() => setSelectedInvoiceOrder(null)}
+        />
+      )}
 
       {/* DRAWER CHECKOUT & SELEKSI TANGGAL KIRIM SENIN & SELASA */}
       {isCartDrawerOpen && (
