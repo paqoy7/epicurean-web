@@ -642,7 +642,7 @@ export default function EpicureanApp() {
 
     if (packType === '200g') {
       weightGram = 200;
-      unitPrice = prod.pricePer200g || 50000;
+      unitPrice = prod.pricePer200g || Math.round((prod.pricePerKg * 0.25));
       packLabel = '200g';
     }
 
@@ -1003,41 +1003,60 @@ export default function EpicureanApp() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {filteredProducts.map((p) => (
-                  <div key={p.id} className="border border-[#2E2B27] bg-[#1F1C19] p-6 flex flex-col justify-between space-y-6">
-                    <div className="space-y-3">
-                      <div className="flex justify-between items-center text-xs font-mono text-[#8C8479]">
-                        <span>{p.category}</span>
-                        {p.isExclusive && <span className="text-purple-400">Exclusive Blend</span>}
+                {filteredProducts.map((p) => {
+                  const price200g = p.pricePer200g || Math.round(p.pricePerKg * 0.25);
+                  return (
+                    <div key={p.id} className="border border-[#2E2B27] bg-[#1F1C19] p-6 flex flex-col justify-between space-y-6">
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-xs font-mono text-[#8C8479]">
+                          <span>{p.category}</span>
+                          {p.isExclusive && <span className="text-purple-400">Exclusive Blend</span>}
+                        </div>
+
+                        <h3 className="text-lg font-serif text-[#EFECE6]">{p.name}</h3>
+                        <p className="text-xs text-[#A39B8E] leading-relaxed font-light">{p.description}</p>
                       </div>
 
-                      <h3 className="text-lg font-serif text-[#EFECE6]">{p.name}</h3>
-                      <p className="text-xs text-[#A39B8E] leading-relaxed font-light">{p.description}</p>
+                      {/* AREA PILIHAN KEMASAN 1 KG DAN 200G */}
+                      <div className="space-y-3 pt-4 border-t border-[#2E2B27]">
+                        {/* Kemasan 1 Kg */}
+                        <div className="flex justify-between items-center text-xs font-mono">
+                          <div>
+                            <span className="text-[#EFECE6] font-medium block">Kemasan 1 Kg</span>
+                            <span className="text-[#C8A97E]">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
+                          </div>
+                          <button
+                            onClick={() => addProductToCart(p, '1kg', 1)}
+                            className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-3 py-1.5 transition-all"
+                          >
+                            + 1 Kg
+                          </button>
+                        </div>
+
+                        {/* Kemasan 200g */}
+                        {p.category !== 'Green Beans' && (
+                          <div className="flex justify-between items-center text-xs font-mono border-t border-[#2A2723] pt-2">
+                            <div>
+                              <span className="text-[#EFECE6] font-medium block">Kemasan 200g</span>
+                              <span className="text-[#C8A97E]">Rp {price200g.toLocaleString('id-ID')}</span>
+                            </div>
+                            <button
+                              onClick={() => addProductToCart(p, '200g', 1)}
+                              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-3 py-1.5 transition-all"
+                            >
+                              + 200g
+                            </button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-
-                    <div className="space-y-3 pt-4 border-t border-[#2E2B27]">
-                      <div className="flex justify-between text-xs font-mono">
-                        <span className="text-[#8C8479]">Kemasan 1 Kg</span>
-                        <span className="text-[#C8A97E]">Rp {p.pricePerKg.toLocaleString('id-ID')}</span>
-                      </div>
-
-                      <div className="flex justify-between items-center pt-2">
-                        <span className="text-xs font-mono text-[#8C8479]">Order 1 Kg</span>
-                        <button
-                          onClick={() => addProductToCart(p, '1kg', 1)}
-                          className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-4 py-2 transition-all"
-                        >
-                          + Tambah
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
         ) : (
-          /* DASHBOARD SELLER UTUH SAMA TAB SELLER */
+          /* DASHBOARD SELLER */
           <div className="space-y-8">
             <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
               <h1 className="text-xl font-serif text-[#EFECE6]">Fulfillment & Order Control</h1>
@@ -1155,6 +1174,7 @@ export default function EpicureanApp() {
                         name: '',
                         category: 'Roasted Beans',
                         pricePerKg: 200000,
+                        pricePer200g: 60000,
                         greenBeanCostPerKg: 120000,
                         roastingCostPerKg: 20000,
                         packagingCostPerKg: 7500,
@@ -1177,7 +1197,7 @@ export default function EpicureanApp() {
                         <span className="text-[10px] text-[#8C8479] font-mono uppercase">{p.category}</span>
                         <h4 className="text-sm font-serif text-[#EFECE6]">{p.name}</h4>
                         <p className="text-xs font-mono text-[#C8A97E] mt-0.5">
-                          Harga Jual: Rp {p.pricePerKg.toLocaleString('id-ID')}/Kg
+                          1 Kg: Rp {p.pricePerKg.toLocaleString('id-ID')} | 200g: Rp {(p.pricePer200g || Math.round(p.pricePerKg * 0.25)).toLocaleString('id-ID')}
                         </p>
                       </div>
 
@@ -1282,7 +1302,7 @@ export default function EpicureanApp() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 <div>
                   <label className="text-[#8C8479] block mb-1">Kategori</label>
                   <select
@@ -1296,12 +1316,21 @@ export default function EpicureanApp() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[#8C8479] block mb-1">Harga Jual / Kg (Rp)</label>
+                  <label className="text-[#8C8479] block mb-1">Harga 1 Kg (Rp)</label>
                   <input
                     type="number"
                     required
                     value={productForm.pricePerKg}
                     onChange={(e) => setProductForm({ ...productForm, pricePerKg: Number(e.target.value) })}
+                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[#8C8479] block mb-1">Harga 200g (Rp)</label>
+                  <input
+                    type="number"
+                    value={productForm.pricePer200g}
+                    onChange={(e) => setProductForm({ ...productForm, pricePer200g: Number(e.target.value) })}
                     className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
                   />
                 </div>
