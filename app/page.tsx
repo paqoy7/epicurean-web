@@ -142,6 +142,127 @@ const calculateOrderSchedule = () => {
   };
 };
 
+// KOMPONEN KALENDER POPUP KHUSUS SENIN & SELASA
+function CustomDeliveryDatePicker({ 
+  value, 
+  onChange 
+}: { 
+  value: string; 
+  onChange: (dateStr: string) => void; 
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  const daysOfWeek = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+
+  const handleSelectDate = (day: number) => {
+    const selected = new Date(year, month, day);
+    const dayOfWeek = selected.getDay();
+
+    if (dayOfWeek === 1 || dayOfWeek === 2) {
+      const yyyy = selected.getFullYear();
+      const mm = String(selected.getMonth() + 1).padStart(2, '0');
+      const dd = String(selected.getDate()).padStart(2, '0');
+      onChange(`${yyyy}-${mm}-${dd}`);
+      setIsOpen(false);
+    }
+  };
+
+  const nextMonth = () => setCurrentMonth(new Date(year, month + 1, 1));
+  const prevMonth = () => setCurrentMonth(new Date(year, month - 1, 1));
+
+  const formatDisplayDate = (dateStr: string) => {
+    if (!dateStr) return 'Klik untuk Pilih Tanggal...';
+    const d = new Date(dateStr);
+    const opt: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    return d.toLocaleDateString('id-ID', opt);
+  };
+
+  return (
+    <div className="relative w-full">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-left text-[#EFECE6] flex justify-between items-center hover:border-[#C8A97E] transition-all"
+      >
+        <span>{formatDisplayDate(value)}</span>
+        <Calendar className="h-4 w-4 text-[#C8A97E]" />
+      </button>
+
+      {isOpen && (
+        <div className="absolute top-full left-0 right-0 mt-2 bg-[#181614] border border-[#38332E] p-4 z-50 shadow-2xl space-y-3 font-mono">
+          <div className="flex justify-between items-center text-xs font-bold text-[#EFECE6] border-b border-[#2E2B27] pb-2">
+            <button type="button" onClick={prevMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
+              &lt;
+            </button>
+            <span>
+              {currentMonth.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}
+            </span>
+            <button type="button" onClick={nextMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
+              &gt;
+            </button>
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center text-[10px] text-[#8C8479]">
+            {daysOfWeek.map((d, idx) => (
+              <span key={d} className={idx === 1 || idx === 2 ? 'text-[#C8A97E] font-bold' : ''}>
+                {d}
+              </span>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-1 text-center text-xs">
+            {Array.from({ length: firstDayOfMonth }).map((_, i) => (
+              <div key={`empty-${i}`} />
+            ))}
+
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const dayNum = i + 1;
+              const dateObj = new Date(year, month, dayNum);
+              const dayOfWeek = dateObj.getDay();
+              const isAllowed = dayOfWeek === 1 || dayOfWeek === 2;
+
+              const yyyy = dateObj.getFullYear();
+              const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+              const dd = String(dateObj.getDate()).padStart(2, '0');
+              const dateString = `${yyyy}-${mm}-${dd}`;
+              const isSelected = value === dateString;
+
+              return (
+                <button
+                  key={dayNum}
+                  type="button"
+                  disabled={!isAllowed}
+                  onClick={() => handleSelectDate(dayNum)}
+                  className={`py-1.5 rounded transition-all text-[11px] ${
+                    isSelected
+                      ? 'bg-[#C8A97E] text-[#181614] font-bold'
+                      : isAllowed
+                      ? 'bg-[#1F1C19] text-[#EFECE6] hover:bg-[#C8A97E] hover:text-[#181614] cursor-pointer font-bold border border-[#38332E]'
+                      : 'text-[#3A3631] bg-[#141210] cursor-not-allowed opacity-30'
+                  }`}
+                >
+                  {dayNum}
+                </button>
+              );
+            })}
+          </div>
+
+          <p className="text-[10px] text-[#8C8479] italic border-t border-[#2E2B27] pt-2 text-center">
+            * Hanya tanggal di hari <strong className="text-[#C8A97E]">Senin</strong> & <strong className="text-[#C8A97E]">Selasa</strong> yang bisa dipilih.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function EpicureanApp() {
   const [currentStep, setCurrentStep] = useState<'welcome' | 'auth' | 'main'>('welcome');
   const [selectedRole, setSelectedRole] = useState<'pembeli' | 'reseller' | 'seller'>('pembeli');
@@ -160,10 +281,6 @@ export default function EpicureanApp() {
 
   const [searchOrderQuery, setSearchOrderQuery] = useState('');
   const [selectedCustomShippingDate, setSelectedCustomShippingDate] = useState('');
-  const [dateValidationError, setDateValidationError] = useState('');
-
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
@@ -222,7 +339,7 @@ export default function EpicureanApp() {
   };
 
   const fetchOrders = async () => {
-    const { data, error } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+    const { data } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
     if (data) {
       const formatted: Order[] = data.map(item => ({
         id: item.id,
@@ -299,8 +416,6 @@ export default function EpicureanApp() {
   const cartSubtotal = cart.reduce((acc, item) => acc + item.totalPrice, 0);
   const grandTotal = cartSubtotal + shippingCost;
 
-  const [currentActiveOrder, setCurrentActiveOrder] = useState<Order | null>(null);
-
   const handleRoleSelection = (role: 'pembeli' | 'reseller' | 'seller') => {
     setSelectedRole(role);
     setAuthError('');
@@ -351,25 +466,19 @@ export default function EpicureanApp() {
     }
   };
 
+  const handleGoogleLogin = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin }
+    });
+    if (error) alert('Gagal login via Google: ' + error.message);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('epicurean_user');
     setCurrentUser(null);
     setCurrentStep('welcome');
     setCart([]);
-  };
-
-  const handleCustomShippingDateChange = (dateVal: string) => {
-    setSelectedCustomShippingDate(dateVal);
-    setDateValidationError('');
-
-    if (!dateVal) return;
-
-    const chosenDate = new Date(dateVal);
-    const dayOfWeek = chosenDate.getDay();
-
-    if (dayOfWeek !== 1 && dayOfWeek !== 2) {
-      setDateValidationError('Jadwal pengiriman roastery HANYA melayani hari SENIN & SELASA.');
-    }
   };
 
   const addProductToCart = (prod: Product, packType: '1kg' | '500g' | '200g', deltaQty: number = 1) => {
@@ -411,22 +520,9 @@ export default function EpicureanApp() {
     }
   };
 
-  const updateCartQuantity = (itemId: string, newQty: number) => {
-    if (newQty <= 0) {
-      setCart(cart.filter(i => i.id !== itemId));
-      return;
-    }
-    setCart(cart.map(item => item.id === itemId ? { ...item, quantity: newQty, totalPrice: item.unitPrice * newQty } : item));
-  };
-
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
-
-    if (dateValidationError) {
-      alert('Mohon pilih hari Senin atau Selasa untuk tanggal pengiriman.');
-      return;
-    }
 
     const today = new Date();
     const finalShippingDate = selectedCustomShippingDate || scheduleInfo.shipping;
@@ -474,44 +570,11 @@ export default function EpicureanApp() {
     });
 
     if (!error) {
-      setCurrentActiveOrder(newOrder);
+      alert('Pre-order Anda berhasil terkirim!');
       setCart([]);
+      setIsCartDrawerOpen(false);
       fetchOrders();
     }
-  };
-
-  const handleSubmitFeedback = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!feedbackForm.message.trim()) return;
-
-    const newFb: CustomerFeedback = {
-      id: `FB-${Date.now().toString().slice(-5)}`,
-      customerName: currentUser?.username || customerInfo.name || 'Pelanggan',
-      companyName: currentUser?.companyName || customerInfo.company || 'Cafe',
-      customerPhone: feedbackForm.phone || customerInfo.phone || '-',
-      category: feedbackForm.category,
-      orderId: feedbackForm.orderId || undefined,
-      message: feedbackForm.message,
-      status: 'Open',
-      createdAt: new Date().toISOString().split('T')[0]
-    };
-
-    await supabase.from('customer_feedbacks').insert({
-      id: newFb.id,
-      customer_name: newFb.customerName,
-      company_name: newFb.companyName,
-      customer_phone: newFb.customerPhone,
-      category: newFb.category,
-      order_id: newFb.orderId,
-      message: newFb.message,
-      status: newFb.status,
-      created_at: newFb.createdAt
-    });
-
-    alert('Pesan pengaduan terkirim ke roastery.');
-    setIsFeedbackModalOpen(false);
-    setFeedbackForm({ category: 'Roasting Profile Tidak Sesuai', orderId: '', phone: '', message: '' });
-    fetchFeedbacks();
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
@@ -525,7 +588,7 @@ export default function EpicureanApp() {
     return o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q) || o.companyName.toLowerCase().includes(q);
   });
 
-  // STEP 1: WELCOME SCREEN (EDITORIAL MINIMALIST)
+  // STEP 1: WELCOME SCREEN
   if (currentStep === 'welcome') {
     return (
       <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex flex-col justify-between p-6 sm:p-12">
@@ -584,7 +647,7 @@ export default function EpicureanApp() {
     );
   }
 
-  // STEP 2: AUTH SCREEN (CLEAN FORM)
+  // STEP 2: AUTH SCREEN (LENGKAP DENGAN GOOGLE OAUTH)
   if (currentStep === 'auth') {
     return (
       <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans flex items-center justify-center p-6">
@@ -637,12 +700,32 @@ export default function EpicureanApp() {
               Masuk Sistem
             </button>
           </form>
+
+          {/* OPSI GOOGLE OAUTH DITAMPILKAN KEMBALI */}
+          {selectedRole === 'pembeli' && (
+            <div className="pt-4 border-t border-[#2E2B27] space-y-3 text-center">
+              <p className="text-xs text-[#8C8479] font-mono">Atau masuk cepat dengan Google:</p>
+              <button
+                type="button"
+                onClick={handleGoogleLogin}
+                className="w-full bg-[#181614] hover:bg-[#282420] border border-[#38332E] text-[#EFECE6] py-3 text-xs font-mono flex items-center justify-center space-x-2 transition-all"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                </svg>
+                <span>Lanjutkan dengan Google</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
   }
 
-  // STEP 3: MAIN APP (MINIMALIST EDITORIAL ROASTERY)
+  // STEP 3: MAIN APP
   return (
     <div className="min-h-screen bg-[#181614] text-[#EFECE6] font-sans antialiased pb-24">
       {/* HEADER */}
@@ -655,23 +738,13 @@ export default function EpicureanApp() {
 
           <div className="flex items-center space-x-4">
             {currentUser?.role !== 'seller' && (
-              <>
-                <button
-                  onClick={() => setIsFeedbackModalOpen(true)}
-                  className="text-xs text-[#A39B8E] hover:text-[#C8A97E] flex items-center space-x-1 font-mono"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Komplain</span>
-                </button>
-
-                <button
-                  onClick={() => setIsCartDrawerOpen(true)}
-                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono"
-                >
-                  <ShoppingCart className="h-3.5 w-3.5 text-[#C8A97E]" />
-                  <span>Cart ({totalCartUnits})</span>
-                </button>
-              </>
+              <button
+                onClick={() => setIsCartDrawerOpen(true)}
+                className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono"
+              >
+                <ShoppingCart className="h-3.5 w-3.5 text-[#C8A97E]" />
+                <span>Cart ({totalCartUnits})</span>
+              </button>
             )}
 
             <div className="flex items-center space-x-3 text-xs border-l border-[#2E2B27] pl-4">
@@ -686,9 +759,8 @@ export default function EpicureanApp() {
 
       <main className="max-w-7xl mx-auto px-6 py-8">
         {currentUser?.role !== 'seller' ? (
-          /* KATALOG UTAMA (PEMBELI/RESELLER) */
           <div className="space-y-8">
-            {/* ROASTING & SHIPPING SCHEDULE BANNER */}
+            {/* SCHEDULE BANNER */}
             <div className="border border-[#2E2B27] bg-[#1F1C19] p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-1 border-b md:border-b-0 md:border-r border-[#2E2B27] pb-4 md:pb-0 md:pr-4">
                 <div className="flex items-center space-x-2 text-xs text-[#C8A97E] font-mono uppercase">
@@ -705,7 +777,7 @@ export default function EpicureanApp() {
                   <span>Jadwal Sangrai</span>
                 </div>
                 <p className="text-sm font-serif text-[#EFECE6]">Rabu & Kamis</p>
-                <p className="text-xs text-[#8C8479]">Biji kopi disangrai fresh sesuai kuota pesanan.</p>
+                <p className="text-xs text-[#8C8479]">Biji kopi disangrai fresh sesuai pesanan.</p>
               </div>
 
               <div className="space-y-1">
@@ -714,11 +786,11 @@ export default function EpicureanApp() {
                   <span>Pengiriman Khusus</span>
                 </div>
                 <p className="text-sm font-serif text-[#EFECE6]">Senin & Selasa</p>
-                <p className="text-xs text-[#8C8479]">Pengiriman diselesaikan pada hari Senin / Selasa.</p>
+                <p className="text-xs text-[#8C8479]">Pengiriman melayani hari Senin & Selasa.</p>
               </div>
             </div>
 
-            {/* TAB KATALOG & GRID PRODUK */}
+            {/* KATALOG PRODUK */}
             <div className="space-y-6">
               <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
                 <h2 className="text-xl font-serif text-[#EFECE6]">Pilihan Biji Kopi</h2>
@@ -773,7 +845,7 @@ export default function EpicureanApp() {
             </div>
           </div>
         ) : (
-          /* DASHBOARD SELLER / ROASTERY MANAGER */
+          /* DASHBOARD SELLER */
           <div className="space-y-8">
             <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
               <h1 className="text-xl font-serif text-[#EFECE6]">Fulfillment & Order Control</h1>
@@ -784,12 +856,6 @@ export default function EpicureanApp() {
                   className={`px-4 py-2 ${sellerSubTab === 'orders' ? 'bg-[#C8A97E] text-[#181614]' : 'text-[#8C8479]'}`}
                 >
                   Orders ({orders.length})
-                </button>
-                <button
-                  onClick={() => setSellerSubTab('feedbacks')}
-                  className={`px-4 py-2 ${sellerSubTab === 'feedbacks' ? 'bg-[#C8A97E] text-[#181614]' : 'text-[#8C8479]'}`}
-                >
-                  Pengaduan ({feedbacks.length})
                 </button>
               </div>
             </div>
@@ -858,7 +924,7 @@ export default function EpicureanApp() {
         )}
       </main>
 
-      {/* DRAWER CHECKOUT & SELEKSI TANGGAL KIRIM (SENIN/SELASA ONLY) */}
+      {/* DRAWER CHECKOUT & SELEKSI TANGGAL KIRIM SENIN & SELASA */}
       {isCartDrawerOpen && (
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-end">
           <div className="bg-[#1F1C19] border-l border-[#2E2B27] w-full max-w-md h-full overflow-y-auto p-6 flex flex-col justify-between">
@@ -881,19 +947,15 @@ export default function EpicureanApp() {
               ))}
 
               <form onSubmit={handleCheckout} id="checkout-form" className="space-y-4 pt-4">
+                {/* PILIHAN TANGGAL SENIN & SELASA VIA POPUP KALENDER */}
                 <div className="space-y-2">
                   <label className="block text-xs font-mono text-[#C8A97E] uppercase">
                     Pilih Tanggal Pengiriman (Hanya Senin / Selasa)
                   </label>
-                  <input
-                    type="date"
+                  <CustomDeliveryDatePicker
                     value={selectedCustomShippingDate}
-                    onChange={(e) => handleCustomShippingDateChange(e.target.value)}
-                    className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:border-[#C8A97E] focus:outline-none"
+                    onChange={(dateStr) => setSelectedCustomShippingDate(dateStr)}
                   />
-                  {dateValidationError && (
-                    <p className="text-xs text-rose-400 font-mono italic">{dateValidationError}</p>
-                  )}
                 </div>
 
                 <div className="space-y-3 pt-2">
@@ -942,10 +1004,7 @@ export default function EpicureanApp() {
               <button
                 type="submit"
                 form="checkout-form"
-                disabled={Boolean(dateValidationError)}
-                className={`w-full py-3 text-xs font-mono uppercase tracking-wider transition-all ${
-                  dateValidationError ? 'bg-[#2E2B27] text-[#8C8479] cursor-not-allowed' : 'bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium'
-                }`}
+                className="w-full py-3 text-xs font-mono uppercase tracking-wider bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium transition-all"
               >
                 Submit Pre-Order
               </button>
