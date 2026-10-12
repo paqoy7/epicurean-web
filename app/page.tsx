@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock,
   Trash2, User, X,
-  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText
+  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -142,14 +142,7 @@ const calculateOrderSchedule = () => {
   };
 };
 
-// KOMPONEN KALENDER POPUP KHUSUS SENIN & SELASA
-function CustomDeliveryDatePicker({ 
-  value, 
-  onChange 
-}: { 
-  value: string; 
-  onChange: (dateStr: string) => void; 
-}) {
+function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange: (dateStr: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
@@ -263,16 +256,12 @@ function CustomDeliveryDatePicker({
   );
 }
 
-// KOMPONEN MODAL INVOICE RESMI (CV. MULTI AGRI SENTOSA)
 function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const handlePrint = () => {
-    window.print();
-  };
+  const handlePrint = () => window.print();
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4 overflow-y-auto">
       <div className="bg-white text-black w-full max-w-2xl p-8 shadow-2xl font-sans relative my-auto">
-        {/* Tombol Aksi (Otomatis Sembunyi Saat Cetak/PDF) */}
         <div className="flex justify-between items-center mb-6 border-b pb-4 print:hidden">
           <div className="flex items-center space-x-2">
             <FileText className="h-5 w-5 text-gray-700" />
@@ -286,18 +275,13 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
               <Printer className="h-4 w-4" />
               <span>Print / Download PDF</span>
             </button>
-            <button
-              onClick={onClose}
-              className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all"
-            >
+            <button onClick={onClose} className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all">
               Tutup
             </button>
           </div>
         </div>
 
-        {/* AREA KONTEN INVOICE */}
         <div id="invoice-content" className="space-y-6 text-xs text-gray-800">
-          {/* Header Perusahaan */}
           <div className="flex justify-between items-start border-b pb-4 border-gray-300">
             <div>
               <h1 className="text-lg font-bold tracking-wider text-black font-serif uppercase">
@@ -320,7 +304,6 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
             </div>
           </div>
 
-          {/* Rincian Pelanggan */}
           <div className="grid grid-cols-2 gap-4 bg-gray-50 p-3 border border-gray-200">
             <div>
               <span className="text-[10px] uppercase font-bold text-gray-500 block font-mono">CUSTOMER</span>
@@ -334,7 +317,6 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
             </div>
           </div>
 
-          {/* Tabel Barang */}
           <table className="w-full text-left border-collapse border border-gray-200">
             <thead>
               <tr className="bg-gray-100 text-[10px] uppercase font-bold text-gray-700 border-b border-gray-200 font-mono">
@@ -358,7 +340,6 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
             </tbody>
           </table>
 
-          {/* Ringkasan & Detail Rekening Bank */}
           <div className="grid grid-cols-2 gap-6 pt-2">
             <div className="space-y-3">
               <div className="border p-3 bg-gray-50 border-gray-200 space-y-1 font-mono">
@@ -417,11 +398,27 @@ export default function EpicureanApp() {
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
 
+  // STATE PRODUK MANAGEMENT (SELLER)
+  const [isProductModalOpen, setIsProductModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [productForm, setProductForm] = useState<Partial<Product>>({
+    name: '',
+    category: 'Roasted Beans',
+    pricePerKg: 200000,
+    pricePer500g: 0,
+    pricePer200g: 60000,
+    greenBeanCostPerKg: 150000,
+    roastingCostPerKg: 20000,
+    packagingCostPerKg: 7500,
+    description: '',
+    isExclusive: false,
+    allowedResellers: []
+  });
+
   const [paymentProofFile, setPaymentProofFile] = useState<string>('');
 
   const scheduleInfo = calculateOrderSchedule();
 
-  // LISTENER SESSION UTAMA (CEK LOCALSTORAGE & GOOGLE OAUTH REDIRECT)
   useEffect(() => {
     const savedUser = localStorage.getItem('epicurean_user');
     if (savedUser) {
@@ -739,6 +736,45 @@ export default function EpicureanApp() {
     fetchOrders();
   };
 
+  const updateFeedbackStatus = async (feedbackId: string, status: 'Open' | 'Resolved') => {
+    await supabase.from('customer_feedbacks').update({ status }).eq('id', feedbackId);
+    fetchFeedbacks();
+  };
+
+  const handleSaveProduct = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!productForm.name) return;
+
+    const payload = {
+      id: editingProduct ? editingProduct.id : `PROD-${Date.now().toString().slice(-4)}`,
+      name: productForm.name,
+      category: productForm.category,
+      price_per_kg: Number(productForm.pricePerKg || 0),
+      price_per_500g: Number(productForm.pricePer500g || 0),
+      price_per_200g: Number(productForm.pricePer200g || 0),
+      green_bean_cost_per_kg: Number(productForm.greenBeanCostPerKg || 0),
+      roasting_cost_per_kg: Number(productForm.roastingCostPerKg || 0),
+      packaging_cost_per_kg: Number(productForm.packagingCostPerKg || 0),
+      description: productForm.description || '',
+      is_exclusive: Boolean(productForm.isExclusive)
+    };
+
+    const { error } = await supabase.from('products').upsert(payload);
+    if (!error) {
+      alert('Produk berhasil disimpan!');
+      setIsProductModalOpen(false);
+      setEditingProduct(null);
+      fetchProducts();
+    }
+  };
+
+  const handleDeleteProduct = async (id: string) => {
+    if (confirm('Yakin ingin menghapus produk ini?')) {
+      await supabase.from('products').delete().eq('id', id);
+      fetchProducts();
+    }
+  };
+
   const searchedOrders = orders.filter(o => {
     if (!searchOrderQuery.trim()) return true;
     const q = searchOrderQuery.toLowerCase();
@@ -1001,7 +1037,7 @@ export default function EpicureanApp() {
             </div>
           </div>
         ) : (
-          /* DASHBOARD SELLER */
+          /* DASHBOARD SELLER UTUH SAMA TAB SELLER */
           <div className="space-y-8">
             <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
               <h1 className="text-xl font-serif text-[#EFECE6]">Fulfillment & Order Control</h1>
@@ -1009,13 +1045,35 @@ export default function EpicureanApp() {
               <div className="flex space-x-2 text-xs font-mono">
                 <button
                   onClick={() => setSellerSubTab('orders')}
-                  className={`px-4 py-2 ${sellerSubTab === 'orders' ? 'bg-[#C8A97E] text-[#181614]' : 'text-[#8C8479]'}`}
+                  className={`px-4 py-2 transition-all ${sellerSubTab === 'orders' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
                 >
                   Orders ({orders.length})
+                </button>
+
+                <button
+                  onClick={() => setSellerSubTab('products')}
+                  className={`px-4 py-2 transition-all ${sellerSubTab === 'products' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                >
+                  Products ({products.length})
+                </button>
+
+                <button
+                  onClick={() => setSellerSubTab('feedbacks')}
+                  className={`px-4 py-2 transition-all ${sellerSubTab === 'feedbacks' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                >
+                  Feedbacks ({feedbacks.length})
+                </button>
+
+                <button
+                  onClick={() => setSellerSubTab('recap')}
+                  className={`px-4 py-2 transition-all ${sellerSubTab === 'recap' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                >
+                  Rekap Produksi
                 </button>
               </div>
             </div>
 
+            {/* TAB 1: ORDERS */}
             {sellerSubTab === 'orders' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
@@ -1042,7 +1100,6 @@ export default function EpicureanApp() {
                         </div>
 
                         <div className="flex items-center space-x-3">
-                          {/* TOMBOL CETAK INVOICE */}
                           <button
                             onClick={() => setSelectedInvoiceOrder(o)}
                             className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] bg-[#181614] flex items-center space-x-1 transition-all"
@@ -1085,9 +1142,191 @@ export default function EpicureanApp() {
                 </div>
               </div>
             )}
+
+            {/* TAB 2: PRODUCTS CONTROL */}
+            {sellerSubTab === 'products' && (
+              <div className="space-y-6">
+                <div className="flex justify-between items-center">
+                  <h2 className="text-lg font-serif text-[#EFECE6]">Kelola Katalog Biji Kopi</h2>
+                  <button
+                    onClick={() => {
+                      setEditingProduct(null);
+                      setProductForm({
+                        name: '',
+                        category: 'Roasted Beans',
+                        pricePerKg: 200000,
+                        greenBeanCostPerKg: 120000,
+                        roastingCostPerKg: 20000,
+                        packagingCostPerKg: 7500,
+                        description: '',
+                        isExclusive: false
+                      });
+                      setIsProductModalOpen(true);
+                    }}
+                    className="bg-[#C8A97E] text-[#181614] font-mono text-xs px-4 py-2 font-bold hover:bg-[#b5956a] transition-all flex items-center space-x-2"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span>Tambah Produk Baru</span>
+                  </button>
+                </div>
+
+                <div className="border border-[#2E2B27] bg-[#1F1C19] divide-y divide-[#2E2B27]">
+                  {products.map((p) => (
+                    <div key={p.id} className="p-4 flex justify-between items-center">
+                      <div>
+                        <span className="text-[10px] text-[#8C8479] font-mono uppercase">{p.category}</span>
+                        <h4 className="text-sm font-serif text-[#EFECE6]">{p.name}</h4>
+                        <p className="text-xs font-mono text-[#C8A97E] mt-0.5">
+                          Harga Jual: Rp {p.pricePerKg.toLocaleString('id-ID')}/Kg
+                        </p>
+                      </div>
+
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => {
+                            setEditingProduct(p);
+                            setProductForm(p);
+                            setIsProductModalOpen(true);
+                          }}
+                          className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6]"
+                        >
+                          <Edit3 className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteProduct(p.id)}
+                          className="border border-[#38332E] hover:border-rose-400 text-xs font-mono px-3 py-1.5 text-rose-400"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 3: FEEDBACKS */}
+            {sellerSubTab === 'feedbacks' && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-serif text-[#EFECE6]">Komplain & Masukan Pelanggan</h2>
+                <div className="border border-[#2E2B27] bg-[#1F1C19] divide-y divide-[#2E2B27]">
+                  {feedbacks.length === 0 ? (
+                    <p className="p-6 text-xs text-[#8C8479] font-mono">Belum ada keluhan dari pelanggan.</p>
+                  ) : (
+                    feedbacks.map((f) => (
+                      <div key={f.id} className="p-6 space-y-2">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <span className="text-xs font-mono text-[#C8A97E]">{f.category}</span>
+                            <h4 className="text-sm font-serif text-[#EFECE6]">{f.customerName} ({f.companyName})</h4>
+                          </div>
+                          <button
+                            onClick={() => updateFeedbackStatus(f.id, f.status === 'Open' ? 'Resolved' : 'Open')}
+                            className={`px-3 py-1 text-xs font-mono ${f.status === 'Resolved' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}
+                          >
+                            {f.status}
+                          </button>
+                        </div>
+                        <p className="text-xs text-[#A39B8E] leading-relaxed">{f.message}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: REKAP PRODUKSI */}
+            {sellerSubTab === 'recap' && (
+              <div className="space-y-6">
+                <h2 className="text-lg font-serif text-[#EFECE6]">Rekapitulasi Kebutuhan Sangrai (Batch Mingguan)</h2>
+                <div className="border border-[#2E2B27] bg-[#1F1C19] p-6 space-y-4 font-mono text-xs">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pb-4 border-b border-[#2E2B27]">
+                    <div>
+                      <span className="text-[#8C8479] block">Total Pesanan Active:</span>
+                      <span className="text-base font-bold text-[#EFECE6]">{orders.filter(o => o.status !== 'Rejected').length} Order</span>
+                    </div>
+                    <div>
+                      <span className="text-[#8C8479] block">Total Omset Batch:</span>
+                      <span className="text-base font-bold text-[#C8A97E]">
+                        Rp {orders.filter(o => o.status !== 'Rejected').reduce((acc, o) => acc + o.totalAmount, 0).toLocaleString('id-ID')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
+
+      {/* MODAL EDIT/TAMBAH PRODUK */}
+      {isProductModalOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
+          <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-lg p-6 space-y-4 font-mono text-xs">
+            <div className="flex justify-between items-center border-b border-[#2E2B27] pb-3">
+              <h3 className="text-sm font-serif text-[#EFECE6]">{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</h3>
+              <button onClick={() => setIsProductModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveProduct} className="space-y-3">
+              <div>
+                <label className="text-[#8C8479] block mb-1">Nama Varian Kopi</label>
+                <input
+                  type="text"
+                  required
+                  value={productForm.name}
+                  onChange={(e) => setProductForm({ ...productForm, name: e.target.value })}
+                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[#8C8479] block mb-1">Kategori</label>
+                  <select
+                    value={productForm.category}
+                    onChange={(e) => setProductForm({ ...productForm, category: e.target.value as any })}
+                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                  >
+                    <option value="Green Beans">Green Beans</option>
+                    <option value="Roasted Beans">Roasted Beans</option>
+                    <option value="Blend Beans">Blend Beans</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="text-[#8C8479] block mb-1">Harga Jual / Kg (Rp)</label>
+                  <input
+                    type="number"
+                    required
+                    value={productForm.pricePerKg}
+                    onChange={(e) => setProductForm({ ...productForm, pricePerKg: Number(e.target.value) })}
+                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-[#8C8479] block mb-1">Deskripsi Singkat</label>
+                <textarea
+                  rows={2}
+                  value={productForm.description}
+                  onChange={(e) => setProductForm({ ...productForm, description: e.target.value })}
+                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#C8A97E] text-[#181614] font-bold py-2.5 hover:bg-[#b5956a] transition-all uppercase"
+              >
+                Simpan Produk
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* MODAL CETAK INVOICE RESMI B2B */}
       {selectedInvoiceOrder && (
