@@ -146,6 +146,27 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  // HITUNG TANGGAL PENGIRIMAN PALING AWAL YANG DIPERBOLEHKAN (MINIMUM DATE)
+  const getEarliestAllowedShippingDate = () => {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayOfWeek = today.getDay(); // 0 = Minggu, 1 = Senin, ..., 2 = Selasa, dst.
+
+    const minDate = new Date(today);
+    if (dayOfWeek === 1 || dayOfWeek === 2) {
+      // Jika order Senin / Selasa, kirim paling cepat Senin minggu depan
+      const daysUntilNextMonday = 8 - dayOfWeek;
+      minDate.setDate(today.getDate() + daysUntilNextMonday);
+    } else {
+      // Jika order Rabu - Minggu, kirim paling cepat Senin dua minggu ke depan
+      const daysUntilNextMonday = (1 - dayOfWeek + 7) % 7 + 7;
+      minDate.setDate(today.getDate() + daysUntilNextMonday);
+    }
+    return minDate;
+  };
+
+  const minAllowedDate = getEarliestAllowedShippingDate();
+
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
 
@@ -158,7 +179,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
     const selected = new Date(year, month, day);
     const dayOfWeek = selected.getDay();
 
-    if (dayOfWeek === 1 || dayOfWeek === 2) {
+    if ((dayOfWeek === 1 || dayOfWeek === 2) && selected >= minAllowedDate) {
       const yyyy = selected.getFullYear();
       const mm = String(selected.getMonth() + 1).padStart(2, '0');
       const dd = String(selected.getDate()).padStart(2, '0');
@@ -197,7 +218,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#141210] border border-[#2E2B27] p-4 z-50 shadow-2xl space-y-4 font-serif text-[#EFECE6]">
-          {/* HEADER EPICUREAN DARI GAMBAR */}
+          {/* HEADER EPICUREAN */}
           <div className="text-center space-y-1 pb-2 border-b border-[#2E2B27]">
             <h3 className="text-lg tracking-widest uppercase font-serif text-[#EFECE6]">EPICUREAN</h3>
             <p className="text-xs italic text-[#C8A97E]">Coffee Company Catalog</p>
@@ -209,7 +230,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
             <span className="font-bold text-[#C8A97E]">{todayFormatted}</span>
           </div>
 
-          {/* JADWAL RUTIN PRODUKSI & PENGIRIMAN ROASTERY (DESAIN RESMI SESUAI GAMBAR) */}
+          {/* JADWAL RUTIN PRODUKSI & PENGIRIMAN ROASTERY */}
           <div className="border border-[#2E2B27] bg-[#181614] rounded-xl p-4 space-y-3 font-sans">
             <div className="flex items-center space-x-2 text-sm font-serif text-[#EFECE6] pb-2 border-b border-[#2E2B27]">
               <Calendar className="h-4 w-4 text-[#C8A97E]" />
@@ -260,7 +281,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
             </div>
           </div>
 
-          {/* KALENDER SELEKSI TANGGAL KIRIM SENIN & SELASA */}
+          {/* KALENDER DENGAN VALIDASI SIKLUS PRODUKSI */}
           <div className="font-mono pt-2 border-t border-[#2E2B27]">
             <div className="flex justify-between items-center text-xs font-bold text-[#EFECE6] border-b border-[#2E2B27] pb-2 mb-2">
               <button type="button" onClick={prevMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
@@ -291,7 +312,11 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
                 const dayNum = i + 1;
                 const dateObj = new Date(year, month, dayNum);
                 const dayOfWeek = dateObj.getDay();
-                const isAllowed = dayOfWeek === 1 || dayOfWeek === 2;
+                
+                // HANYA SENIN/SELASA DAN HARUS LEBIH DARI ATAU SAMA DENGAN MINIMUM SHIPPING DATE
+                const isSeninSelasa = dayOfWeek === 1 || dayOfWeek === 2;
+                const isValidBatchDate = dateObj >= minAllowedDate;
+                const isAllowed = isSeninSelasa && isValidBatchDate;
 
                 const yyyy = dateObj.getFullYear();
                 const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -310,7 +335,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
                         ? 'bg-[#C8A97E] text-[#181614] font-bold'
                         : isAllowed
                         ? 'bg-[#1F1C19] text-[#EFECE6] hover:bg-[#C8A97E] hover:text-[#181614] cursor-pointer font-bold border border-[#38332E]'
-                        : 'text-[#3A3631] bg-[#141210] cursor-not-allowed opacity-30'
+                        : 'text-[#3A3631] bg-[#141210] cursor-not-allowed opacity-20'
                     }`}
                   >
                     {dayNum}
@@ -320,7 +345,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
             </div>
 
             <p className="text-[10px] text-[#8C8479] italic border-t border-[#2E2B27] pt-2 text-center mt-3">
-              * Klik tanggal di atas untuk menentukan jadwal kirim (<strong className="text-[#C8A97E]">Senin</strong> / <strong className="text-[#C8A97E]">Selasa</strong>).
+              * Tanggal yang aktif di atas sudah disesuaikan secara otomatis berdasarkan jadwal roasting batch roastery.
             </p>
           </div>
         </div>
