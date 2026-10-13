@@ -899,7 +899,7 @@ export default function EpicureanApp() {
     }
   };
 
-  // FITUR KIRIM INVOICE VIA WHATSAPP (DIRECT FIX STUCK)
+  // FITUR KIRIM INVOICE VIA WHATSAPP (FORMAT RAPIH TANPA MARKDOWN BERANTAKAN)
   const handleSendWhatsAppInvoice = (order: Order) => {
     let rawPhone = order.customerPhone.replace(/[^0-9]/g, '');
     
@@ -908,10 +908,30 @@ export default function EpicureanApp() {
     }
 
     const itemListText = order.items
-      .map(item => `• ${item.name} (${item.quantity} Pack) - Rp ${item.totalPrice.toLocaleString('id-ID')}`)
+      .map(item => `- ${item.name} (${item.quantity} Pack) : Rp ${item.totalPrice.toLocaleString('id-ID')}`)
       .join('\n');
 
-    const message = `Halo Kak ${order.customerName} (${order.companyName}),\nBerikut rincian invoice pemesanan kopi Anda di *Epicurean Coffee Co.*:\n\n*ID Order:* ${order.id}\n*Tanggal:* ${order.createdAt}\n*Estimasi Kirim:* ${order.shippingDate || '-'}\n\n*Detail Item:*\n${itemListText}\n\n*Subtotal:* Rp ${order.subtotal.toLocaleString('id-ID')}\n*Ongkir:* Rp ${order.shippingCost.toLocaleString('id-ID')}\n*Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}\n\n*Metode Bayar:* ${order.paymentMethod.toUpperCase()}\n*BCA 7772400244 a/n CV MULTI AGRI SENTOSA*\n\nTerima kasih banyak!`;
+    const formattedPayment = order.paymentMethod.toUpperCase().replace(/_/g, ' ');
+
+    const message = `Halo Kak ${order.customerName} (${order.companyName}),
+
+Berikut rincian invoice pemesanan kopi Anda di Epicurean Coffee Co.:
+
+ID Order: ${order.id}
+Tanggal: ${order.createdAt}
+Estimasi Kirim: ${order.shippingDate || '-'}
+
+Detail Item:
+${itemListText}
+
+Subtotal: Rp ${order.subtotal.toLocaleString('id-ID')}
+Ongkir: Rp ${order.shippingCost.toLocaleString('id-ID')}
+Total Tagihan: Rp ${order.totalAmount.toLocaleString('id-ID')}
+
+Metode Bayar: ${formattedPayment}
+BCA 7772400244 a/n CV MULTI AGRI SENTOSA
+
+Terima kasih banyak!`;
 
     const waUrl = `https://api.whatsapp.com/send?phone=${rawPhone}&text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank', 'noopener,noreferrer');
@@ -1335,7 +1355,7 @@ export default function EpicureanApp() {
                           </div>
                           <div>
                             <span className="text-[#8C8479] block">Metode Pembayaran:</span>
-                            <span className="text-[#EFECE6] uppercase">{o.paymentMethod}</span>
+                            <span className="text-[#EFECE6] uppercase">{o.paymentMethod.replace(/_/g, ' ')}</span>
                           </div>
                           <div>
                             <span className="text-[#8C8479] block">Total Tagihan:</span>
