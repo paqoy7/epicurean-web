@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock,
   Trash2, User, X,
-  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle
+  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle, Send, History, Filter
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -142,23 +142,37 @@ const calculateOrderSchedule = () => {
   };
 };
 
+const getStatusBadgeClass = (status: Order['status']) => {
+  switch (status) {
+    case 'Pending Approval':
+      return 'bg-amber-900/40 text-amber-300 border-amber-700/50';
+    case 'Roasting Process':
+      return 'bg-purple-900/40 text-purple-300 border-purple-700/50';
+    case 'Ready for Shipping':
+      return 'bg-sky-900/40 text-sky-300 border-sky-700/50';
+    case 'Delivered':
+      return 'bg-emerald-900/40 text-emerald-300 border-emerald-700/50';
+    case 'Rejected':
+      return 'bg-rose-900/40 text-rose-300 border-rose-700/50';
+    default:
+      return 'bg-gray-800 text-gray-300 border-gray-700';
+  }
+};
+
 function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange: (dateStr: string) => void }) {
   const [isOpen, setIsOpen] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
-  // HITUNG TANGGAL PENGIRIMAN PALING AWAL YANG DIPERBOLEHKAN (MINIMUM DATE)
   const getEarliestAllowedShippingDate = () => {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayOfWeek = today.getDay(); // 0 = Minggu, 1 = Senin, ..., 2 = Selasa, dst.
+    const dayOfWeek = today.getDay();
 
     const minDate = new Date(today);
     if (dayOfWeek === 1 || dayOfWeek === 2) {
-      // Jika order Senin / Selasa, kirim paling cepat Senin minggu depan
       const daysUntilNextMonday = 8 - dayOfWeek;
       minDate.setDate(today.getDate() + daysUntilNextMonday);
     } else {
-      // Jika order Rabu - Minggu, kirim paling cepat Senin dua minggu ke depan
       const daysUntilNextMonday = (1 - dayOfWeek + 7) % 7 + 7;
       minDate.setDate(today.getDate() + daysUntilNextMonday);
     }
@@ -218,26 +232,22 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
 
       {isOpen && (
         <div className="absolute top-full left-0 right-0 mt-2 bg-[#141210] border border-[#2E2B27] p-4 z-50 shadow-2xl space-y-4 font-serif text-[#EFECE6]">
-          {/* HEADER EPICUREAN */}
           <div className="text-center space-y-1 pb-2 border-b border-[#2E2B27]">
             <h3 className="text-lg tracking-widest uppercase font-serif text-[#EFECE6]">EPICUREAN</h3>
             <p className="text-xs italic text-[#C8A97E]">Coffee Company Catalog</p>
           </div>
 
-          {/* BOX INFO TANGGAL ORDER HARI INI */}
           <div className="bg-[#1F1C19] border border-[#38332E] p-3 text-xs font-mono flex items-center justify-between text-[#EFECE6]">
             <span className="text-[#8C8479]">Tanggal Order:</span>
             <span className="font-bold text-[#C8A97E]">{todayFormatted}</span>
           </div>
 
-          {/* JADWAL RUTIN PRODUKSI & PENGIRIMAN ROASTERY */}
           <div className="border border-[#2E2B27] bg-[#181614] rounded-xl p-4 space-y-3 font-sans">
             <div className="flex items-center space-x-2 text-sm font-serif text-[#EFECE6] pb-2 border-b border-[#2E2B27]">
               <Calendar className="h-4 w-4 text-[#C8A97E]" />
               <span className="font-bold">Jadwal Rutin Produksi & Pengiriman Roastery</span>
             </div>
 
-            {/* CUT-OFF */}
             <div className="border border-rose-900/40 bg-rose-950/20 p-3 rounded-lg space-y-1">
               <div className="flex items-center space-x-2 text-xs font-mono text-rose-400">
                 <Clock className="h-3.5 w-3.5" />
@@ -248,7 +258,6 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
               </p>
             </div>
 
-            {/* JADWAL ROASTING */}
             <div className="border border-emerald-900/40 bg-emerald-950/20 p-3 rounded-lg space-y-1">
               <div className="flex items-center space-x-2 text-xs font-mono text-emerald-400">
                 <Coffee className="h-3.5 w-3.5" />
@@ -259,7 +268,6 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
               </p>
             </div>
 
-            {/* PENGIRIMAN */}
             <div className="border border-sky-900/40 bg-sky-950/20 p-3 rounded-lg space-y-1">
               <div className="flex items-center space-x-2 text-xs font-mono text-sky-400">
                 <Truck className="h-3.5 w-3.5" />
@@ -270,7 +278,6 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
               </p>
             </div>
 
-            {/* CATATAN */}
             <div className="border border-amber-900/40 bg-amber-950/20 p-3 rounded-lg space-y-1">
               <div className="flex items-start space-x-2 text-[11px] text-[#EFECE6] font-serif leading-relaxed">
                 <AlertCircle className="h-4 w-4 text-amber-400 shrink-0 mt-0.5" />
@@ -281,7 +288,6 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
             </div>
           </div>
 
-          {/* KALENDER DENGAN VALIDASI SIKLUS PRODUKSI */}
           <div className="font-mono pt-2 border-t border-[#2E2B27]">
             <div className="flex justify-between items-center text-xs font-bold text-[#EFECE6] border-b border-[#2E2B27] pb-2 mb-2">
               <button type="button" onClick={prevMonth} className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E]">
@@ -313,7 +319,6 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
                 const dateObj = new Date(year, month, dayNum);
                 const dayOfWeek = dateObj.getDay();
                 
-                // HANYA SENIN/SELASA DAN HARUS LEBIH DARI ATAU SAMA DENGAN MINIMUM SHIPPING DATE
                 const isSeninSelasa = dayOfWeek === 1 || dayOfWeek === 2;
                 const isValidBatchDate = dateObj >= minAllowedDate;
                 const isAllowed = isSeninSelasa && isValidBatchDate;
@@ -490,10 +495,13 @@ export default function EpicureanApp() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
 
+  // FITUR TRACKING & FILTER PESANAN
   const [searchOrderQuery, setSearchOrderQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedCustomShippingDate, setSelectedCustomShippingDate] = useState('');
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -529,6 +537,11 @@ export default function EpicureanApp() {
         const parsed = JSON.parse(savedUser);
         setCurrentUser(parsed);
         setCurrentStep('main');
+        setCustomerInfo(prev => ({ 
+          ...prev, 
+          name: parsed.username || '', 
+          company: parsed.companyName || '' 
+        }));
       } catch (e) {
         localStorage.removeItem('epicurean_user');
       }
@@ -887,10 +900,37 @@ export default function EpicureanApp() {
     }
   };
 
+  // FITUR KIRIM INVOICE VIA WHATSAPP
+  const handleSendWhatsAppInvoice = (order: Order) => {
+    const rawPhone = order.customerPhone.replace(/[^0-9]/g, '');
+    const formattedPhone = rawPhone.startsWith('0') ? '62' + rawPhone.slice(1) : rawPhone;
+
+    const itemListText = order.items
+      .map(item => `• ${item.name} (${item.quantity} Pack) - Rp ${item.totalPrice.toLocaleString('id-ID')}`)
+      .join('%0A');
+
+    const message = `Halo Kak ${order.customerName} (${order.companyName}),%0ABerikut rincian invoice pemesanan kopi Anda di *Epicurean Coffee Co.*:%0A%0A*ID Order:* ${order.id}%0A*Tanggal:* ${order.createdAt}%0A*Estimasi Kirim:* ${order.shippingDate || '-' }%0A%0A*Detail Item:*%0A${itemListText}%0A%0A*Subtotal:* Rp ${order.subtotal.toLocaleString('id-ID')}%0A*Ongkir:* Rp ${order.shippingCost.toLocaleString('id-ID')}%0A*Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}%0A%0A*Metode Bayar:* ${order.paymentMethod.toUpperCase()}%0A*BCA 7772400244 a/n CV MULTI AGRI SENTOSA*%0A%0ATerima kasih banyak!`;
+
+    window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+  };
+
+  // FILTERING ORDER UNTUK DASHBOARD SELLER
   const searchedOrders = orders.filter(o => {
-    if (!searchOrderQuery.trim()) return true;
-    const q = searchOrderQuery.toLowerCase();
-    return o.id.toLowerCase().includes(q) || o.customerName.toLowerCase().includes(q) || o.companyName.toLowerCase().includes(q);
+    const matchesSearch = !searchOrderQuery.trim() || 
+      o.id.toLowerCase().includes(searchOrderQuery.toLowerCase()) || 
+      o.customerName.toLowerCase().includes(searchOrderQuery.toLowerCase()) || 
+      o.companyName.toLowerCase().includes(searchOrderQuery.toLowerCase());
+
+    const matchesStatus = statusFilter === 'ALL' || o.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  });
+
+  // FILTERING DAFTAR RIWAYAT BELANJA USER LOGIN
+  const userOrderHistory = orders.filter(o => {
+    if (!currentUser) return false;
+    return o.customerName.toLowerCase() === currentUser.username.toLowerCase() ||
+           (currentUser.companyName && o.companyName.toLowerCase() === currentUser.companyName.toLowerCase());
   });
 
   if (currentStep === 'welcome') {
@@ -1038,13 +1078,23 @@ export default function EpicureanApp() {
 
           <div className="flex items-center space-x-4">
             {currentUser?.role !== 'seller' && (
-              <button
-                onClick={() => setIsCartDrawerOpen(true)}
-                className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono"
-              >
-                <ShoppingCart className="h-3.5 w-3.5 text-[#C8A97E]" />
-                <span>Cart ({totalCartUnits})</span>
-              </button>
+              <>
+                <button
+                  onClick={() => setIsProfileModalOpen(true)}
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
+                >
+                  <User className="h-3.5 w-3.5 text-[#C8A97E]" />
+                  <span>Profil & Riwayat</span>
+                </button>
+
+                <button
+                  onClick={() => setIsCartDrawerOpen(true)}
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
+                >
+                  <ShoppingCart className="h-3.5 w-3.5 text-[#C8A97E]" />
+                  <span>Cart ({totalCartUnits})</span>
+                </button>
+              </>
             )}
 
             <div className="flex items-center space-x-3 text-xs border-l border-[#2E2B27] pl-4">
@@ -1196,69 +1246,107 @@ export default function EpicureanApp() {
 
             {sellerSubTab === 'orders' && (
               <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <div className="relative w-72">
+                {/* TRACKING & FILTER BAR */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#1F1C19] p-4 border border-[#2E2B27]">
+                  <div className="relative w-full sm:w-80">
                     <Search className="h-3.5 w-3.5 text-[#8C8479] absolute left-3 top-3" />
                     <input
                       type="text"
-                      placeholder="Cari ID / Nama Pemesan..."
+                      placeholder="Cari ID Order / Customer / Cafe..."
                       value={searchOrderQuery}
                       onChange={(e) => setSearchOrderQuery(e.target.value)}
-                      className="w-full bg-[#1F1C19] border border-[#2E2B27] pl-9 pr-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                      className="w-full bg-[#181614] border border-[#38332E] pl-9 pr-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none focus:border-[#C8A97E]"
                     />
+                  </div>
+
+                  <div className="flex items-center space-x-2 text-xs font-mono w-full sm:w-auto">
+                    <Filter className="h-3.5 w-3.5 text-[#C8A97E]" />
+                    <span className="text-[#8C8479]">Status:</span>
+                    <select
+                      value={statusFilter}
+                      onChange={(e) => setStatusFilter(e.target.value)}
+                      className="bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                    >
+                      <option value="ALL">Semua Status ({orders.length})</option>
+                      <option value="Pending Approval">Pending Approval</option>
+                      <option value="Roasting Process">Roasting Process</option>
+                      <option value="Ready for Shipping">Ready for Shipping</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Rejected">Rejected</option>
+                    </select>
                   </div>
                 </div>
 
+                {/* LIST ORDER DENGAN BADGE WARNA BERBEDA & FITUR KIRIM WA */}
                 <div className="border border-[#2E2B27] bg-[#1F1C19] divide-y divide-[#2E2B27]">
-                  {searchedOrders.map((o) => (
-                    <div key={o.id} className="p-6 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <span className="text-xs font-mono text-[#C8A97E]">{o.id}</span>
-                          <h3 className="text-base font-serif text-[#EFECE6]">{o.customerName} ({o.companyName})</h3>
-                          <p className="text-xs text-[#8C8479] font-mono mt-0.5">Tgl Order: {o.createdAt} | Phone: {o.customerPhone}</p>
+                  {searchedOrders.length === 0 ? (
+                    <p className="p-8 text-center text-xs text-[#8C8479] font-mono">Pesanan tidak ditemukan.</p>
+                  ) : (
+                    searchedOrders.map((o) => (
+                      <div key={o.id} className="p-6 space-y-4">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                          <div>
+                            <div className="flex items-center space-x-3">
+                              <span className="text-xs font-mono text-[#C8A97E] font-bold">{o.id}</span>
+                              <span className={`px-2.5 py-0.5 rounded text-[10px] font-mono font-bold uppercase border ${getStatusBadgeClass(o.status)}`}>
+                                {o.status}
+                              </span>
+                            </div>
+                            <h3 className="text-base font-serif text-[#EFECE6] mt-1">{o.customerName} ({o.companyName})</h3>
+                            <p className="text-xs text-[#8C8479] font-mono mt-0.5">Tgl Order: {o.createdAt} | WA: {o.customerPhone}</p>
+                          </div>
+
+                          <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
+                            {/* TOMBOL KIRIM INVOICE WA */}
+                            <button
+                              onClick={() => handleSendWhatsAppInvoice(o)}
+                              className="border border-emerald-700/50 hover:bg-emerald-950/40 text-xs font-mono px-3 py-1.5 text-emerald-400 bg-[#181614] flex items-center space-x-1.5 transition-all"
+                            >
+                              <Send className="h-3.5 w-3.5 text-emerald-400" />
+                              <span>Kirim WA</span>
+                            </button>
+
+                            {/* TOMBOL CETAK INVOICE */}
+                            <button
+                              onClick={() => setSelectedInvoiceOrder(o)}
+                              className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] bg-[#181614] flex items-center space-x-1.5 transition-all"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-[#C8A97E]" />
+                              <span>Cetak</span>
+                            </button>
+
+                            {/* UBAH STATUS ORDER */}
+                            <select
+                              value={o.status}
+                              onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
+                              className="bg-[#181614] border border-[#38332E] px-2.5 py-1.5 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                            >
+                              <option value="Pending Approval">Pending Approval</option>
+                              <option value="Roasting Process">Roasting Process</option>
+                              <option value="Ready for Shipping">Ready for Shipping</option>
+                              <option value="Delivered">Delivered</option>
+                              <option value="Rejected">Rejected</option>
+                            </select>
+                          </div>
                         </div>
 
-                        <div className="flex items-center space-x-3">
-                          <button
-                            onClick={() => setSelectedInvoiceOrder(o)}
-                            className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] bg-[#181614] flex items-center space-x-1 transition-all"
-                          >
-                            <FileText className="h-3.5 w-3.5 text-[#C8A97E]" />
-                            <span>Cetak Invoice</span>
-                          </button>
-
-                          <span className="text-xs font-mono text-[#8C8479]">Status:</span>
-                          <select
-                            value={o.status}
-                            onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
-                            className="bg-[#181614] border border-[#38332E] px-3 py-1.5 text-xs font-mono text-[#EFECE6] focus:outline-none"
-                          >
-                            <option value="Pending Approval">Pending Approval</option>
-                            <option value="Roasting Process">Roasting Process</option>
-                            <option value="Ready for Shipping">Ready for Shipping</option>
-                            <option value="Delivered">Delivered</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono bg-[#181614] p-4 border border-[#2E2B27]">
+                          <div>
+                            <span className="text-[#8C8479] block">Tgl Kirim Pilihan Cust:</span>
+                            <span className="text-[#EFECE6] font-medium">{o.shippingDate || '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#8C8479] block">Metode Pembayaran:</span>
+                            <span className="text-[#EFECE6] uppercase">{o.paymentMethod}</span>
+                          </div>
+                          <div>
+                            <span className="text-[#8C8479] block">Total Tagihan:</span>
+                            <span className="text-[#C8A97E] font-medium">Rp {o.totalAmount.toLocaleString('id-ID')}</span>
+                          </div>
                         </div>
                       </div>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-mono bg-[#181614] p-4 border border-[#2E2B27]">
-                        <div>
-                          <span className="text-[#8C8479] block">Tgl Kirim Pilihan Cust:</span>
-                          <span className="text-[#EFECE6] font-medium">{o.shippingDate || '-'}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#8C8479] block">Metode Pembayaran:</span>
-                          <span className="text-[#EFECE6] uppercase">{o.paymentMethod}</span>
-                        </div>
-                        <div>
-                          <span className="text-[#8C8479] block">Total Tagihan:</span>
-                          <span className="text-[#C8A97E] font-medium">Rp {o.totalAmount.toLocaleString('id-ID')}</span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -1376,6 +1464,70 @@ export default function EpicureanApp() {
           </div>
         )}
       </main>
+
+      {/* MODAL PROFIL & RIWAYAT PEMBELIAN PEMBELI */}
+      {isProfileModalOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
+          <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-2xl p-6 space-y-6 font-mono text-xs max-h-[90vh] overflow-y-auto">
+            <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
+              <div className="flex items-center space-x-2">
+                <User className="h-5 w-5 text-[#C8A97E]" />
+                <h3 className="text-base font-serif text-[#EFECE6]">Profil Saya & Riwayat Pembelian</h3>
+              </div>
+              <button onClick={() => setIsProfileModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="bg-[#181614] border border-[#38332E] p-4 space-y-2">
+              <p className="text-[#8C8479]">Username / Akun: <strong className="text-[#EFECE6]">{currentUser?.username}</strong></p>
+              <p className="text-[#8C8479]">Perusahaan / Cafe: <strong className="text-[#EFECE6]">{currentUser?.companyName || '-'}</strong></p>
+              <p className="text-[#8C8479]">Peran Akun: <strong className="text-[#C8A97E] uppercase">{currentUser?.role}</strong></p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 border-b border-[#2E2B27] pb-2">
+                <History className="h-4 w-4 text-[#C8A97E]" />
+                <h4 className="text-sm font-serif text-[#EFECE6]">Daftar Pesanan Saya ({userOrderHistory.length})</h4>
+              </div>
+
+              {userOrderHistory.length === 0 ? (
+                <p className="text-center text-[#8C8479] py-6">Anda belum memiliki riwayat pesanan.</p>
+              ) : (
+                <div className="space-y-4 divide-y divide-[#2E2B27]">
+                  {userOrderHistory.map((item) => (
+                    <div key={item.id} className="pt-4 space-y-2">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <span className="text-[#C8A97E] font-bold">{item.id}</span>
+                          <span className="text-[#8C8479] block text-[10px] mt-0.5">Tgl Order: {item.createdAt}</span>
+                        </div>
+                        <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase border ${getStatusBadgeClass(item.status)}`}>
+                          {item.status}
+                        </span>
+                      </div>
+
+                      <div className="bg-[#181614] p-3 border border-[#2E2B27] space-y-1">
+                        {item.items.map((prod, idx) => (
+                          <div key={idx} className="flex justify-between text-[11px]">
+                            <span>{prod.name} x {prod.quantity} Pack</span>
+                            <span className="text-[#C8A97E]">Rp {prod.totalPrice.toLocaleString('id-ID')}</span>
+                          </div>
+                        ))}
+                      </div>
+
+                      <div className="flex justify-between text-xs pt-1">
+                        <span className="text-[#8C8479]">Estimasi Kirim: <strong className="text-[#EFECE6]">{item.shippingDate || '-'}</strong></span>
+                        <span className="font-bold text-[#EFECE6]">Total: Rp {item.totalAmount.toLocaleString('id-ID')}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
