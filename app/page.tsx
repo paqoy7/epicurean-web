@@ -84,7 +84,7 @@ interface UserAccount {
   allowedBlends?: string[];
 }
 
-// HELPER UNTUK TAMPILAN COGS / HPP (JIKA 0 ATAU KOSONG JADI N/A)
+// HELPER TAMPILAN COGS / HPP (JIKA 0 ATAU UNDEFINED DITAMPILKAN AS N/A)
 const formatCOGS = (val: number) => {
   if (!val || val === 0) return 'N/A';
   return `Rp ${val.toLocaleString('id-ID')}`;
@@ -366,7 +366,31 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
 }
 
 function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const handlePrint = () => window.print();
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleDownloadPDF = async () => {
+    setIsGenerating(true);
+    const element = document.getElementById('invoice-content');
+    if (!element) return;
+
+    try {
+      // Import library html2pdf secara dinamis
+      const html2pdf = (await import('html2pdf.js')).default;
+      const opt = {
+        margin:       [10, 10, 10, 10],
+        filename:     `Invoice-${order.id}.pdf`,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      await html2pdf().set(opt).from(element).save();
+    } catch (err) {
+      window.print();
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4 overflow-y-auto">
@@ -378,11 +402,19 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={handlePrint}
-              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow"
+              onClick={handleDownloadPDF}
+              disabled={isGenerating}
+              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow disabled:opacity-50"
+            >
+              <Download className="h-4 w-4" />
+              <span>{isGenerating ? 'Generating PDF...' : 'Download File PDF'}</span>
+            </button>
+            <button
+              onClick={() => window.print()}
+              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono transition-all flex items-center space-x-1 border"
             >
               <Printer className="h-4 w-4" />
-              <span>Cetak / Save PDF</span>
+              <span>Print</span>
             </button>
             <button onClick={onClose} className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all">
               Tutup
@@ -390,7 +422,7 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
           </div>
         </div>
 
-        <div id="invoice-content" className="space-y-6 text-xs text-gray-800">
+        <div id="invoice-content" className="space-y-6 text-xs text-gray-800 p-2">
           <div className="flex justify-between items-start border-b pb-4 border-gray-300">
             <div>
               <h1 className="text-lg font-bold tracking-wider text-black font-serif uppercase">
@@ -517,9 +549,9 @@ export default function EpicureanApp() {
     pricePerKg: 200000,
     pricePer500g: 0,
     pricePer200g: 60000,
-    greenBeanCostPerKg: 150000,
-    roastingCostPerKg: 20000,
-    packagingCostPerKg: 7500,
+    greenBeanCostPerKg: 0,
+    roastingCostPerKg: 0,
+    packagingCostPerKg: 0,
     description: '',
     isExclusive: false,
     allowedResellers: []
