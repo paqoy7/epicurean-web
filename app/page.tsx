@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock,
   Trash2, User, X,
-  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle, Send, History, Filter
+  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle, History, Filter
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -83,6 +83,12 @@ interface UserAccount {
   companyName?: string;
   allowedBlends?: string[];
 }
+
+// HELPER UNTUK TAMPILAN COGS / HPP (JIKA 0 ATAU KOSONG JADI N/A)
+const formatCOGS = (val: number) => {
+  if (!val || val === 0) return 'N/A';
+  return `Rp ${val.toLocaleString('id-ID')}`;
+};
 
 const presetResellerAccounts: UserAccount[] = [
   { username: 'BrunswickCafe', password: 'Fitzroy!', role: 'reseller', companyName: 'Brunswick', allowedBlends: ['Brunswick Blend (50 KDH : 50 BNE)'] },
@@ -376,7 +382,7 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
               className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow"
             >
               <Printer className="h-4 w-4" />
-              <span>Print / Download PDF</span>
+              <span>Cetak / Save PDF</span>
             </button>
             <button onClick={onClose} className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all">
               Tutup
@@ -899,45 +905,6 @@ export default function EpicureanApp() {
     }
   };
 
-  // FITUR KIRIM INVOICE VIA WHATSAPP (FORMAT RAPIH TANPA MARKDOWN BERANTAKAN)
-  const handleSendWhatsAppInvoice = (order: Order) => {
-    let rawPhone = order.customerPhone.replace(/[^0-9]/g, '');
-    
-    if (rawPhone.startsWith('0')) {
-      rawPhone = '62' + rawPhone.slice(1);
-    }
-
-    const itemListText = order.items
-      .map(item => `- ${item.name} (${item.quantity} Pack) : Rp ${item.totalPrice.toLocaleString('id-ID')}`)
-      .join('\n');
-
-    const formattedPayment = order.paymentMethod.toUpperCase().replace(/_/g, ' ');
-
-    const message = `Halo Kak ${order.customerName} (${order.companyName}),
-
-Berikut rincian invoice pemesanan kopi Anda di Epicurean Coffee Co.:
-
-ID Order: ${order.id}
-Tanggal: ${order.createdAt}
-Estimasi Kirim: ${order.shippingDate || '-'}
-
-Detail Item:
-${itemListText}
-
-Subtotal: Rp ${order.subtotal.toLocaleString('id-ID')}
-Ongkir: Rp ${order.shippingCost.toLocaleString('id-ID')}
-Total Tagihan: Rp ${order.totalAmount.toLocaleString('id-ID')}
-
-Metode Bayar: ${formattedPayment}
-BCA 7772400244 a/n CV MULTI AGRI SENTOSA
-
-Terima kasih banyak!`;
-
-    const waUrl = `https://api.whatsapp.com/send?phone=${rawPhone}&text=${encodeURIComponent(message)}`;
-    window.open(waUrl, '_blank', 'noopener,noreferrer');
-  };
-
-  // FILTERING ORDER UNTUK DASHBOARD SELLER
   const searchedOrders = orders.filter(o => {
     const matchesSearch = !searchOrderQuery.trim() || 
       o.id.toLowerCase().includes(searchOrderQuery.toLowerCase()) || 
@@ -949,7 +916,6 @@ Terima kasih banyak!`;
     return matchesSearch && matchesStatus;
   });
 
-  // FILTERING DAFTAR RIWAYAT BELANJA USER LOGIN
   const userOrderHistory = orders.filter(o => {
     if (!currentUser) return false;
     return o.customerName.toLowerCase() === currentUser.username.toLowerCase() ||
@@ -1319,19 +1285,11 @@ Terima kasih banyak!`;
 
                           <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                             <button
-                              onClick={() => handleSendWhatsAppInvoice(o)}
-                              className="border border-emerald-700/50 hover:bg-emerald-950/40 text-xs font-mono px-3 py-1.5 text-emerald-400 bg-[#181614] flex items-center space-x-1.5 transition-all"
-                            >
-                              <Send className="h-3.5 w-3.5 text-emerald-400" />
-                              <span>Kirim WA</span>
-                            </button>
-
-                            <button
                               onClick={() => setSelectedInvoiceOrder(o)}
-                              className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] bg-[#181614] flex items-center space-x-1.5 transition-all"
+                              className="border border-[#C8A97E] hover:bg-[#C8A97E] hover:text-[#181614] text-xs font-mono px-3.5 py-1.5 text-[#C8A97E] bg-[#181614] flex items-center space-x-1.5 transition-all font-bold"
                             >
-                              <FileText className="h-3.5 w-3.5 text-[#C8A97E]" />
-                              <span>Cetak</span>
+                              <Download className="h-3.5 w-3.5" />
+                              <span>Download PDF</span>
                             </button>
 
                             <select
@@ -1381,9 +1339,9 @@ Terima kasih banyak!`;
                         category: 'Roasted Beans',
                         pricePerKg: 200000,
                         pricePer200g: 60000,
-                        greenBeanCostPerKg: 120000,
-                        roastingCostPerKg: 20000,
-                        packagingCostPerKg: 7500,
+                        greenBeanCostPerKg: 0,
+                        roastingCostPerKg: 0,
+                        packagingCostPerKg: 0,
                         description: '',
                         isExclusive: false
                       });
@@ -1403,7 +1361,7 @@ Terima kasih banyak!`;
                         <span className="text-[10px] text-[#8C8479] font-mono uppercase">{p.category}</span>
                         <h4 className="text-sm font-serif text-[#EFECE6]">{p.name}</h4>
                         <p className="text-xs font-mono text-[#C8A97E] mt-0.5">
-                          1 Kg: Rp {p.pricePerKg.toLocaleString('id-ID')} | 200g: Rp {(p.pricePer200g || Math.round(p.pricePerKg * 0.25)).toLocaleString('id-ID')}
+                          Harga Jual: Rp {p.pricePerKg.toLocaleString('id-ID')} / Kg | COGS GB: {formatCOGS(p.greenBeanCostPerKg)}
                         </p>
                       </div>
 
@@ -1598,6 +1556,29 @@ Terima kasih banyak!`;
                     value={productForm.pricePer200g}
                     onChange={(e) => setProductForm({ ...productForm, pricePer200g: Number(e.target.value) })}
                     className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-[#2E2B27]">
+                <div>
+                  <label className="text-[#8C8479] block mb-1">COGS Green Beans (Rp)</label>
+                  <input
+                    type="number"
+                    value={productForm.greenBeanCostPerKg || 0}
+                    onChange={(e) => setProductForm({ ...productForm, greenBeanCostPerKg: Number(e.target.value) })}
+                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                    placeholder="0 = N/A"
+                  />
+                </div>
+                <div>
+                  <label className="text-[#8C8479] block mb-1">Ongkos Roasting (Rp)</label>
+                  <input
+                    type="number"
+                    value={productForm.roastingCostPerKg || 0}
+                    onChange={(e) => setProductForm({ ...productForm, roastingCostPerKg: Number(e.target.value) })}
+                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                    placeholder="0 = N/A"
                   />
                 </div>
               </div>
