@@ -374,19 +374,30 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
     if (!element) return;
 
     try {
-      // Import library html2pdf secara dinamis
-      const html2pdf = (await import('html2pdf.js')).default;
-      const opt = {
-        margin:       [10, 10, 10, 10],
-        filename:     `Invoice-${order.id}.pdf`,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-      };
+      const html2canvas = (await import('html2canvas')).default;
+      const { jsPDF } = await import('jspdf');
 
-      await html2pdf().set(opt).from(element).save();
+      // Ambil elemen HTML dan ubah jadi canvas image
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.98);
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const imgWidth = 210; // Lebar A4 dalam mm
+      const pageHeight = 297; // Tinggi A4 dalam mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+      
+      // Langsung pemicu file terunduh otomatis
+      pdf.save(`Invoice-${order.id.replace('ORD-', '')}.pdf`);
     } catch (err) {
-      window.print();
+      console.error('Failed to generate PDF:', err);
+      alert('Gagal mengunduh PDF. Silakan coba lagi.');
     } finally {
       setIsGenerating(false);
     }
@@ -404,25 +415,21 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
             <button
               onClick={handleDownloadPDF}
               disabled={isGenerating}
-              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow disabled:opacity-50"
+              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow cursor-pointer disabled:opacity-50"
             >
               <Download className="h-4 w-4" />
-              <span>{isGenerating ? 'Generating PDF...' : 'Download File PDF'}</span>
+              <span>{isGenerating ? 'Proses PDF...' : 'Download PDF Direct'}</span>
             </button>
             <button
-              onClick={() => window.print()}
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono transition-all flex items-center space-x-1 border"
+              onClick={onClose}
+              className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all cursor-pointer"
             >
-              <Printer className="h-4 w-4" />
-              <span>Print</span>
-            </button>
-            <button onClick={onClose} className="bg-gray-200 text-gray-800 px-3 py-2 text-xs font-mono hover:bg-gray-300 transition-all">
               Tutup
             </button>
           </div>
         </div>
 
-        <div id="invoice-content" className="space-y-6 text-xs text-gray-800 p-2">
+        <div id="invoice-content" className="space-y-6 text-xs text-gray-800 bg-white p-4">
           <div className="flex justify-between items-start border-b pb-4 border-gray-300">
             <div>
               <h1 className="text-lg font-bold tracking-wider text-black font-serif uppercase">
