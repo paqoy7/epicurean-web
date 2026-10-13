@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { 
   Coffee, ShoppingCart, Lock,
   Trash2, User, X,
-  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle, History, Filter
+  MessageSquare, Edit3, LogOut, ArrowRight, ShieldCheck, Tag, Plus, Minus, BarChart2, Package, Calendar, Clock, Truck, CreditCard, Download, Search, MapPin, Printer, FileText, CheckCircle2, AlertCircle, History, Filter, Send
 } from 'lucide-react';
 
 const supabaseUrl = 'https://myqdhkwicdqgtrtqlead.supabase.co';
@@ -84,7 +84,6 @@ interface UserAccount {
   allowedBlends?: string[];
 }
 
-// HELPER TAMPILAN COGS / HPP (JIKA 0 ATAU UNDEFINED DITAMPILKAN AS N/A)
 const formatCOGS = (val: number) => {
   if (!val || val === 0) return 'N/A';
   return `Rp ${val.toLocaleString('id-ID')}`;
@@ -366,41 +365,13 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
 }
 
 function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void }) {
-  const [isGenerating, setIsGenerating] = useState(false);
-
-  const handleDownloadPDF = async () => {
-    setIsGenerating(true);
-    const element = document.getElementById('invoice-content');
-    if (!element) return;
-
-    try {
-      const html2canvas = (await import('html2canvas')).default;
-      const { jsPDF } = await import('jspdf');
-
-      // Ambil elemen HTML dan ubah jadi canvas image
-      const canvas = await html2canvas(element, {
-        scale: 2,
-        useCORS: true,
-        logging: false
-      });
-
-      const imgData = canvas.toDataURL('image/jpeg', 0.98);
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = 210; // Lebar A4 dalam mm
-      const pageHeight = 297; // Tinggi A4 dalam mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
-      
-      // Langsung pemicu file terunduh otomatis
-      pdf.save(`Invoice-${order.id.replace('ORD-', '')}.pdf`);
-    } catch (err) {
-      console.error('Failed to generate PDF:', err);
-      alert('Gagal mengunduh PDF. Silakan coba lagi.');
-    } finally {
-      setIsGenerating(false);
-    }
+  const handlePrint = () => {
+    const originalTitle = document.title;
+    document.title = `Invoice-${order.id.replace('ORD-', '')}`;
+    window.print();
+    setTimeout(() => {
+      document.title = originalTitle;
+    }, 1000);
   };
 
   return (
@@ -413,12 +384,11 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
           </div>
           <div className="flex space-x-2">
             <button
-              onClick={handleDownloadPDF}
-              disabled={isGenerating}
-              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow cursor-pointer disabled:opacity-50"
+              onClick={handlePrint}
+              className="bg-[#C8A97E] hover:bg-[#b5956a] text-black px-4 py-2 text-xs font-mono font-bold flex items-center space-x-2 transition-all shadow cursor-pointer"
             >
-              <Download className="h-4 w-4" />
-              <span>{isGenerating ? 'Proses PDF...' : 'Download PDF Direct'}</span>
+              <Printer className="h-4 w-4" />
+              <span>Cetak / Simpan PDF</span>
             </button>
             <button
               onClick={onClose}
@@ -429,7 +399,7 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
           </div>
         </div>
 
-        <div id="invoice-content" className="space-y-6 text-xs text-gray-800 bg-white p-4">
+        <div id="invoice-content" className="space-y-6 text-xs text-gray-800 bg-white p-2">
           <div className="flex justify-between items-start border-b pb-4 border-gray-300">
             <div>
               <h1 className="text-lg font-bold tracking-wider text-black font-serif uppercase">
@@ -546,7 +516,14 @@ export default function EpicureanApp() {
 
   const [isCartDrawerOpen, setIsCartDrawerOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+
+  const [feedbackForm, setFeedbackForm] = useState({
+    category: 'Roasting Profile Tidak Sesuai' as CustomerFeedback['category'],
+    orderId: '',
+    message: ''
+  });
 
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -900,6 +877,40 @@ export default function EpicureanApp() {
     }
   };
 
+  const handleSendFeedback = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!feedbackForm.message.trim()) return;
+
+    const newFeedback = {
+      id: `FB-${Date.now().toString().slice(-6)}`,
+      customer_name: customerInfo.name || currentUser?.username || 'Pelanggan',
+      company_name: customerInfo.company || currentUser?.companyName || 'Perusahaan/Cafe',
+      customer_phone: customerInfo.phone || '-',
+      category: feedbackForm.category,
+      order_id: feedbackForm.orderId || null,
+      message: feedbackForm.message,
+      status: 'Open',
+      created_at: new Date().toISOString().split('T')[0]
+    };
+
+    const { error } = await supabase.from('customer_feedbacks').insert(newFeedback);
+
+    if (!error) {
+      alert('Masukan/Komplain berhasil dikirim ke Admin Roastery!');
+      setFeedbackForm({ category: 'Roasting Profile Tidak Sesuai', orderId: '', message: '' });
+      setIsFeedbackModalOpen(false);
+      fetchFeedbacks();
+    } else {
+      alert('Gagal mengirim feedback: ' + error.message);
+    }
+  };
+
+  const openWhatsAppAdmin = () => {
+    const adminPhone = '628112039695';
+    const message = encodeURIComponent(`Halo Admin Epicurean Coffee Co., saya ${currentUser?.username || 'Pelanggan'} (${currentUser?.companyName || 'Cafe'}). Saya ingin bertanya terkait pemesanan kopi.`);
+    window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
+  };
+
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
     await supabase.from('orders').update({ status }).eq('id', orderId);
     fetchOrders();
@@ -1104,15 +1115,33 @@ export default function EpicureanApp() {
             <span className="font-serif text-base tracking-widest text-[#EFECE6] uppercase">Epicurean</span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3 sm:space-x-4">
             {currentUser?.role !== 'seller' && (
               <>
+                {/* FITUR CHAT ADMIN WA */}
+                <button
+                  onClick={openWhatsAppAdmin}
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-1.5 hover:border-[#C8A97E] transition-all text-xs font-mono text-emerald-400"
+                >
+                  <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Chat Admin</span>
+                </button>
+
+                {/* FITUR BANTUAN & KOMPLAIN */}
+                <button
+                  onClick={() => setIsFeedbackModalOpen(true)}
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-1.5 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
+                >
+                  <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
+                  <span className="hidden sm:inline">Komplain/Bantuan</span>
+                </button>
+
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
                   className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
                 >
                   <User className="h-3.5 w-3.5 text-[#C8A97E]" />
-                  <span>Profil & Riwayat</span>
+                  <span className="hidden sm:inline">Profil</span>
                 </button>
 
                 <button
@@ -1125,7 +1154,7 @@ export default function EpicureanApp() {
               </>
             )}
 
-            <div className="flex items-center space-x-3 text-xs border-l border-[#2E2B27] pl-4">
+            <div className="flex items-center space-x-3 text-xs border-l border-[#2E2B27] pl-3 sm:pl-4">
               <span className="text-[#A39B8E] font-mono">{currentUser?.username}</span>
               <button onClick={handleLogout} className="text-[#8C8479] hover:text-rose-400">
                 <LogOut className="h-3.5 w-3.5" />
@@ -1441,6 +1470,7 @@ export default function EpicureanApp() {
                           <div>
                             <span className="text-xs font-mono text-[#C8A97E]">{f.category}</span>
                             <h4 className="text-sm font-serif text-[#EFECE6]">{f.customerName} ({f.companyName})</h4>
+                            {f.orderId && <p className="text-[10px] text-[#8C8479] font-mono">ID Order Terkait: {f.orderId}</p>}
                           </div>
                           <button
                             onClick={() => updateFeedbackStatus(f.id, f.status === 'Open' ? 'Resolved' : 'Open')}
@@ -1480,6 +1510,7 @@ export default function EpicureanApp() {
         )}
       </main>
 
+      {/* MODAL PROFILE */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
           <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-2xl p-6 space-y-6 font-mono text-xs max-h-[90vh] overflow-y-auto">
@@ -1543,6 +1574,72 @@ export default function EpicureanApp() {
         </div>
       )}
 
+      {/* MODAL FEEDBACK / BANTUAN */}
+      {isFeedbackModalOpen && (
+        <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
+          <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-lg p-6 space-y-4 font-mono text-xs">
+            <div className="flex justify-between items-center border-b border-[#2E2B27] pb-3">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-4 w-4 text-amber-400" />
+                <h3 className="text-sm font-serif text-[#EFECE6]">Kirim Komplain & Masukan Roastery</h3>
+              </div>
+              <button onClick={() => setIsFeedbackModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSendFeedback} className="space-y-3">
+              <div>
+                <label className="text-[#8C8479] block mb-1">Kategori Masukan / Kendala</label>
+                <select
+                  value={feedbackForm.category}
+                  onChange={(e) => setFeedbackForm({ ...feedbackForm, category: e.target.value as any })}
+                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6] focus:outline-none"
+                >
+                  <option value="Roasting Profile Tidak Sesuai">Roasting Profile Tidak Sesuai</option>
+                  <option value="Barang Kurang / Salah">Barang Kurang / Salah</option>
+                  <option value="Kemasan Rusak">Kemasan Rusak</option>
+                  <option value="Kendala Pengiriman">Kendala Pengiriman</option>
+                  <option value="Lainnya">Lainnya</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[#8C8479] block mb-1">ID Order Terkait (Opsional)</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: ORD-705732"
+                  value={feedbackForm.orderId}
+                  onChange={(e) => setFeedbackForm({ ...feedbackForm, orderId: e.target.value })}
+                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                />
+              </div>
+
+              <div>
+                <label className="text-[#8C8479] block mb-1">Pesan / Detail Masukan *</label>
+                <textarea
+                  required
+                  rows={4}
+                  placeholder="Jelaskan detail keluhan atau masukan Anda..."
+                  value={feedbackForm.message}
+                  onChange={(e) => setFeedbackForm({ ...feedbackForm, message: e.target.value })}
+                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full bg-[#C8A97E] text-[#181614] font-bold py-2.5 hover:bg-[#b5956a] transition-all uppercase flex items-center justify-center space-x-2"
+              >
+                <Send className="h-3.5 w-3.5" />
+                <span>Kirim Masukan</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KELOLA PRODUK */}
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
           <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-lg p-6 space-y-4 font-mono text-xs">
@@ -1650,6 +1747,7 @@ export default function EpicureanApp() {
         />
       )}
 
+      {/* DRAWER CART CHECKOUT */}
       {isCartDrawerOpen && (
         <div className="fixed inset-0 bg-black/70 z-50 flex justify-end">
           <div className="bg-[#1F1C19] border-l border-[#2E2B27] w-full max-w-md h-full overflow-y-auto p-6 flex flex-col justify-between">
