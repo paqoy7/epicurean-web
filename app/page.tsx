@@ -495,7 +495,6 @@ export default function EpicureanApp() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
 
-  // FITUR TRACKING & FILTER PESANAN
   const [searchOrderQuery, setSearchOrderQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [selectedCustomShippingDate, setSelectedCustomShippingDate] = useState('');
@@ -900,18 +899,22 @@ export default function EpicureanApp() {
     }
   };
 
-  // FITUR KIRIM INVOICE VIA WHATSAPP
+  // FITUR KIRIM INVOICE VIA WHATSAPP (DIRECT FIX STUCK)
   const handleSendWhatsAppInvoice = (order: Order) => {
-    const rawPhone = order.customerPhone.replace(/[^0-9]/g, '');
-    const formattedPhone = rawPhone.startsWith('0') ? '62' + rawPhone.slice(1) : rawPhone;
+    let rawPhone = order.customerPhone.replace(/[^0-9]/g, '');
+    
+    if (rawPhone.startsWith('0')) {
+      rawPhone = '62' + rawPhone.slice(1);
+    }
 
     const itemListText = order.items
       .map(item => `• ${item.name} (${item.quantity} Pack) - Rp ${item.totalPrice.toLocaleString('id-ID')}`)
-      .join('%0A');
+      .join('\n');
 
-    const message = `Halo Kak ${order.customerName} (${order.companyName}),%0ABerikut rincian invoice pemesanan kopi Anda di *Epicurean Coffee Co.*:%0A%0A*ID Order:* ${order.id}%0A*Tanggal:* ${order.createdAt}%0A*Estimasi Kirim:* ${order.shippingDate || '-' }%0A%0A*Detail Item:*%0A${itemListText}%0A%0A*Subtotal:* Rp ${order.subtotal.toLocaleString('id-ID')}%0A*Ongkir:* Rp ${order.shippingCost.toLocaleString('id-ID')}%0A*Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}%0A%0A*Metode Bayar:* ${order.paymentMethod.toUpperCase()}%0A*BCA 7772400244 a/n CV MULTI AGRI SENTOSA*%0A%0ATerima kasih banyak!`;
+    const message = `Halo Kak ${order.customerName} (${order.companyName}),\nBerikut rincian invoice pemesanan kopi Anda di *Epicurean Coffee Co.*:\n\n*ID Order:* ${order.id}\n*Tanggal:* ${order.createdAt}\n*Estimasi Kirim:* ${order.shippingDate || '-'}\n\n*Detail Item:*\n${itemListText}\n\n*Subtotal:* Rp ${order.subtotal.toLocaleString('id-ID')}\n*Ongkir:* Rp ${order.shippingCost.toLocaleString('id-ID')}\n*Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}\n\n*Metode Bayar:* ${order.paymentMethod.toUpperCase()}\n*BCA 7772400244 a/n CV MULTI AGRI SENTOSA*\n\nTerima kasih banyak!`;
 
-    window.open(`https://wa.me/${formattedPhone}?text=${message}`, '_blank');
+    const waUrl = `https://api.whatsapp.com/send?phone=${rawPhone}&text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank', 'noopener,noreferrer');
   };
 
   // FILTERING ORDER UNTUK DASHBOARD SELLER
@@ -1246,7 +1249,6 @@ export default function EpicureanApp() {
 
             {sellerSubTab === 'orders' && (
               <div className="space-y-6">
-                {/* TRACKING & FILTER BAR */}
                 <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-[#1F1C19] p-4 border border-[#2E2B27]">
                   <div className="relative w-full sm:w-80">
                     <Search className="h-3.5 w-3.5 text-[#8C8479] absolute left-3 top-3" />
@@ -1277,7 +1279,6 @@ export default function EpicureanApp() {
                   </div>
                 </div>
 
-                {/* LIST ORDER DENGAN BADGE WARNA BERBEDA & FITUR KIRIM WA */}
                 <div className="border border-[#2E2B27] bg-[#1F1C19] divide-y divide-[#2E2B27]">
                   {searchedOrders.length === 0 ? (
                     <p className="p-8 text-center text-xs text-[#8C8479] font-mono">Pesanan tidak ditemukan.</p>
@@ -1297,7 +1298,6 @@ export default function EpicureanApp() {
                           </div>
 
                           <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
-                            {/* TOMBOL KIRIM INVOICE WA */}
                             <button
                               onClick={() => handleSendWhatsAppInvoice(o)}
                               className="border border-emerald-700/50 hover:bg-emerald-950/40 text-xs font-mono px-3 py-1.5 text-emerald-400 bg-[#181614] flex items-center space-x-1.5 transition-all"
@@ -1306,7 +1306,6 @@ export default function EpicureanApp() {
                               <span>Kirim WA</span>
                             </button>
 
-                            {/* TOMBOL CETAK INVOICE */}
                             <button
                               onClick={() => setSelectedInvoiceOrder(o)}
                               className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] bg-[#181614] flex items-center space-x-1.5 transition-all"
@@ -1315,7 +1314,6 @@ export default function EpicureanApp() {
                               <span>Cetak</span>
                             </button>
 
-                            {/* UBAH STATUS ORDER */}
                             <select
                               value={o.status}
                               onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
@@ -1465,7 +1463,6 @@ export default function EpicureanApp() {
         )}
       </main>
 
-      {/* MODAL PROFIL & RIWAYAT PEMBELIAN PEMBELI */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
           <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-2xl p-6 space-y-6 font-mono text-xs max-h-[90vh] overflow-y-auto">
