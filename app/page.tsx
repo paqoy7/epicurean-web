@@ -90,14 +90,14 @@ const formatCOGS = (val: number) => {
 };
 
 const presetResellerAccounts: UserAccount[] = [
-  { username: 'BrunswickCafe', password: 'Fitzroy!', role: 'reseller', companyName: 'Brunswick', allowedBlends: ['Brunswick Blend (50 KDH : 50 BNE)'] },
-  { username: 'DagoTerrace', password: 'TerraceB', role: 'reseller', companyName: 'Dago Terrace', allowedBlends: ['Dago Terrace Blend (70 KDH : 30 Robusta)'] },
-  { username: 'RailwayCafe', password: 'RWCoffee', role: 'reseller', companyName: 'Railway', allowedBlends: ['Railway Blend (50 KDH : 50 KWH)'] },
-  { username: 'NaraPark', password: 'NRBlend', role: 'reseller', companyName: 'Nara Park', allowedBlends: ['Blend K50 (50 KDH : 50 Robusta)'] },
+  { username: 'BrunswickCafe', password: 'Fitzroy!', role: 'reseller', companyName: 'Brunswick', allowedBlends: ['Brunswick Blend (50 KDH : 50 BNE)', 'Brunswick'] },
+  { username: 'DagoTerrace', password: 'TerraceB', role: 'reseller', companyName: 'Dago Terrace', allowedBlends: ['Dago Terrace Blend (70 KDH : 30 Robusta)', 'Dago Terrace'] },
+  { username: 'RailwayCafe', password: 'RWCoffee', role: 'reseller', companyName: 'Railway', allowedBlends: ['Railway Blend (50 KDH : 50 KWH)', 'Railway'] },
+  { username: 'NaraPark', password: 'NRBlend', role: 'reseller', companyName: 'Nara Park', allowedBlends: ['Blend K50 (50 KDH : 50 Robusta)', 'Nara Park'] },
   { username: 'GreensCafe', password: 'GFAR', role: 'reseller', companyName: 'Greens Food', allowedBlends: ['Foresta Blend (70 KDH : 30 Robusta)', 'Blend Tigris (70 Robusta : 30 KDH)'] },
-  { username: 'AstriaSolo', password: 'Blend64', role: 'reseller', companyName: 'Astria Bakery', allowedBlends: ['Astria Blend (60 KDH : 40 Robusta)'] },
-  { username: 'Sasson', password: 'Blend55', role: 'reseller', companyName: 'Sasson', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)'] },
-  { username: 'LunaTirsa', password: 'LTBlend', role: 'reseller', companyName: 'Luna Tirsa', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)'] },
+  { username: 'AstriaSolo', password: 'Blend64', role: 'reseller', companyName: 'Astria Bakery', allowedBlends: ['Astria Blend (60 KDH : 40 Robusta)', 'Astria'] },
+  { username: 'Sasson', password: 'Blend55', role: 'reseller', companyName: 'Sasson', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)', 'Sasson'] },
+  { username: 'LunaTirsa', password: 'LTBlend', role: 'reseller', companyName: 'Luna Tirsa', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)', 'Luna Tirsa'] },
 ];
 
 const sellerAccount: UserAccount = {
@@ -681,13 +681,38 @@ export default function EpicureanApp() {
     fetchFeedbacks();
   }, []);
 
+  // PERBAIKAN LOGIKA BLEND ACCESSIBLE UNTUK RESELLER
   const filteredProducts = products.filter(p => {
     if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) return false;
     if (currentUser?.role === 'seller') return true;
     if (currentUser?.role === 'reseller') {
       if (!p.isExclusive) return true;
-      if (currentUser.allowedBlends && currentUser.allowedBlends.includes(p.name)) return true;
-      if (p.allowedResellers && p.allowedResellers.includes(currentUser.username)) return true;
+
+      const pNameLower = p.name.toLowerCase();
+      const uNameLower = (currentUser.username || '').toLowerCase();
+      const cNameLower = (currentUser.companyName || '').toLowerCase();
+
+      // Cek izin dari list blend reseller
+      if (currentUser.allowedBlends && currentUser.allowedBlends.length > 0) {
+        const isMatchBlend = currentUser.allowedBlends.some(blend => 
+          pNameLower.includes(blend.toLowerCase()) || blend.toLowerCase().includes(pNameLower)
+        );
+        if (isMatchBlend) return true;
+      }
+
+      // Cek izin dari nama reseller/perusahaan di produk
+      if (p.allowedResellers && p.allowedResellers.length > 0) {
+        const isMatchReseller = p.allowedResellers.some(r => 
+          r.toLowerCase() === uNameLower || r.toLowerCase() === cNameLower
+        );
+        if (isMatchReseller) return true;
+      }
+
+      // Fallback: jika nama produk mengandung nama cafe / username reseller
+      if (pNameLower.includes(uNameLower) || pNameLower.includes(cNameLower)) {
+        return true;
+      }
+
       return false;
     }
     return !p.isExclusive;
