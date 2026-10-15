@@ -94,7 +94,7 @@ const presetResellerAccounts: UserAccount[] = [
   { username: 'DagoTerrace', password: 'TerraceB', role: 'reseller', companyName: 'Dago Terrace', allowedBlends: ['Dago Terrace Blend (70 KDH : 30 Robusta)', 'Dago Terrace'] },
   { username: 'RailwayCafe', password: 'RWCoffee', role: 'reseller', companyName: 'Railway', allowedBlends: ['Railway Blend (50 KDH : 50 KWH)', 'Railway'] },
   { username: 'NaraPark', password: 'NRBlend', role: 'reseller', companyName: 'Nara Park', allowedBlends: ['Blend K50 (50 KDH : 50 Robusta)', 'Nara Park'] },
-  { username: 'GreensCafe', password: 'GFAR', role: 'reseller', companyName: 'Greens Food', allowedBlends: ['Foresta Blend (70 KDH : 30 Robusta)', 'Blend Tigris (70 Robusta : 30 KDH)'] },
+  { username: 'GreensCafe', password: 'GFAR', role: 'reseller', companyName: 'Greens Food', allowedBlends: ['Foresta Blend (70 KDH : 30 Robusta)', 'Blend Tigris (70 Robusta : 30 KDH)', 'Greens'] },
   { username: 'AstriaSolo', password: 'Blend64', role: 'reseller', companyName: 'Astria Bakery', allowedBlends: ['Astria Blend (60 KDH : 40 Robusta)', 'Astria'] },
   { username: 'Sasson', password: 'Blend55', role: 'reseller', companyName: 'Sasson', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)', 'Sasson'] },
   { username: 'LunaTirsa', password: 'LTBlend', role: 'reseller', companyName: 'Luna Tirsa', allowedBlends: ['Luna Tirsa Blend (50 KDH : 50 KNE)', 'Luna Tirsa'] },
@@ -229,7 +229,7 @@ function CustomDeliveryDatePicker({ value, onChange }: { value: string; onChange
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-left text-[#EFECE6] flex justify-between items-center hover:border-[#C8A97E] transition-all"
+        className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-left text-[#EFECE6] flex justify-between items-center hover:border-[#C8A97E] transition-all cursor-pointer"
       >
         <span>{formatDisplayDate(value)}</span>
         <Calendar className="h-4 w-4 text-[#C8A97E]" />
@@ -405,7 +405,7 @@ function InvoiceModal({ order, onClose }: { order: Order; onClose: () => void })
               <h1 className="text-lg font-bold tracking-wider text-black font-serif uppercase">
                 EPICUREAN COFFEE COMPANY
               </h1>
-              <p className="text-[11px] text-gray-600 font-mono">Phone: +628112039695</p>
+              <p className="text-[11px] text-gray-600 font-mono">Phone: +6289654225095</p>
               <p className="text-[11px] text-gray-600 font-mono">Email: epccoffee@gmail.com</p>
             </div>
             <div className="text-right">
@@ -518,6 +518,9 @@ export default function EpicureanApp() {
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
+
+  // STATE BARU UNTUK MODAL KONFIRMASI SUCCESS ORDER VIA WA
+  const [createdOrderSuccess, setCreatedOrderSuccess] = useState<Order | null>(null);
 
   const [feedbackForm, setFeedbackForm] = useState({
     category: 'Roasting Profile Tidak Sesuai' as CustomerFeedback['category'],
@@ -681,10 +684,12 @@ export default function EpicureanApp() {
     fetchFeedbacks();
   }, []);
 
-  // PERBAIKAN LOGIKA BLEND ACCESSIBLE UNTUK RESELLER
+  // LOGIKA AKSES HOUSE BLEND RESELLER
   const filteredProducts = products.filter(p => {
     if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) return false;
+    
     if (currentUser?.role === 'seller') return true;
+
     if (currentUser?.role === 'reseller') {
       if (!p.isExclusive) return true;
 
@@ -692,29 +697,29 @@ export default function EpicureanApp() {
       const uNameLower = (currentUser.username || '').toLowerCase();
       const cNameLower = (currentUser.companyName || '').toLowerCase();
 
-      // Cek izin dari list blend reseller
       if (currentUser.allowedBlends && currentUser.allowedBlends.length > 0) {
-        const isMatchBlend = currentUser.allowedBlends.some(blend => 
-          pNameLower.includes(blend.toLowerCase()) || blend.toLowerCase().includes(pNameLower)
-        );
+        const isMatchBlend = currentUser.allowedBlends.some(blend => {
+          const bLower = blend.toLowerCase();
+          return pNameLower.includes(bLower) || bLower.includes(pNameLower);
+        });
         if (isMatchBlend) return true;
       }
 
-      // Cek izin dari nama reseller/perusahaan di produk
       if (p.allowedResellers && p.allowedResellers.length > 0) {
-        const isMatchReseller = p.allowedResellers.some(r => 
-          r.toLowerCase() === uNameLower || r.toLowerCase() === cNameLower
-        );
+        const isMatchReseller = p.allowedResellers.some(r => {
+          const rLower = r.toLowerCase();
+          return rLower === uNameLower || rLower === cNameLower || uNameLower.includes(rLower);
+        });
         if (isMatchReseller) return true;
       }
 
-      // Fallback: jika nama produk mengandung nama cafe / username reseller
       if (pNameLower.includes(uNameLower) || pNameLower.includes(cNameLower)) {
         return true;
       }
 
       return false;
     }
+
     return !p.isExclusive;
   });
 
@@ -845,6 +850,7 @@ export default function EpicureanApp() {
     }
   };
 
+  // CHECKOUT & LANGSUNG MUNCULKAN POPUP CHAT WA DENGAN RINCIAN ORDER
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
@@ -895,11 +901,37 @@ export default function EpicureanApp() {
     });
 
     if (!error) {
-      alert('Pre-order Anda berhasil terkirim!');
+      setCreatedOrderSuccess(newOrder); // Buka Modal Konfirmasi WA
       setCart([]);
       setIsCartDrawerOpen(false);
       fetchOrders();
+    } else {
+      alert('Gagal mengirim pesanan: ' + error.message);
     }
+  };
+
+  // BUKA WHATSAPP DENGAN RINCIAN ORDER SETELAH SUBMIT PRE-ORDER
+  const sendOrderToWhatsAppAdmin = (order: Order) => {
+    const adminPhone = '6289654225095';
+    const itemsText = order.items.map(i => `• ${i.name} x ${i.quantity} Pack - Rp ${i.totalPrice.toLocaleString('id-ID')}`).join('\n');
+    
+    const message = 
+`Halo Admin Epicurean Coffee Co., saya ingin konfirmasi pesanan baru:
+
+🧾 *ID Order:* ${order.id}
+👤 *Pemesan:* ${order.customerName} (${order.companyName})
+📱 *WhatsApp:* ${order.customerPhone}
+📅 *Rencana Kirim:* ${order.shippingDate || '-'}
+
+📦 *Rincian Pesanan:*
+${itemsText}
+
+💳 *Metode Bayar:* ${order.paymentMethod.toUpperCase().replace(/_/g, ' ')}
+💰 *Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}
+
+Mohon diproses ya admin, terima kasih!`;
+
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const handleSendFeedback = async (e: React.FormEvent) => {
@@ -930,10 +962,11 @@ export default function EpicureanApp() {
     }
   };
 
-  const openWhatsAppAdmin = () => {
-    const adminPhone = '628112039695';
-    const message = encodeURIComponent(`Halo Admin Epicurean Coffee Co., saya ${currentUser?.username || 'Pelanggan'} (${currentUser?.companyName || 'Cafe'}). Saya ingin bertanya terkait pemesanan kopi.`);
-    window.open(`https://wa.me/${adminPhone}?text=${message}`, '_blank');
+  // CHAT GENERAL ADMIN
+  const openWhatsAppGeneral = () => {
+    const adminPhone = '6289654225095';
+    const text = `Halo Admin Epicurean Coffee Co., saya ${currentUser?.username || 'Pelanggan'} (${currentUser?.companyName || 'Cafe'}). Saya ingin bertanya terkait pemesanan kopi.`;
+    window.open(`https://wa.me/${adminPhone}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   const updateOrderStatus = async (orderId: string, status: Order['status']) => {
@@ -1020,7 +1053,7 @@ export default function EpicureanApp() {
           <div className="pt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
               onClick={() => handleRoleSelection('pembeli')}
-              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group"
+              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group cursor-pointer"
             >
               <span className="text-xs text-[#8C8479] block mb-2 font-mono">01</span>
               <span className="text-sm font-serif text-[#EFECE6] group-hover:text-[#C8A97E] block">Portal Pembeli</span>
@@ -1029,7 +1062,7 @@ export default function EpicureanApp() {
 
             <button
               onClick={() => handleRoleSelection('reseller')}
-              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group"
+              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group cursor-pointer"
             >
               <span className="text-xs text-[#8C8479] block mb-2 font-mono">02</span>
               <span className="text-sm font-serif text-[#EFECE6] group-hover:text-[#C8A97E] block">Mitra Reseller</span>
@@ -1038,7 +1071,7 @@ export default function EpicureanApp() {
 
             <button
               onClick={() => handleRoleSelection('seller')}
-              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group"
+              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#1F1C19] p-5 text-left transition-all group cursor-pointer"
             >
               <span className="text-xs text-[#8C8479] block mb-2 font-mono">03</span>
               <span className="text-sm font-serif text-[#EFECE6] group-hover:text-[#C8A97E] block">Roastery Admin</span>
@@ -1061,7 +1094,7 @@ export default function EpicureanApp() {
         <div className="max-w-md w-full border border-[#2E2B27] bg-[#1F1C19] p-8 space-y-6">
           <button
             onClick={() => setCurrentStep('welcome')}
-            className="text-xs text-[#8C8479] hover:text-[#C8A97E] font-mono flex items-center space-x-1"
+            className="text-xs text-[#8C8479] hover:text-[#C8A97E] font-mono flex items-center space-x-1 cursor-pointer"
           >
             ← Kembali
           </button>
@@ -1102,7 +1135,7 @@ export default function EpicureanApp() {
 
             <button
               type="submit"
-              className="w-full bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium py-3 text-sm transition-all font-mono uppercase tracking-wider"
+              className="w-full bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium py-3 text-sm transition-all font-mono uppercase tracking-wider cursor-pointer"
             >
               Masuk Sistem
             </button>
@@ -1114,7 +1147,7 @@ export default function EpicureanApp() {
               <button
                 type="button"
                 onClick={handleGoogleLogin}
-                className="w-full bg-[#181614] hover:bg-[#282420] border border-[#38332E] text-[#EFECE6] py-3 text-xs font-mono flex items-center justify-center space-x-2 transition-all"
+                className="w-full bg-[#181614] hover:bg-[#282420] border border-[#38332E] text-[#EFECE6] py-3 text-xs font-mono flex items-center justify-center space-x-2 transition-all cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -1141,21 +1174,19 @@ export default function EpicureanApp() {
           </div>
 
           <div className="flex items-center space-x-3 sm:space-x-4">
+            <button
+              onClick={openWhatsAppGeneral}
+              className="bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] px-3.5 py-1.5 flex items-center space-x-1.5 font-mono text-xs font-bold transition-all shadow cursor-pointer"
+            >
+              <MessageSquare className="h-3.5 w-3.5 text-[#181614]" />
+              <span>Chat Admin</span>
+            </button>
+
             {currentUser?.role !== 'seller' && (
               <>
-                {/* FITUR CHAT ADMIN WA */}
-                <button
-                  onClick={openWhatsAppAdmin}
-                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-1.5 hover:border-[#C8A97E] transition-all text-xs font-mono text-emerald-400"
-                >
-                  <MessageSquare className="h-3.5 w-3.5 text-emerald-400" />
-                  <span className="hidden sm:inline">Chat Admin</span>
-                </button>
-
-                {/* FITUR BANTUAN & KOMPLAIN */}
                 <button
                   onClick={() => setIsFeedbackModalOpen(true)}
-                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-1.5 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-1.5 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6] cursor-pointer"
                 >
                   <AlertCircle className="h-3.5 w-3.5 text-amber-400" />
                   <span className="hidden sm:inline">Komplain/Bantuan</span>
@@ -1163,7 +1194,7 @@ export default function EpicureanApp() {
 
                 <button
                   onClick={() => setIsProfileModalOpen(true)}
-                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6] cursor-pointer"
                 >
                   <User className="h-3.5 w-3.5 text-[#C8A97E]" />
                   <span className="hidden sm:inline">Profil</span>
@@ -1171,7 +1202,7 @@ export default function EpicureanApp() {
 
                 <button
                   onClick={() => setIsCartDrawerOpen(true)}
-                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6]"
+                  className="border border-[#38332E] bg-[#1F1C19] px-3 py-1.5 flex items-center space-x-2 hover:border-[#C8A97E] transition-all text-xs font-mono text-[#EFECE6] cursor-pointer"
                 >
                   <ShoppingCart className="h-3.5 w-3.5 text-[#C8A97E]" />
                   <span>Cart ({totalCartUnits})</span>
@@ -1181,7 +1212,7 @@ export default function EpicureanApp() {
 
             <div className="flex items-center space-x-3 text-xs border-l border-[#2E2B27] pl-3 sm:pl-4">
               <span className="text-[#A39B8E] font-mono">{currentUser?.username}</span>
-              <button onClick={handleLogout} className="text-[#8C8479] hover:text-rose-400">
+              <button onClick={handleLogout} className="text-[#8C8479] hover:text-rose-400 cursor-pointer">
                 <LogOut className="h-3.5 w-3.5" />
               </button>
             </div>
@@ -1230,7 +1261,7 @@ export default function EpicureanApp() {
                     <button
                       key={cat}
                       onClick={() => setActiveCatalogTab(cat as any)}
-                      className={`px-3 py-1.5 transition-all ${
+                      className={`px-3 py-1.5 transition-all cursor-pointer ${
                         activeCatalogTab === cat ? 'bg-[#C8A97E] text-[#181614] font-medium' : 'text-[#8C8479] hover:text-[#EFECE6]'
                       }`}
                     >
@@ -1263,7 +1294,7 @@ export default function EpicureanApp() {
                           </div>
                           <button
                             onClick={() => addProductToCart(p, '1kg', 1)}
-                            className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-3 py-1.5 transition-all"
+                            className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-3 py-1.5 transition-all cursor-pointer"
                           >
                             + 1 Kg
                           </button>
@@ -1277,7 +1308,7 @@ export default function EpicureanApp() {
                             </div>
                             <button
                               onClick={() => addProductToCart(p, '200g', 1)}
-                              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-3 py-1.5 transition-all"
+                              className="border border-[#38332E] hover:border-[#C8A97E] bg-[#181614] text-xs font-mono text-[#EFECE6] px-3 py-1.5 transition-all cursor-pointer"
                             >
                               + 200g
                             </button>
@@ -1298,28 +1329,28 @@ export default function EpicureanApp() {
               <div className="flex space-x-2 text-xs font-mono">
                 <button
                   onClick={() => setSellerSubTab('orders')}
-                  className={`px-4 py-2 transition-all ${sellerSubTab === 'orders' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                  className={`px-4 py-2 transition-all cursor-pointer ${sellerSubTab === 'orders' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
                 >
                   Orders ({orders.length})
                 </button>
 
                 <button
                   onClick={() => setSellerSubTab('products')}
-                  className={`px-4 py-2 transition-all ${sellerSubTab === 'products' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                  className={`px-4 py-2 transition-all cursor-pointer ${sellerSubTab === 'products' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
                 >
                   Products ({products.length})
                 </button>
 
                 <button
                   onClick={() => setSellerSubTab('feedbacks')}
-                  className={`px-4 py-2 transition-all ${sellerSubTab === 'feedbacks' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                  className={`px-4 py-2 transition-all cursor-pointer ${sellerSubTab === 'feedbacks' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
                 >
                   Feedbacks ({feedbacks.length})
                 </button>
 
                 <button
                   onClick={() => setSellerSubTab('recap')}
-                  className={`px-4 py-2 transition-all ${sellerSubTab === 'recap' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
+                  className={`px-4 py-2 transition-all cursor-pointer ${sellerSubTab === 'recap' ? 'bg-[#C8A97E] text-[#181614] font-bold' : 'text-[#8C8479] hover:text-[#EFECE6]'}`}
                 >
                   Rekap Produksi
                 </button>
@@ -1379,7 +1410,7 @@ export default function EpicureanApp() {
                           <div className="flex items-center space-x-2 w-full sm:w-auto justify-end">
                             <button
                               onClick={() => setSelectedInvoiceOrder(o)}
-                              className="border border-[#C8A97E] hover:bg-[#C8A97E] hover:text-[#181614] text-xs font-mono px-3.5 py-1.5 text-[#C8A97E] bg-[#181614] flex items-center space-x-1.5 transition-all font-bold"
+                              className="border border-[#C8A97E] hover:bg-[#C8A97E] hover:text-[#181614] text-xs font-mono px-3.5 py-1.5 text-[#C8A97E] bg-[#181614] flex items-center space-x-1.5 transition-all font-bold cursor-pointer"
                             >
                               <Download className="h-3.5 w-3.5" />
                               <span>Download PDF</span>
@@ -1388,7 +1419,7 @@ export default function EpicureanApp() {
                             <select
                               value={o.status}
                               onChange={(e) => updateOrderStatus(o.id, e.target.value as Order['status'])}
-                              className="bg-[#181614] border border-[#38332E] px-2.5 py-1.5 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                              className="bg-[#181614] border border-[#38332E] px-2.5 py-1.5 text-xs font-mono text-[#EFECE6] focus:outline-none cursor-pointer"
                             >
                               <option value="Pending Approval">Pending Approval</option>
                               <option value="Roasting Process">Roasting Process</option>
@@ -1440,7 +1471,7 @@ export default function EpicureanApp() {
                       });
                       setIsProductModalOpen(true);
                     }}
-                    className="bg-[#C8A97E] text-[#181614] font-mono text-xs px-4 py-2 font-bold hover:bg-[#b5956a] transition-all flex items-center space-x-2"
+                    className="bg-[#C8A97E] text-[#181614] font-mono text-xs px-4 py-2 font-bold hover:bg-[#b5956a] transition-all flex items-center space-x-2 cursor-pointer"
                   >
                     <Plus className="h-4 w-4" />
                     <span>Tambah Produk Baru</span>
@@ -1465,13 +1496,13 @@ export default function EpicureanApp() {
                             setProductForm(p);
                             setIsProductModalOpen(true);
                           }}
-                          className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6]"
+                          className="border border-[#38332E] hover:border-[#C8A97E] text-xs font-mono px-3 py-1.5 text-[#EFECE6] cursor-pointer"
                         >
                           <Edit3 className="h-3.5 w-3.5" />
                         </button>
                         <button
                           onClick={() => handleDeleteProduct(p.id)}
-                          className="border border-[#38332E] hover:border-rose-400 text-xs font-mono px-3 py-1.5 text-rose-400"
+                          className="border border-[#38332E] hover:border-rose-400 text-xs font-mono px-3 py-1.5 text-rose-400 cursor-pointer"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1499,7 +1530,7 @@ export default function EpicureanApp() {
                           </div>
                           <button
                             onClick={() => updateFeedbackStatus(f.id, f.status === 'Open' ? 'Resolved' : 'Open')}
-                            className={`px-3 py-1 text-xs font-mono ${f.status === 'Resolved' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}
+                            className={`px-3 py-1 text-xs font-mono cursor-pointer ${f.status === 'Resolved' ? 'bg-emerald-900/50 text-emerald-400' : 'bg-amber-900/50 text-amber-400'}`}
                           >
                             {f.status}
                           </button>
@@ -1535,6 +1566,59 @@ export default function EpicureanApp() {
         )}
       </main>
 
+      {/* MODAL SUCCESS ORDER & LANGSUNG CHAT WA ADMIN */}
+      {createdOrderSuccess && (
+        <div className="fixed inset-0 bg-black/85 z-50 flex justify-center items-center p-4">
+          <div className="bg-[#1F1C19] border border-[#C8A97E] w-full max-w-md p-6 space-y-6 font-mono text-xs text-center shadow-2xl">
+            <div className="w-12 h-12 bg-[#C8A97E]/10 rounded-full flex items-center justify-center mx-auto border border-[#C8A97E]">
+              <CheckCircle2 className="h-6 w-6 text-[#C8A97E]" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-lg font-serif text-[#EFECE6]">Pre-Order Berhasil Terkirim!</h3>
+              <p className="text-xs text-[#A39B8E]">
+                ID Order Anda: <strong className="text-[#C8A97E] font-bold">{createdOrderSuccess.id}</strong>
+              </p>
+              <p className="text-[11px] text-[#8C8479] leading-relaxed">
+                Silakan klik tombol di bawah untuk langsung terhubung dengan WhatsApp Admin Roastery dan mengirim rincian pesanan Anda.
+              </p>
+            </div>
+
+            <div className="bg-[#181614] border border-[#38332E] p-4 text-left space-y-2 text-[11px]">
+              <div className="flex justify-between border-b border-[#2E2B27] pb-2">
+                <span className="text-[#8C8479]">Rencana Pengiriman:</span>
+                <span className="text-[#EFECE6] font-bold">{createdOrderSuccess.shippingDate}</span>
+              </div>
+              <div className="flex justify-between border-b border-[#2E2B27] pb-2">
+                <span className="text-[#8C8479]">Metode Bayar:</span>
+                <span className="text-[#EFECE6] uppercase">{createdOrderSuccess.paymentMethod.replace(/_/g, ' ')}</span>
+              </div>
+              <div className="flex justify-between font-bold pt-1">
+                <span className="text-[#EFECE6]">Total Tagihan:</span>
+                <span className="text-[#C8A97E]">Rp {createdOrderSuccess.totalAmount.toLocaleString('id-ID')}</span>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => sendOrderToWhatsAppAdmin(createdOrderSuccess)}
+                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 text-xs uppercase flex items-center justify-center space-x-2 transition-all cursor-pointer shadow-lg"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span>Hubungi Admin via WhatsApp</span>
+              </button>
+
+              <button
+                onClick={() => setCreatedOrderSuccess(null)}
+                className="w-full bg-[#181614] hover:bg-[#282420] text-[#8C8479] py-2 text-xs transition-all border border-[#38332E] cursor-pointer"
+              >
+                Tutup Window Ini
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* MODAL PROFILE */}
       {isProfileModalOpen && (
         <div className="fixed inset-0 bg-black/80 z-50 flex justify-center items-center p-4">
@@ -1544,7 +1628,7 @@ export default function EpicureanApp() {
                 <User className="h-5 w-5 text-[#C8A97E]" />
                 <h3 className="text-base font-serif text-[#EFECE6]">Profil Saya & Riwayat Pembelian</h3>
               </div>
-              <button onClick={() => setIsProfileModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+              <button onClick={() => setIsProfileModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6] cursor-pointer">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -1586,9 +1670,18 @@ export default function EpicureanApp() {
                         ))}
                       </div>
 
-                      <div className="flex justify-between text-xs pt-1">
+                      <div className="flex justify-between items-center text-xs pt-1">
                         <span className="text-[#8C8479]">Estimasi Kirim: <strong className="text-[#EFECE6]">{item.shippingDate || '-'}</strong></span>
-                        <span className="font-bold text-[#EFECE6]">Total: Rp {item.totalAmount.toLocaleString('id-ID')}</span>
+                        <div className="flex items-center space-x-2">
+                          <button
+                            onClick={() => sendOrderToWhatsAppAdmin(item)}
+                            className="text-[10px] bg-emerald-700/30 text-emerald-400 border border-emerald-600/40 px-2 py-1 font-bold flex items-center space-x-1 hover:bg-emerald-700/50 transition-all cursor-pointer"
+                          >
+                            <MessageSquare className="h-3 w-3" />
+                            <span>Chat WA</span>
+                          </button>
+                          <span className="font-bold text-[#EFECE6]">Total: Rp {item.totalAmount.toLocaleString('id-ID')}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1608,7 +1701,7 @@ export default function EpicureanApp() {
                 <AlertCircle className="h-4 w-4 text-amber-400" />
                 <h3 className="text-sm font-serif text-[#EFECE6]">Kirim Komplain & Masukan Roastery</h3>
               </div>
-              <button onClick={() => setIsFeedbackModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+              <button onClick={() => setIsFeedbackModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6] cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1619,7 +1712,7 @@ export default function EpicureanApp() {
                 <select
                   value={feedbackForm.category}
                   onChange={(e) => setFeedbackForm({ ...feedbackForm, category: e.target.value as any })}
-                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6] focus:outline-none"
+                  className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6] focus:outline-none cursor-pointer"
                 >
                   <option value="Roasting Profile Tidak Sesuai">Roasting Profile Tidak Sesuai</option>
                   <option value="Barang Kurang / Salah">Barang Kurang / Salah</option>
@@ -1654,7 +1747,7 @@ export default function EpicureanApp() {
 
               <button
                 type="submit"
-                className="w-full bg-[#C8A97E] text-[#181614] font-bold py-2.5 hover:bg-[#b5956a] transition-all uppercase flex items-center justify-center space-x-2"
+                className="w-full bg-[#C8A97E] text-[#181614] font-bold py-2.5 hover:bg-[#b5956a] transition-all uppercase flex items-center justify-center space-x-2 cursor-pointer"
               >
                 <Send className="h-3.5 w-3.5" />
                 <span>Kirim Masukan</span>
@@ -1670,7 +1763,7 @@ export default function EpicureanApp() {
           <div className="bg-[#1F1C19] border border-[#2E2B27] w-full max-w-lg p-6 space-y-4 font-mono text-xs">
             <div className="flex justify-between items-center border-b border-[#2E2B27] pb-3">
               <h3 className="text-sm font-serif text-[#EFECE6]">{editingProduct ? 'Edit Produk' : 'Tambah Produk Baru'}</h3>
-              <button onClick={() => setIsProductModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+              <button onClick={() => setIsProductModalOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6] cursor-pointer">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1693,7 +1786,7 @@ export default function EpicureanApp() {
                   <select
                     value={productForm.category}
                     onChange={(e) => setProductForm({ ...productForm, category: e.target.value as any })}
-                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6]"
+                    className="w-full bg-[#181614] border border-[#38332E] p-2 text-[#EFECE6] cursor-pointer"
                   >
                     <option value="Green Beans">Green Beans</option>
                     <option value="Roasted Beans">Roasted Beans</option>
@@ -1756,7 +1849,7 @@ export default function EpicureanApp() {
 
               <button
                 type="submit"
-                className="w-full bg-[#C8A97E] text-[#181614] font-bold py-2.5 hover:bg-[#b5956a] transition-all uppercase"
+                className="w-full bg-[#C8A97E] text-[#181614] font-bold py-2.5 hover:bg-[#b5956a] transition-all uppercase cursor-pointer"
               >
                 Simpan Produk
               </button>
@@ -1779,7 +1872,7 @@ export default function EpicureanApp() {
             <div className="space-y-6">
               <div className="flex justify-between items-center border-b border-[#2E2B27] pb-4">
                 <h2 className="text-lg font-serif text-[#EFECE6]">Order Checkout</h2>
-                <button onClick={() => setIsCartDrawerOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6]">
+                <button onClick={() => setIsCartDrawerOpen(false)} className="text-[#8C8479] hover:text-[#EFECE6] cursor-pointer">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -1800,7 +1893,7 @@ export default function EpicureanApp() {
                           <button
                             type="button"
                             onClick={() => updateCartItemQuantity(item.id, -1)}
-                            className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E] hover:bg-[#2A2723] transition-all"
+                            className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E] hover:bg-[#2A2723] transition-all cursor-pointer"
                           >
                             <Minus className="h-3 w-3" />
                           </button>
@@ -1808,7 +1901,7 @@ export default function EpicureanApp() {
                           <button
                             type="button"
                             onClick={() => updateCartItemQuantity(item.id, 1)}
-                            className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E] hover:bg-[#2A2723] transition-all"
+                            className="px-2 py-1 text-[#8C8479] hover:text-[#C8A97E] hover:bg-[#2A2723] transition-all cursor-pointer"
                           >
                             <Plus className="h-3 w-3" />
                           </button>
@@ -1850,7 +1943,7 @@ export default function EpicureanApp() {
                       <select
                         value={paymentMethod}
                         onChange={(e) => setPaymentMethod(e.target.value as any)}
-                        className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none"
+                        className="w-full bg-[#181614] border border-[#38332E] px-3 py-2 text-xs font-mono text-[#EFECE6] focus:outline-none cursor-pointer"
                       >
                         <option value="transfer">Transfer Bank BCA (7772400244 a/n CV Multi Agri Sentosa)</option>
                         <option value="kontra_bon_15">Kontra Bon (15 Hari)</option>
@@ -1907,7 +2000,7 @@ export default function EpicureanApp() {
                 <button
                   type="submit"
                   form="checkout-form"
-                  className="w-full py-3 text-xs font-mono uppercase tracking-wider bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium transition-all"
+                  className="w-full py-3 text-xs font-mono uppercase tracking-wider bg-[#C8A97E] hover:bg-[#b5956a] text-[#181614] font-medium transition-all cursor-pointer"
                 >
                   Submit Pre-Order
                 </button>
