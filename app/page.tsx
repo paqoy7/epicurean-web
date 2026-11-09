@@ -114,9 +114,9 @@ const defaultProductsFromSpreadsheet: Product[] = [
   { id: 'RB-1', name: 'Wanoja Avisani Single Origin', category: 'Roasted Beans', pricePerKg: 225000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 284000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Avisani Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
   { id: 'RB-2', name: 'Wanoja Fullwash Single Origin', category: 'Roasted Beans', pricePerKg: 350000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 193000, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Wanoja Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
   { id: 'RB-5', name: 'Kerinci Fullwash Single Origin', category: 'Roasted Beans', pricePerKg: 325000, pricePer500g: 0, pricePer200g: 120000, greenBeanCostPerKg: 160222, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 9000, description: 'Kerinci Fullwash Single Origin Roasted', isExclusive: false, exclusiveCode: '' },
-  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: '', allowedResellers: ['RailwayCafe'] },
-  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['AstriaSolo'] },
-  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: '', allowedResellers: ['BrunswickCafe'] },
+  { id: 'BL-1', name: 'Railway Blend (50 KDH : 50 KWH)', category: 'Blend Beans', pricePerKg: 320000, pricePer500g: 0, pricePer200g: 75000, greenBeanCostPerKg: 224653, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Railway Blend: 50% Roasted KDH + 50% Roasted KWH', isExclusive: true, exclusiveCode: '', allowedResellers: ['RailwayCafe', 'Railway'] },
+  { id: 'BL-2', name: 'Astria Blend (60 KDH : 40 Robusta)', category: 'Blend Beans', pricePerKg: 250000, pricePer500g: 0, pricePer200g: 60000, greenBeanCostPerKg: 190278, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Astria Blend: 60% Roasted KDH + 40% Roasted Robusta', isExclusive: true, exclusiveCode: '', allowedResellers: ['AstriaSolo', 'Astria'] },
+  { id: 'BL-3', name: 'Brunswick Blend (50 KDH : 50 BNE)', category: 'Blend Beans', pricePerKg: 285000, pricePer500g: 0, pricePer200g: 68000, greenBeanCostPerKg: 243264, roastingCostPerKg: 20000, packagingCostPerKg: 7500, packagingCostPer500g: 0, packagingCostPer200g: 3000, description: 'Brunswick Blend: 50% Roasted KDH + 50% Roasted Flores', isExclusive: true, exclusiveCode: '', allowedResellers: ['BrunswickCafe', 'Brunswick'] },
 ];
 
 const calculateOrderSchedule = () => {
@@ -519,7 +519,6 @@ export default function EpicureanApp() {
   const [isFeedbackModalOpen, setIsFeedbackModalOpen] = useState(false);
   const [selectedInvoiceOrder, setSelectedInvoiceOrder] = useState<Order | null>(null);
 
-  // STATE BARU UNTUK MODAL KONFIRMASI SUCCESS ORDER VIA WA
   const [createdOrderSuccess, setCreatedOrderSuccess] = useState<Order | null>(null);
 
   const [feedbackForm, setFeedbackForm] = useState({
@@ -624,7 +623,7 @@ export default function EpicureanApp() {
 
   const fetchProducts = async () => {
     const { data, error } = await supabase.from('products').select('*');
-    if (error || !data || data.length < defaultProductsFromSpreadsheet.length) {
+    if (error || !data || data.length === 0) {
       setProducts(defaultProductsFromSpreadsheet);
     } else {
       setProducts(formatSupabaseProducts(data));
@@ -684,7 +683,6 @@ export default function EpicureanApp() {
     fetchFeedbacks();
   }, []);
 
-  // LOGIKA AKSES HOUSE BLEND RESELLER
   const filteredProducts = products.filter(p => {
     if (activeCatalogTab !== 'all' && p.category !== activeCatalogTab) return false;
     
@@ -850,7 +848,6 @@ export default function EpicureanApp() {
     }
   };
 
-  // CHECKOUT & LANGSUNG MUNCULKAN POPUP CHAT WA DENGAN RINCIAN ORDER
   const handleCheckout = async (e: React.FormEvent) => {
     e.preventDefault();
     if (cart.length === 0) return;
@@ -901,7 +898,7 @@ export default function EpicureanApp() {
     });
 
     if (!error) {
-      setCreatedOrderSuccess(newOrder); // Buka Modal Konfirmasi WA
+      setCreatedOrderSuccess(newOrder);
       setCart([]);
       setIsCartDrawerOpen(false);
       fetchOrders();
@@ -910,24 +907,23 @@ export default function EpicureanApp() {
     }
   };
 
-  // BUKA WHATSAPP DENGAN RINCIAN ORDER SETELAH SUBMIT PRE-ORDER
   const sendOrderToWhatsAppAdmin = (order: Order) => {
     const adminPhone = '6289654225095';
-    const itemsText = order.items.map(i => `• ${i.name} x ${i.quantity} Pack - Rp ${i.totalPrice.toLocaleString('id-ID')}`).join('\n');
+    const itemsText = order.items.map(i => `� ${i.name} x ${i.quantity} Pack - Rp ${i.totalPrice.toLocaleString('id-ID')}`).join('\n');
     
     const message = 
 `Halo Admin Epicurean Coffee Co., saya ingin konfirmasi pesanan baru:
 
-🧾 *ID Order:* ${order.id}
-👤 *Pemesan:* ${order.customerName} (${order.companyName})
-📱 *WhatsApp:* ${order.customerPhone}
-📅 *Rencana Kirim:* ${order.shippingDate || '-'}
+?? *ID Order:* ${order.id}
+?? *Pemesan:* ${order.customerName} (${order.companyName})
+?? *WhatsApp:* ${order.customerPhone}
+?? *Rencana Kirim:* ${order.shippingDate || '-'}
 
-📦 *Rincian Pesanan:*
+?? *Rincian Pesanan:*
 ${itemsText}
 
-💳 *Metode Bayar:* ${order.paymentMethod.toUpperCase().replace(/_/g, ' ')}
-💰 *Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}
+?? *Metode Bayar:* ${order.paymentMethod.toUpperCase().replace(/_/g, ' ')}
+?? *Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}
 
 Mohon diproses ya admin, terima kasih!`;
 
@@ -962,7 +958,6 @@ Mohon diproses ya admin, terima kasih!`;
     }
   };
 
-  // CHAT GENERAL ADMIN
   const openWhatsAppGeneral = () => {
     const adminPhone = '6289654225095';
     const text = `Halo Admin Epicurean Coffee Co., saya ${currentUser?.username || 'Pelanggan'} (${currentUser?.companyName || 'Cafe'}). Saya ingin bertanya terkait pemesanan kopi.`;
@@ -1081,7 +1076,7 @@ Mohon diproses ya admin, terima kasih!`;
         </main>
 
         <footer className="border-t border-[#2E2B27] pt-6 flex justify-between text-xs text-[#8C8479] font-mono">
-          <span>Epicurean Roastery © 2026</span>
+          <span>Epicurean Roastery � 2026</span>
           <span>Bandung, West Java</span>
         </footer>
       </div>
@@ -1096,7 +1091,7 @@ Mohon diproses ya admin, terima kasih!`;
             onClick={() => setCurrentStep('welcome')}
             className="text-xs text-[#8C8479] hover:text-[#C8A97E] font-mono flex items-center space-x-1 cursor-pointer"
           >
-            ← Kembali
+            ? Kembali
           </button>
 
           <div>
@@ -1454,7 +1449,7 @@ Mohon diproses ya admin, terima kasih!`;
             {sellerSubTab === 'products' && (
               <div className="space-y-6">
                 <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-serif text-[#EFECE6]">Kelola Katalog Biji Kopi</h2>
+                  <h2 className="text-lg font-serif text-[#EFECE6]">Kelola Katalog Biji Kopi ({products.length})</h2>
                   <button
                     onClick={() => {
                       setEditingProduct(null);
