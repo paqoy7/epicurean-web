@@ -506,7 +506,7 @@ export default function EpicureanApp() {
 
   const [activeCatalogTab, setActiveCatalogTab] = useState<'all' | 'Green Beans' | 'Roasted Beans' | 'Blend Beans'>('all');
 
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<Product[]>(defaultProductsFromSpreadsheet);
   const [orders, setOrders] = useState<Order[]>([]);
   const [feedbacks, setFeedbacks] = useState<CustomerFeedback[]>([]);
 
@@ -622,11 +622,15 @@ export default function EpicureanApp() {
   };
 
   const fetchProducts = async () => {
-    const { data, error } = await supabase.from('products').select('*');
-    if (error || !data || data.length === 0) {
+    try {
+      const { data, error } = await supabase.from('products').select('*');
+      if (error || !data || data.length === 0) {
+        setProducts(defaultProductsFromSpreadsheet);
+      } else {
+        setProducts(formatSupabaseProducts(data));
+      }
+    } catch (err) {
       setProducts(defaultProductsFromSpreadsheet);
-    } else {
-      setProducts(formatSupabaseProducts(data));
     }
   };
 
@@ -909,21 +913,21 @@ export default function EpicureanApp() {
 
   const sendOrderToWhatsAppAdmin = (order: Order) => {
     const adminPhone = '6289654225095';
-    const itemsText = order.items.map(i => `� ${i.name} x ${i.quantity} Pack - Rp ${i.totalPrice.toLocaleString('id-ID')}`).join('\n');
+    const itemsText = order.items.map(i => `• ${i.name} x ${i.quantity} Pack - Rp ${i.totalPrice.toLocaleString('id-ID')}`).join('\n');
     
     const message = 
 `Halo Admin Epicurean Coffee Co., saya ingin konfirmasi pesanan baru:
 
-?? *ID Order:* ${order.id}
-?? *Pemesan:* ${order.customerName} (${order.companyName})
-?? *WhatsApp:* ${order.customerPhone}
-?? *Rencana Kirim:* ${order.shippingDate || '-'}
+🧾 *ID Order:* ${order.id}
+👤 *Pemesan:* ${order.customerName} (${order.companyName})
+📱 *WhatsApp:* ${order.customerPhone}
+📅 *Rencana Kirim:* ${order.shippingDate || '-'}
 
-?? *Rincian Pesanan:*
+📦 *Rincian Pesanan:*
 ${itemsText}
 
-?? *Metode Bayar:* ${order.paymentMethod.toUpperCase().replace(/_/g, ' ')}
-?? *Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}
+💳 *Metode Bayar:* ${order.paymentMethod.toUpperCase().replace(/_/g, ' ')}
+💰 *Total Tagihan:* Rp ${order.totalAmount.toLocaleString('id-ID')}
 
 Mohon diproses ya admin, terima kasih!`;
 
@@ -1076,7 +1080,7 @@ Mohon diproses ya admin, terima kasih!`;
         </main>
 
         <footer className="border-t border-[#2E2B27] pt-6 flex justify-between text-xs text-[#8C8479] font-mono">
-          <span>Epicurean Roastery � 2026</span>
+          <span>Epicurean Roastery © 2026</span>
           <span>Bandung, West Java</span>
         </footer>
       </div>
@@ -1091,7 +1095,7 @@ Mohon diproses ya admin, terima kasih!`;
             onClick={() => setCurrentStep('welcome')}
             className="text-xs text-[#8C8479] hover:text-[#C8A97E] font-mono flex items-center space-x-1 cursor-pointer"
           >
-            ? Kembali
+            ← Kembali
           </button>
 
           <div>
